@@ -1,3 +1,5 @@
+import Button from '@/components/Button';
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-start p-24">
@@ -16,6 +18,7 @@ export default function Home() {
           {/* This is a placeholder. Replace it with code to generate an answer */}
         </p>
       </div>
+      <Button />
     </main>
   );
 }
