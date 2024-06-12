@@ -4,7 +4,7 @@ import {FormEvent, useContext} from 'react';
 import {ChatContext} from './ChatContext.client';
 
 export function UserPrompt() {
-  const {prompt, setPrompt} = useContext(ChatContext);
+  const {prompt, setPrompt, setAnswer} = useContext(ChatContext);
 
   async function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
@@ -24,7 +24,10 @@ export function UserPrompt() {
       console.log('User prompt correctly sent: ', data.prompt);
     } else {
       const error = await response.json();
-      console.error('Failed to send prompt, Response object: ', error);
+
+      const errorMsg = 'Failed to send prompt, Response object:\n';
+      console.error(errorMsg, error);
+      alert(errorMsg + JSON.stringify(error, null, 2));
     }
   }
 
