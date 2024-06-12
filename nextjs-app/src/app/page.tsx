@@ -1,4 +1,5 @@
 import Button from '@/components/Button.client';
+import {UserPrompt} from './components/UserPrompt.client';
 
 export default function Home() {
   return (
@@ -6,13 +7,7 @@ export default function Home() {
       <h1 className="font-sans text-4xl">RAG TEST</h1>
       <div className="m-6 flex flex-col items-center justify-around">
         <div className="m-6">Input your prompt:</div>
-        <textarea
-          name="prompt"
-          id="prompt"
-          className="text-black"
-          rows={10}
-          cols={60}
-        ></textarea>
+        <UserPrompt />
         <div className="m-6">LLM ANSWER:</div>
         <p id="answer" className="w-full break-words bg-white p-6 text-black">
           {/* This is a placeholder. Replace it with code to generate an answer */}
