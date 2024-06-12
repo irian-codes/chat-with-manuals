@@ -11,6 +11,7 @@ export function UserPrompt() {
 
     const formData = new FormData(e.target as HTMLFormElement);
 
+    // TODO: Transform this into the call that sends the prompt to the LLM and returns the answer
     const response = await fetch('/api/send-prompt', {
       method: 'POST',
       body: formData,
