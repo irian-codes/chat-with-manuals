@@ -1,17 +1,30 @@
 'use client';
 
-import {FormEvent} from 'react';
+import {FormEvent, useContext} from 'react';
+import {ChatContext} from './ChatContext.client';
 
 export function UserPrompt() {
+  const {prompt, setPrompt} = useContext(ChatContext);
+
   async function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
 
     const formData = new FormData(e.target as HTMLFormElement);
 
-    await fetch('/api/send-prompt', {
+    const response = await fetch('/api/send-prompt', {
       method: 'POST',
       body: formData,
     });
+
+    if (response.ok) {
+      const data = await response.json();
+      setPrompt(data.prompt);
+
+      console.log('User prompt correctly sent: ', data.prompt);
+    } else {
+      const error = await response.json();
+      console.error('Failed to send prompt, Response object: ', error);
+    }
   }
 
   return (

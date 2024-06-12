@@ -1,6 +1,6 @@
-import CountContextWrapper from '@/components/CountContext.client';
 import type {Metadata} from 'next';
 import {Inter} from 'next/font/google';
+import ChatContextWrapper from './components/ChatContext.client';
 import './globals.css';
 
 const inter = Inter({subsets: ['latin']});
@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <CountContextWrapper>{children}</CountContextWrapper>
+        <ChatContextWrapper>{children}</ChatContextWrapper>
       </body>
     </html>
   );

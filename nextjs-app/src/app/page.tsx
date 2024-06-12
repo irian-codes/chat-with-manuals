@@ -1,4 +1,3 @@
-import Button from '@/components/Button.client';
 import {UserPrompt} from './components/UserPrompt.client';
 
 export default function Home() {
@@ -13,7 +12,6 @@ export default function Home() {
           {/* This is a placeholder. Replace it with code to generate an answer */}
         </p>
       </div>
-      <Button />
     </main>
   );
 }
