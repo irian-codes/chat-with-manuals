@@ -1,7 +1,7 @@
 'use client';
 
 import {useContext} from 'react';
-import {CountContext} from './CountContext';
+import {CountContext} from './CountContext.client';
 
 function Button() {
   const {count, setCount} = useContext(CountContext);
