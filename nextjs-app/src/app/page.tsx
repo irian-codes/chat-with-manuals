@@ -1,3 +1,4 @@
+import {LLMAnswer} from './components/LLMAnswer.client';
 import {UserPrompt} from './components/UserPrompt.client';
 
 export default function Home() {
@@ -8,9 +9,7 @@ export default function Home() {
         <div className="m-6">Input your prompt:</div>
         <UserPrompt />
         <div className="m-6">LLM ANSWER:</div>
-        <p id="answer" className="w-full break-words bg-white p-6 text-black">
-          {/* This is a placeholder. Replace it with code to generate an answer */}
-        </p>
+        <LLMAnswer />
       </div>
     </main>
   );
