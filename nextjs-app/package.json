@@ -12,8 +12,11 @@
   },
   "dependencies": {
     "@langchain/community": "^0.2.10",
+    "chromadb": "^1.8.1",
+    "chromadb-default-embed": "^2.13.2",
     "langchain": "^0.2.5",
     "next": "14.2.3",
+    "pdf-parse": "^1.1.1",
     "react": "^18",
     "react-dom": "^18"
   },
