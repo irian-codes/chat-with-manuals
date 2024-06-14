@@ -14,18 +14,31 @@ function validateFilePath(filePath: unknown): asserts filePath is string {
   }
 }
 
-export async function embedPDF(filePath: string) {
-  // Validate the filePath parameter
-  validateFilePath(filePath);
+async function downloadFile(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+
+  const blob = await response.blob();
+  const file = new File([blob], 'tempFile.pdf', {type: 'application/pdf'});
+
+  return file;
+}
+
+export async function embedPDF(fileUrl: string) {
+  const file = await downloadFile(fileUrl);
 
   // Check that the file is a pdf
-  if (!filePath.toLowerCase().endsWith('.pdf')) {
-    throw new Error(`File ${filePath} is not a pdf file`);
+  if (file.type !== 'application/pdf') {
+    throw new Error(`File ${fileUrl} is not a pdf file`);
   }
 
   // Create docs with a loader
-  const loader = new PDFLoader(filePath);
+  const loader = new PDFLoader(file);
   const docs = await loader.load();
+
+  console.log('heeey 1.2', docs);
 
   const vectorStore = await createVectorStore(docs);
 
