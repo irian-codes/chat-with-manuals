@@ -2,7 +2,7 @@ import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {Chroma} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
 import fs from 'fs';
-import type {Document} from 'langchain/document';
+import {Document} from 'langchain/document';
 
 function validateFilePath(filePath: unknown): asserts filePath is string {
   if (typeof filePath !== 'string') {
@@ -38,22 +38,26 @@ export async function embedPDF(fileUrl: string) {
   const loader = new PDFLoader(file);
   const docs = await loader.load();
 
-  console.log('heeey 1.2', docs);
-
   const vectorStore = await createVectorStore(docs);
 
   return vectorStore;
 }
 
 async function createVectorStore(docs: Document<Record<string, any>>[]) {
+  console.log('heeey 2.4', docs);
+
   // Create vector store and index the docs
-  const vectorStore = await Chroma.fromDocuments(docs, new OpenAIEmbeddings(), {
-    collectionName: 'a-test-collection',
-    url: 'http://localhost:8000', // Optional, will default to this value
-    collectionMetadata: {
-      'hnsw:space': 'cosine',
-    }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
-  });
+  const vectorStore = await Chroma.fromDocuments(
+    docs,
+    new OpenAIEmbeddings({apiKey: process.env.OPENAI_API_KEY}),
+    {
+      collectionName: 'a-test-collection',
+      url: process.env.CHROMA_DB_HOST,
+      collectionMetadata: {
+        'hnsw:space': 'cosine',
+      }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
+    }
+  );
 
   return vectorStore;
 }
