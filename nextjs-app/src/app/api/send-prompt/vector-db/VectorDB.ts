@@ -1,6 +1,7 @@
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {Chroma} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
+import {ChromaClient} from 'chromadb';
 import fs from 'fs';
 import {Document} from 'langchain/document';
 
@@ -38,9 +39,11 @@ export async function embedPDF(fileUrl: string) {
   const loader = new PDFLoader(file);
   const docs = await loader.load();
 
-  const vectorStore = await createVectorStore(docs);
+  await createVectorStoreNative(docs);
 
-  return vectorStore;
+  // const vectorStore = await createVectorStore(docs);
+
+  // return vectorStore;
 }
 
 async function createVectorStore(docs: Document<Record<string, any>>[]) {
@@ -53,11 +56,25 @@ async function createVectorStore(docs: Document<Record<string, any>>[]) {
     {
       collectionName: 'a-test-collection',
       url: process.env.CHROMA_DB_HOST,
-      collectionMetadata: {
-        'hnsw:space': 'cosine',
-      }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
     }
   );
 
   return vectorStore;
+}
+
+async function createVectorStoreNative(docs: Document<Record<string, any>>[]) {
+  const client = new ChromaClient({
+    path: process.env.CHROMA_DB_HOST,
+  });
+
+  const collection = await client.createCollection({
+    name: 'a-test-collection',
+  });
+
+  await collection.add({
+    documents: docs.map((d) => d.pageContent),
+    ids: ['id1', 'id2'],
+  });
+
+  console.log('heeey 2.5', (await collection.peek()).documents);
 }
