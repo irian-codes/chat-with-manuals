@@ -48,8 +48,8 @@ export async function embedPDF(fileUrl: string, collectionName: string) {
 async function chunkDocs(docs: Document<Record<string, any>>[]) {
   const textSplitter = new CharacterTextSplitter({
     separator: '\n',
-    chunkSize: 250,
-    chunkOverlap: 20,
+    chunkSize: 500,
+    chunkOverlap: 10,
   });
 
   const texts = await textSplitter.splitDocuments(docs);
