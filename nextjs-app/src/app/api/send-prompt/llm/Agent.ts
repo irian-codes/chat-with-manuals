@@ -1,6 +1,10 @@
 import {HumanMessage, SystemMessage} from '@langchain/core/messages';
 import {ChatOpenAI} from '@langchain/openai';
-import {embedPDF} from '../vector-db/VectorDB';
+import {
+  doesCollectionExists,
+  embedPDF,
+  queryCollection,
+} from '../vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
   model: 'gpt-3.5-turbo',
@@ -13,10 +17,16 @@ export async function sendPrompt(prompt: string) {
     throw new Error('Invalid prompt: prompt must be a non-empty string');
   }
 
-  await embedPDF('http://localhost:3000/test-pdf.pdf');
+  if (!(await doesCollectionExists('a-test-collection'))) {
+    await embedPDF('http://localhost:3000/test-pdf.pdf', 'a-test-collection');
+  }
+
+  const res = await queryCollection('a-test-collection', prompt);
+
+  console.log('heeey 1.5', res);
 
   // TODO: Consume these embeddings and pass them with a Prompt template to the LLM
-  return;
+  return res.map((doc) => doc.pageContent).join('\n');
 
   const response = await llm.invoke([
     new SystemMessage({content: 'You are a helpful assistant.'}),

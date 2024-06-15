@@ -1,7 +1,6 @@
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {Chroma} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
-import {ChromaClient} from 'chromadb';
 import fs from 'fs';
 import {Document} from 'langchain/document';
 
@@ -27,7 +26,7 @@ async function downloadFile(url: string) {
   return file;
 }
 
-export async function embedPDF(fileUrl: string) {
+export async function embedPDF(fileUrl: string, collectionName: string) {
   const file = await downloadFile(fileUrl);
 
   // Check that the file is a pdf
@@ -39,14 +38,15 @@ export async function embedPDF(fileUrl: string) {
   const loader = new PDFLoader(file);
   const docs = await loader.load();
 
-  await createVectorStoreNative(docs);
+  const vectorStore = await createVectorStore(collectionName, docs);
 
-  // const vectorStore = await createVectorStore(docs);
-
-  // return vectorStore;
+  return vectorStore;
 }
 
-async function createVectorStore(docs: Document<Record<string, any>>[]) {
+async function createVectorStore(
+  collectionName: string,
+  docs: Document<Record<string, any>>[]
+) {
   console.log('heeey 2.4', docs);
 
   // Create vector store and index the docs
@@ -54,7 +54,7 @@ async function createVectorStore(docs: Document<Record<string, any>>[]) {
     docs,
     new OpenAIEmbeddings({apiKey: process.env.OPENAI_API_KEY}),
     {
-      collectionName: 'a-test-collection',
+      collectionName: collectionName,
       url: process.env.CHROMA_DB_HOST,
     }
   );
@@ -62,19 +62,30 @@ async function createVectorStore(docs: Document<Record<string, any>>[]) {
   return vectorStore;
 }
 
-async function createVectorStoreNative(docs: Document<Record<string, any>>[]) {
-  const client = new ChromaClient({
-    path: process.env.CHROMA_DB_HOST,
-  });
+export async function queryCollection(name: string, prompt: string) {
+  const vectorStore = await Chroma.fromExistingCollection(
+    new OpenAIEmbeddings(),
+    {
+      collectionName: name,
+    }
+  );
 
-  const collection = await client.createCollection({
-    name: 'a-test-collection',
-  });
+  if (!vectorStore) {
+    throw new Error('Vector store not found');
+  }
 
-  await collection.add({
-    documents: docs.map((d) => d.pageContent),
-    ids: ['id1', 'id2'],
-  });
+  const result = await vectorStore.similaritySearch(prompt);
 
-  console.log('heeey 2.5', (await collection.peek()).documents);
+  return result;
+}
+
+export async function doesCollectionExists(name: string) {
+  const vectorStore = await Chroma.fromExistingCollection(
+    new OpenAIEmbeddings(),
+    {
+      collectionName: name,
+    }
+  );
+
+  return vectorStore != null;
 }

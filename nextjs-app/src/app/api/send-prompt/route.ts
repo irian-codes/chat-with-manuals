@@ -6,12 +6,28 @@ export async function POST(request: NextRequest) {
   const prompt = formData.get('prompt') ?? '';
 
   if (typeof prompt === 'string' && prompt.trim().length > 0) {
-    const llmAnswer = await sendPrompt(prompt);
+    const llmAnswer = await (async () => {
+      try {
+        return {
+          result: await sendPrompt(prompt),
+          error: null,
+        };
+      } catch (error) {
+        return {
+          result: null,
+          error,
+        };
+      }
+    })();
 
-    return NextResponse.json({
-      prompt,
-      answer: llmAnswer,
-    });
+    if (llmAnswer.error) {
+      return NextResponse.json({error: llmAnswer.error}, {status: 500});
+    } else {
+      return NextResponse.json({
+        prompt,
+        answer: llmAnswer.result,
+      });
+    }
   } else {
     return NextResponse.json({error: 'Invalid prompt', prompt}, {status: 400});
   }
