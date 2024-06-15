@@ -1,10 +1,6 @@
-import {HumanMessage, SystemMessage} from '@langchain/core/messages';
+import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
-import {
-  doesCollectionExists,
-  embedPDF,
-  queryCollection,
-} from '../vector-db/VectorDB';
+import {embedPDF, queryCollection} from '../vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
   model: 'gpt-3.5-turbo',
@@ -17,21 +13,31 @@ export async function sendPrompt(prompt: string) {
     throw new Error('Invalid prompt: prompt must be a non-empty string');
   }
 
-  if (!(await doesCollectionExists('a-test-collection'))) {
-    await embedPDF('http://localhost:3000/test-pdf.pdf', 'a-test-collection');
+  const collectionName = 'a-test-collection';
+
+  try {
+    await embedPDF('http://localhost:3000/test-pdf.pdf', collectionName);
+  } catch (error) {
+    console.error(error);
   }
 
-  const res = await queryCollection('a-test-collection', prompt);
+  const res = await queryCollection(collectionName, prompt);
 
-  console.log('heeey 1.5', res);
+  const template = `Answer the user's question to the best of your ability.
+  Use the following fictitious story as context to answer.
+  
+  STORY: {context}
+  
+  USER QUESTION: {question}`;
 
-  // TODO: Consume these embeddings and pass them with a Prompt template to the LLM
-  return res.map((doc) => doc.pageContent).join('\n');
+  const chatTemplate = ChatPromptTemplate.fromTemplate(template);
 
-  const response = await llm.invoke([
-    new SystemMessage({content: 'You are a helpful assistant.'}),
-    new HumanMessage({content: prompt}),
-  ]);
+  const finalPrompt = await chatTemplate.invoke({
+    context: res.map((doc) => doc.pageContent).join('\n'),
+    question: prompt,
+  });
+
+  const response = await llm.invoke(finalPrompt.toChatMessages());
 
   return response.content;
 }

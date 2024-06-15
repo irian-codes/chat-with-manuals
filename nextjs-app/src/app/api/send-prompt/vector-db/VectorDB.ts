@@ -1,6 +1,7 @@
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {Chroma} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
+import {CharacterTextSplitter} from '@langchain/textsplitters';
 import fs from 'fs';
 import {Document} from 'langchain/document';
 
@@ -38,17 +39,28 @@ export async function embedPDF(fileUrl: string, collectionName: string) {
   const loader = new PDFLoader(file);
   const docs = await loader.load();
 
-  const vectorStore = await createVectorStore(collectionName, docs);
+  const splitDocs = await chunkDocs(docs);
+  const vectorStore = await createVectorStore(collectionName, splitDocs);
 
   return vectorStore;
+}
+
+async function chunkDocs(docs: Document<Record<string, any>>[]) {
+  const textSplitter = new CharacterTextSplitter({
+    separator: '\n',
+    chunkSize: 250,
+    chunkOverlap: 20,
+  });
+
+  const texts = await textSplitter.splitDocuments(docs);
+
+  return texts;
 }
 
 async function createVectorStore(
   collectionName: string,
   docs: Document<Record<string, any>>[]
 ) {
-  console.log('heeey 2.4', docs);
-
   // Create vector store and index the docs
   const vectorStore = await Chroma.fromDocuments(
     docs,
@@ -77,15 +89,4 @@ export async function queryCollection(name: string, prompt: string) {
   const result = await vectorStore.similaritySearch(prompt);
 
   return result;
-}
-
-export async function doesCollectionExists(name: string) {
-  const vectorStore = await Chroma.fromExistingCollection(
-    new OpenAIEmbeddings(),
-    {
-      collectionName: name,
-    }
-  );
-
-  return vectorStore != null;
 }
