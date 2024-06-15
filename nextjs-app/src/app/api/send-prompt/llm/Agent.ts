@@ -33,9 +33,11 @@ export async function sendPrompt(prompt: string) {
   const chatTemplate = ChatPromptTemplate.fromTemplate(template);
 
   const finalPrompt = await chatTemplate.invoke({
-    context: res.map((doc) => doc.pageContent).join('\n'),
+    context: res.map((doc) => doc.pageContent).join('\n\n'),
     question: prompt,
   });
+
+  console.log('heeey 2.5', finalPrompt.toString());
 
   const response = await llm.invoke(finalPrompt.toChatMessages());
 
