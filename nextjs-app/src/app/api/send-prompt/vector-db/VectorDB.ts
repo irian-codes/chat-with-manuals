@@ -4,6 +4,12 @@ import {OpenAIEmbeddings} from '@langchain/openai';
 import {CharacterTextSplitter} from '@langchain/textsplitters';
 import fs from 'fs';
 import {Document} from 'langchain/document';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
+
+const embedder = new OpenAIEmbeddings({
+  model: 'text-embedding-3-small',
+  dimensions: 1536,
+});
 
 function validateFilePath(filePath: unknown): asserts filePath is string {
   if (typeof filePath !== 'string') {
@@ -62,25 +68,18 @@ async function createVectorStore(
   docs: Document<Record<string, any>>[]
 ) {
   // Create vector store and index the docs
-  const vectorStore = await Chroma.fromDocuments(
-    docs,
-    new OpenAIEmbeddings({apiKey: process.env.OPENAI_API_KEY}),
-    {
+  const vectorStore = await Chroma.fromDocuments(docs, embedder, {
       collectionName: collectionName,
       url: process.env.CHROMA_DB_HOST,
-    }
-  );
+  });
 
   return vectorStore;
 }
 
 export async function queryCollection(name: string, prompt: string) {
-  const vectorStore = await Chroma.fromExistingCollection(
-    new OpenAIEmbeddings(),
-    {
+  const vectorStore = await Chroma.fromExistingCollection(embedder, {
       collectionName: name,
-    }
-  );
+  });
 
   if (!vectorStore) {
     throw new Error('Vector store not found');
