@@ -1,7 +1,6 @@
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {Chroma} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
-import {CharacterTextSplitter} from '@langchain/textsplitters';
 import fs from 'fs';
 import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
@@ -52,10 +51,9 @@ export async function embedPDF(fileUrl: string, collectionName: string) {
 }
 
 async function chunkDocs(docs: Document<Record<string, any>>[]) {
-  const textSplitter = new CharacterTextSplitter({
-    separator: '\n',
+  const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 500,
-    chunkOverlap: 10,
+    chunkOverlap: 20,
   });
 
   const texts = await textSplitter.splitDocuments(docs);
@@ -69,8 +67,8 @@ async function createVectorStore(
 ) {
   // Create vector store and index the docs
   const vectorStore = await Chroma.fromDocuments(docs, embedder, {
-      collectionName: collectionName,
-      url: process.env.CHROMA_DB_HOST,
+    collectionName: collectionName,
+    url: process.env.CHROMA_DB_HOST,
   });
 
   return vectorStore;
@@ -78,7 +76,7 @@ async function createVectorStore(
 
 export async function queryCollection(name: string, prompt: string) {
   const vectorStore = await Chroma.fromExistingCollection(embedder, {
-      collectionName: name,
+    collectionName: name,
   });
 
   if (!vectorStore) {
