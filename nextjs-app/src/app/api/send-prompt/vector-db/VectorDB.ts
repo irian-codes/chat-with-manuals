@@ -1,9 +1,12 @@
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {Chroma} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
+import assert from 'assert';
 import fs from 'fs';
 import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
+import path from 'path';
+import PDFParser, {Output} from 'pdf2json';
 
 const embedder = new OpenAIEmbeddings({
   model: 'text-embedding-3-small',
@@ -27,22 +30,54 @@ async function downloadFile(url: string) {
   }
 
   const blob = await response.blob();
-  const file = new File([blob], 'tempFile.pdf', {type: 'application/pdf'});
+  const fileName = url.split('/').pop() ?? 'tempFile.pdf';
+  const file = new File([blob], fileName, {type: 'application/pdf'});
 
   return file;
+}
+
+export async function parsePdf(fileUrl: string) {
+  const file = await downloadFile(fileUrl);
+
+  assert(file.type === 'application/pdf', 'File is not a pdf');
+
+  const pdfParser = new PDFParser();
+
+  const parsedPdf: Output | Error = await new Promise(
+    async (resolve, reject) => {
+      pdfParser.on('pdfParser_dataReady', (pdfData) => {
+        resolve(pdfData);
+      });
+
+      pdfParser.on('pdfParser_dataError', (errData) => {
+        reject(errData.parserError);
+      });
+
+      pdfParser.parseBuffer(Buffer.from(await file.arrayBuffer()));
+    }
+  );
+
+  if (parsedPdf instanceof Error) {
+    throw parsedPdf;
+  }
+
+  fs.writeFileSync(
+    path.join(
+      process.cwd(),
+      'public',
+      `parsedPdf_${file.name}_${new Date().toISOString().split('T')[0]}.json`
+    ),
+    JSON.stringify(parsedPdf, null, 2)
+  );
 }
 
 export async function embedPDF(fileUrl: string, collectionName: string) {
   const file = await downloadFile(fileUrl);
 
-  // Check that the file is a pdf
-  if (file.type !== 'application/pdf') {
-    throw new Error(`File ${fileUrl} is not a pdf file`);
-  }
+  assert(file.type === 'application/pdf', 'File is not a pdf');
 
   // Create docs with a loader
-  const loader = new PDFLoader(file);
-  const docs = await loader.load();
+  const docs = await new PDFLoader(file).load();
 
   const splitDocs = await chunkDocs(docs);
   const vectorStore = await createVectorStore(collectionName, splitDocs);

@@ -37,7 +37,7 @@ export function UserPrompt() {
   }
 
   return (
-    <form onSubmit={handleFormSubmit}>
+    <form onSubmit={handleFormSubmit} method="POST">
       <textarea
         name="prompt"
         id="prompt"
