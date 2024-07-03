@@ -5,6 +5,9 @@ import {useState} from 'react';
 export default function UploadPDFPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedOutput, setSelectedOutput] = useState<
+    'json' | 'langchain-parser'
+  >('json');
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -37,7 +40,7 @@ export default function UploadPDFPage() {
   async function uploadFile(file: File) {
     const formData = new FormData();
     formData.append('pdf', file);
-    formData.append('output', 'json');
+    formData.append('output', selectedOutput);
 
     const response = await fetch('/api/debug/parse-pdf', {
       method: 'POST',
@@ -84,6 +87,18 @@ export default function UploadPDFPage() {
           </p>
         </div>
       )}
+
+      <select
+        value={selectedOutput}
+        onChange={(event) => {
+          setSelectedOutput(event.target.value);
+        }}
+        className="mt-6 w-auto rounded-md border-2 border-gray-300 bg-black p-2 text-white"
+        disabled={isLoading}
+      >
+        <option value="json">JSON</option>
+        <option value="langchain-parser">Langchain Parser</option>
+      </select>
     </div>
   );
 }

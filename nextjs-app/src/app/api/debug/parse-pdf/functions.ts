@@ -1,25 +1,32 @@
+import {writeToPublicFile} from '@/app/api/utils/fileUtils';
+import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import assert from 'node:assert';
-import fs from 'node:fs';
-import path from 'node:path';
 import PDFParser, {Output} from 'pdf2json';
 
-export async function parsePdf(file: File, output: 'json') {
+export async function parsePdf(
+  file: File,
+  output: 'json' | 'langchain-parser'
+) {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
   switch (output) {
     case 'json':
       const res = await pdfParseToJson(file);
-
-      fs.writeFileSync(
-        path.join(
-          process.cwd(),
-          'public',
-          `parsedPdf_${file.name}_${new Date().toISOString().split('T')[0]}.json`
-        ),
-        res
-      );
+      writeToPublicFile(res, file.name, 'json');
 
       return res;
+
+    case 'langchain-parser':
+      const loader = new PDFLoader(file);
+      const docs = await loader.load();
+
+      writeToPublicFile(
+        docs.map((d) => d.pageContent).join('\n\n'),
+        file.name,
+        'txt'
+      );
+
+      return JSON.stringify(docs, null, 2);
 
     default:
       throw new Error('Not implemented');
