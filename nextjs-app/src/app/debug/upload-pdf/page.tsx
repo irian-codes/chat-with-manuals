@@ -15,7 +15,9 @@ export default function UploadPDFPage() {
       setIsLoading(true);
 
       uploadFile(files[0])
-        .then((res) => console.log('File uploaded successfully'))
+        .then((res) => {
+          console.log('File uploaded successfully', JSON.parse(res?.result));
+        })
         .catch((error) => {
           console.error(error);
 

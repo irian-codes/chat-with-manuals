@@ -8,15 +8,18 @@ export async function parsePdf(file: File, output: 'json') {
 
   switch (output) {
     case 'json':
+      const res = await pdfParseToJson(file);
+
       fs.writeFileSync(
         path.join(
           process.cwd(),
           'public',
           `parsedPdf_${file.name}_${new Date().toISOString().split('T')[0]}.json`
         ),
-        await pdfParseToJson(file)
+        res
       );
-      break;
+
+      return res;
 
     default:
       throw new Error('Not implemented');
