@@ -1,12 +1,9 @@
-import {downloadFile} from '@/app/api/utils/fileUtils';
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import PDFParser, {Output} from 'pdf2json';
 
-export async function parsePdf(fileUrl: string, output: 'json') {
-  const file = await downloadFile(fileUrl);
-
+export async function parsePdf(file: File, output: 'json') {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
   switch (output) {
@@ -17,7 +14,7 @@ export async function parsePdf(fileUrl: string, output: 'json') {
           'public',
           `parsedPdf_${file.name}_${new Date().toISOString().split('T')[0]}.json`
         ),
-        JSON.stringify(await pdfParseToJson(file), null, 2)
+        await pdfParseToJson(file)
       );
       break;
 

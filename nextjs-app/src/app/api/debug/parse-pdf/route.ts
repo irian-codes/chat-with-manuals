@@ -11,11 +11,15 @@ export async function POST(request: NextRequest) {
       throw new Error('The provided file is invalid or missing.');
     }
 
+    if (file.type !== 'application/pdf') {
+      throw new Error('The provided file is not a PDF.');
+    }
+
     if (typeof output !== 'string' || output.trim().length === 0) {
       throw new Error("The 'output' field is required and must be a string.");
     }
 
-    const result = await parsePdf(URL.createObjectURL(file), output);
+    const result = await parsePdf(file, output);
 
     return NextResponse.json({result});
   } catch (error) {

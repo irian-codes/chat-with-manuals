@@ -35,6 +35,7 @@ export default function UploadPDFPage() {
   async function uploadFile(file: File) {
     const formData = new FormData();
     formData.append('pdf', file);
+    formData.append('output', 'json');
 
     const response = await fetch('/api/debug/parse-pdf', {
       method: 'POST',
@@ -49,8 +50,6 @@ export default function UploadPDFPage() {
           ${JSON.stringify(res, null, 2)}`
       );
     }
-
-    console.log(res);
 
     return res;
   }
