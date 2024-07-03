@@ -1,7 +1,7 @@
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
-import {embedPDF, parsePdf, queryCollection} from '../vector-db/VectorDB';
+import {embedPDF, queryCollection} from '../vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
   model: 'gpt-3.5-turbo',
@@ -15,10 +15,6 @@ export async function sendPrompt(prompt: string) {
   }
 
   const collectionName = 'a-test-collection';
-
-  await parsePdf('http://localhost:3000/test-pdf-2.pdf');
-
-  return 'DEBUG TEXT. TEMPORARY MESSAGE';
 
   const retrievedContext = await (async () => {
     const context = await queryCollection(collectionName, prompt);
