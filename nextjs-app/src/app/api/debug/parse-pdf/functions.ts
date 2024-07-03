@@ -1,12 +1,10 @@
 import {writeToPublicFile} from '@/app/api/utils/fileUtils';
+import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import assert from 'node:assert';
 import PDFParser, {Output} from 'pdf2json';
 
-export async function parsePdf(
-  file: File,
-  output: 'json' | 'langchain-parser'
-) {
+export async function parsePdf(file: File, output: PdfParsingOutput) {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
   switch (output) {
@@ -16,7 +14,7 @@ export async function parsePdf(
 
       return res;
 
-    case 'langchain-parser':
+    case 'langchain':
       const loader = new PDFLoader(file);
       const docs = await loader.load();
 

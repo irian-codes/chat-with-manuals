@@ -1,13 +1,13 @@
 'use client';
 
+import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {useState} from 'react';
 
 export default function UploadPDFPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedOutput, setSelectedOutput] = useState<
-    'json' | 'langchain-parser'
-  >('json');
+  const [selectedOutput, setSelectedOutput] =
+    useState<PdfParsingOutput>('json');
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -97,7 +97,7 @@ export default function UploadPDFPage() {
         disabled={isLoading}
       >
         <option value="json">JSON</option>
-        <option value="langchain-parser">Langchain Parser</option>
+        <option value="langchain">Langchain PDF Loader</option>
       </select>
     </div>
   );
