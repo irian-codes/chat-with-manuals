@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
     })();
 
     if (llmAnswer.error) {
-      return NextResponse.json({error: llmAnswer.error}, {status: 500});
+      return NextResponse.json(
+        {error: llmAnswer.error.message ?? 'Unknown error'},
+        {status: 500}
+      );
     } else {
       return NextResponse.json({
         prompt,
