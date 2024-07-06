@@ -25,17 +25,23 @@ export function validateFilePath(
   }
 }
 
-export function writeToPublicFile(
+export function writeToFile(
   content: string,
+  destinationFolderPath: string,
   fileName: string,
   fileExtension: string
 ) {
-  fs.writeFileSync(
-    path.join(
-      process.cwd(),
-      'public',
-      `parsedPdf_${fileName}_${new Date().toISOString().split('T')[0]}.${fileExtension}`
-    ),
-    content
+  const fullPath = path.join(
+    process.cwd(),
+    destinationFolderPath,
+    `parsedPdf_${fileName}_${new Date().toISOString().split('T')[0]}.${fileExtension}`
   );
+
+  const folderPath = path.dirname(fullPath);
+
+  if (!fs.existsSync(folderPath)) {
+    throw new Error(`Folder ${folderPath} does not exist`);
+  }
+
+  fs.writeFileSync(fullPath, content);
 }
