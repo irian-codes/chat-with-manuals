@@ -33,7 +33,7 @@ export function validatePathExists(
   return true;
 }
 
-export function writeToFile(
+export function writeToTimestampedFile(
   content: string,
   destinationFolderPath: string,
   fileName: string,
@@ -42,7 +42,7 @@ export function writeToFile(
   const fullPath = path.join(
     process.cwd(),
     destinationFolderPath,
-    `parsedPdf_${fileName}_${new Date().toISOString().split('T')[0]}.${fileExtension}`
+    `parsedPdf_${fileName}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${new Date().toTimeString().slice(0, 5).replace(/:/g, '')}.${fileExtension}`
   );
 
   const folderPath = path.dirname(fullPath);

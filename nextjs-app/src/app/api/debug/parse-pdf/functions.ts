@@ -1,4 +1,4 @@
-import {writeToFile} from '@/app/api/utils/fileUtils';
+import {writeToTimestampedFile} from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import assert from 'node:assert';
@@ -10,7 +10,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
   switch (output) {
     case 'json':
       const res = await pdfParseToJson(file);
-      writeToFile(res, 'tmp', file.name, 'json');
+      writeToTimestampedFile(res, 'tmp', file.name, 'json');
 
       return res;
 
@@ -18,7 +18,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
       const loader = new PDFLoader(file);
       const docs = await loader.load();
 
-      writeToFile(
+      writeToTimestampedFile(
         docs.map((d) => d.pageContent).join('\n\n'),
         'tmp',
         file.name,
