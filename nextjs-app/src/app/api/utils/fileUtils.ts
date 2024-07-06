@@ -13,16 +13,24 @@ export async function downloadFile(url: string) {
 
   return file;
 }
-export function validateFilePath(
-  filePath: unknown
-): asserts filePath is string {
-  if (typeof filePath !== 'string') {
-    throw new TypeError('filePath must be a string');
+export function validatePathExists(
+  pathToCheck: unknown
+): pathToCheck is string {
+  if (typeof pathToCheck !== 'string') {
+    throw new TypeError('Path must be a string');
   }
 
-  if (!fs.existsSync(filePath.trim())) {
-    throw new Error(`File ${filePath} does not exist`);
+  try {
+    if (!fs.existsSync(path.join(pathToCheck))) {
+      throw new Error(`Path ${pathToCheck} does not exist`);
+    }
+  } catch (error) {
+    throw new Error(`Error checking path: ${error?.message ?? 'unknown'}`, {
+      cause: error,
+    });
   }
+
+  return true;
 }
 
 export function writeToFile(
@@ -39,8 +47,10 @@ export function writeToFile(
 
   const folderPath = path.dirname(fullPath);
 
-  if (!fs.existsSync(folderPath)) {
-    throw new Error(`Folder ${folderPath} does not exist`);
+  if (!validatePathExists(folderPath)) {
+    throw new Error(
+      `Folder '${folderPath}' does not exist or is an invalid path`
+    );
   }
 
   fs.writeFileSync(fullPath, content);
