@@ -91,6 +91,8 @@ export default function UploadPDFPage() {
       <select
         value={selectedOutput}
         onChange={(event) => {
+          if (isLoading) return;
+
           setSelectedOutput(event.target.value);
         }}
         className="mt-6 w-auto rounded-md border-2 border-gray-300 bg-black p-2 text-white"
@@ -98,6 +100,7 @@ export default function UploadPDFPage() {
       >
         <option value="json">JSON</option>
         <option value="langchain">Langchain PDF Loader</option>
+        <option value="unstructured">Unstructured</option>
       </select>
     </div>
   );

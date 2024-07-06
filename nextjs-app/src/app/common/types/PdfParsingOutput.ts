@@ -1,1 +1,1 @@
-export type PdfParsingOutput = 'json' | 'langchain';
+export type PdfParsingOutput = 'json' | 'langchain' | 'unstructured';
