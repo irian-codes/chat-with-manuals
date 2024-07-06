@@ -5,7 +5,10 @@ import assert from 'node:assert';
 import PDFParser, {Output} from 'pdf2json';
 import {UnstructuredClient} from 'unstructured-client';
 import {PartitionResponse} from 'unstructured-client/sdk/models/operations';
-import {Strategy} from 'unstructured-client/sdk/models/shared';
+import {
+  ChunkingStrategy,
+  Strategy,
+} from 'unstructured-client/sdk/models/shared';
 
 export async function parsePdf(file: File, output: PdfParsingOutput) {
   assert(file.type === 'application/pdf', 'File is not a pdf');
@@ -104,6 +107,11 @@ async function pdfParseWithUnstructured(file: File) {
         },
         strategy: Strategy.Fast,
         languages: ['eng'],
+        uniqueElementIds: true,
+        chunkingStrategy: ChunkingStrategy.ByTitle,
+        maxCharacters: 500,
+        includeOrigElements: false,
+        combineUnderNChars: 16,
       },
     });
 
