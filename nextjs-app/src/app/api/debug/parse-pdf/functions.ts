@@ -13,7 +13,12 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
   switch (output) {
     case 'json':
       const res = await pdfParseToJson(file);
-      writeToTimestampedFile(res, 'tmp', file.name, 'json');
+      writeToTimestampedFile(
+        res,
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'json'
+      );
 
       return res;
 
@@ -24,7 +29,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
       writeToTimestampedFile(
         docs.map((d) => d.pageContent).join('\n\n'),
         'tmp',
-        file.name,
+        `${file.name}_parser-${output}`,
         'txt'
       );
 
@@ -36,7 +41,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
       writeToTimestampedFile(
         JSON.stringify(unstructuredRes, null, 2),
         'tmp',
-        file.name,
+        `${file.name}_parser-${output}`,
         'json'
       );
 
