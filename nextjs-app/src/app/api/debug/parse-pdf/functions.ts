@@ -1,7 +1,7 @@
 import {writeToTimestampedFile} from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
-import LLMWhispererClient from 'llmwhisperer-client';
+import {LLMWhispererClient} from 'llmwhisperer-client';
 import assert from 'node:assert';
 import PDFParser, {Output} from 'pdf2json';
 import {UnstructuredClient} from 'unstructured-client';
@@ -52,14 +52,16 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
       return JSON.stringify(unstructuredRes, null, 2);
 
     case 'llmwhisperer':
+      const llmwhispererRes = await pdfParseWithLLMWhisperer(file);
+
       writeToTimestampedFile(
-        await pdfParseWithLLMWhisperer(file),
+        llmwhispererRes,
         'tmp',
         `${file.name}_parser-${output}`,
         'txt'
       );
 
-      return await pdfParseWithLLMWhisperer(file);
+      return llmwhispererRes;
 
     default:
       throw new Error('Not implemented');
@@ -148,4 +150,36 @@ async function pdfParseWithLLMWhisperer(file: File) {
   }
 
   const client = new LLMWhispererClient();
+
+  const whisperJob = await client.whisper({
+    url: URL.createObjectURL(file),
+    processingMode: 'ocr',
+    outputMode: 'line-printer',
+    timeout: 1,
+  });
+
+  if (whisperJob.statusCode == 200) {
+    return whisperJob.extracted_text;
+  }
+
+  // Keep polling until completed
+  const whisperHash = whisperJob['whisper-hash'];
+  let whisperStatus = whisperJob.status;
+
+  while (whisperStatus === 'processing') {
+    console.log('LLMWhisperer: Processing... ' + whisperHash);
+
+    //Let's check every second
+    await new Promise((r) => setTimeout(r, 500));
+    whisperStatus =
+      (await client.whisperStatus(whisperHash)).status ?? 'unknown';
+  }
+
+  if (whisperStatus === 'processed') {
+    //Retrieve the result
+    const whisper = await client.whisperRetrieve(whisperHash);
+    return whisper.extracted_text;
+  } else {
+    throw new Error('LLMWhisperer: Job failed. Status: ' + whisperStatus);
+  }
 }
