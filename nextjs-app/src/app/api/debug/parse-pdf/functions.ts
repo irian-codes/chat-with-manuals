@@ -1,4 +1,7 @@
-import {writeToTimestampedFile} from '@/app/api/utils/fileUtils';
+import {
+  saveFileObjectToFileSystem,
+  writeToTimestampedFile,
+} from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {LLMWhispererClient} from 'llmwhisperer-client';
@@ -158,7 +161,7 @@ async function pdfParseWithLLMWhisperer(file: File) {
   const client = new LLMWhispererClient();
 
   const whisperJob = await client.whisper({
-    url: URL.createObjectURL(file),
+    filePath: await saveFileObjectToFileSystem(file),
     processingMode: 'ocr',
     outputMode: 'line-printer',
     timeout: 1,
@@ -166,26 +169,30 @@ async function pdfParseWithLLMWhisperer(file: File) {
 
   if (whisperJob.statusCode == 200) {
     return whisperJob.extracted_text;
-  }
+  } else if (whisperJob.statusCode == 202) {
+    // Keep polling until completed
+    const whisperHash = whisperJob['whisper-hash'];
+    let whisperStatus = whisperJob.status;
 
-  // Keep polling until completed
-  const whisperHash = whisperJob['whisper-hash'];
-  let whisperStatus = whisperJob.status;
+    while (whisperStatus === 'processing') {
+      console.log('LLMWhisperer: Processing... ' + whisperHash);
 
-  while (whisperStatus === 'processing') {
-    console.log('LLMWhisperer: Processing... ' + whisperHash);
+      //Let's check every second
+      await new Promise((r) => setTimeout(r, 4000));
+      whisperStatus =
+        (await client.whisperStatus(whisperHash)).status ?? 'unknown';
+    }
 
-    //Let's check every second
-    await new Promise((r) => setTimeout(r, 4000));
-    whisperStatus =
-      (await client.whisperStatus(whisperHash)).status ?? 'unknown';
-  }
-
-  if (whisperStatus === 'processed') {
-    //Retrieve the result
-    const whisper = await client.whisperRetrieve(whisperHash);
-    return whisper.extracted_text;
+    if (whisperStatus === 'processed') {
+      //Retrieve the result
+      const whisper = await client.whisperRetrieve(whisperHash);
+      return whisper.extracted_text;
+    } else {
+      throw new Error('LLMWhisperer: Job failed. Status: ' + whisperStatus);
+    }
   } else {
-    throw new Error('LLMWhisperer: Job failed. Status: ' + whisperStatus);
+    throw new Error(
+      'LLMWhisperer: Job failed. Status Code: ' + whisperJob.statusCode
+    );
   }
 }

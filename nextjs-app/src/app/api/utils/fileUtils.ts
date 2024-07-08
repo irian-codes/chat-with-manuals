@@ -38,7 +38,7 @@ export function writeToTimestampedFile(
   destinationFolderPath: string,
   fileName: string,
   fileExtension: string
-) {
+): string {
   const fullPath = path.join(
     process.cwd(),
     destinationFolderPath,
@@ -53,5 +53,39 @@ export function writeToTimestampedFile(
     );
   }
 
-  fs.writeFileSync(fullPath, content);
+  try {
+    fs.writeFileSync(fullPath, content);
+
+    return fullPath;
+  } catch (error) {
+    console.error('Error saving file to filesystem:', error);
+
+    throw new Error('Failed to save file to filesystem. Path: ' + fullPath);
+  }
+}
+
+export async function saveFileObjectToFileSystem(
+  file: File,
+  destinationFolderPath: string = 'tmp'
+): Promise<string> {
+  const destDir = path.join(process.cwd(), destinationFolderPath);
+
+  // Create directory if it doesn't exist
+  if (!validatePathExists(destDir)) {
+    fs.mkdirSync(destDir, {recursive: true});
+  }
+
+  const fullPath = path.join(destDir, file.name);
+
+  try {
+    // Save the file to the filesystem
+    const buffer = await file.arrayBuffer();
+    fs.writeFileSync(fullPath, Buffer.from(buffer));
+
+    return fullPath;
+  } catch (error) {
+    console.error('Error saving file to filesystem:', error);
+
+    throw new Error('Failed to save file to filesystem. Path: ' + fullPath);
+  }
 }
