@@ -170,7 +170,7 @@ async function pdfParseWithLLMWhisperer(file: File) {
     console.log('LLMWhisperer: Processing... ' + whisperHash);
 
     //Let's check every second
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 4000));
     whisperStatus =
       (await client.whisperStatus(whisperHash)).status ?? 'unknown';
   }
