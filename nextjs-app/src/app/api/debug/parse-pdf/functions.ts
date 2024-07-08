@@ -61,7 +61,13 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         'txt'
       );
 
-      return llmwhispererRes;
+      return JSON.stringify(
+        {
+          text: llmwhispererRes,
+        },
+        null,
+        2
+      );
 
     default:
       throw new Error('Not implemented');
