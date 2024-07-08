@@ -7,7 +7,7 @@ export default function UploadPDFPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOutput, setSelectedOutput] =
-    useState<PdfParsingOutput>('json');
+    useState<PdfParsingOutput>('langchain');
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -101,6 +101,7 @@ export default function UploadPDFPage() {
         <option value="json">JSON</option>
         <option value="langchain">Langchain PDF Loader</option>
         <option value="unstructured">Unstructured</option>
+        <option value="llmwhisperer">LLM Whisperer</option>
       </select>
     </div>
   );
