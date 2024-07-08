@@ -162,7 +162,7 @@ async function pdfParseWithLLMWhisperer(file: File) {
 
   const whisperJob = await client.whisper({
     filePath: await saveFileObjectToFileSystem(file),
-    processingMode: 'ocr',
+    processingMode: 'text',
     outputMode: 'line-printer',
   });
 
