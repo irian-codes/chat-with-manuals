@@ -164,7 +164,6 @@ async function pdfParseWithLLMWhisperer(file: File) {
     filePath: await saveFileObjectToFileSystem(file),
     processingMode: 'ocr',
     outputMode: 'line-printer',
-    timeout: 1,
   });
 
   if (whisperJob.statusCode == 200) {
