@@ -1,6 +1,7 @@
 import {writeToTimestampedFile} from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
+import LLMWhispererClient from 'llmwhisperer-client';
 import assert from 'node:assert';
 import PDFParser, {Output} from 'pdf2json';
 import {UnstructuredClient} from 'unstructured-client';
@@ -49,6 +50,16 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
       );
 
       return JSON.stringify(unstructuredRes, null, 2);
+
+    case 'llmwhisperer':
+      writeToTimestampedFile(
+        await pdfParseWithLLMWhisperer(file),
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'txt'
+      );
+
+      return await pdfParseWithLLMWhisperer(file);
 
     default:
       throw new Error('Not implemented');
@@ -128,4 +139,13 @@ async function pdfParseWithUnstructured(file: File) {
 
     throw error;
   }
+}
+async function pdfParseWithLLMWhisperer(file: File) {
+  const key = process.env.LLMWHISPERER_API_KEY;
+
+  if (!key) {
+    throw new Error('LLMWHISPERER_API_KEY is not set');
+  }
+
+  const client = new LLMWhispererClient();
 }

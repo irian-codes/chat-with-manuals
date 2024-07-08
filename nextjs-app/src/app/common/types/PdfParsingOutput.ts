@@ -1,1 +1,5 @@
-export type PdfParsingOutput = 'json' | 'langchain' | 'unstructured';
+export type PdfParsingOutput =
+  | 'json'
+  | 'langchain'
+  | 'unstructured'
+  | 'llmwhisperer';
