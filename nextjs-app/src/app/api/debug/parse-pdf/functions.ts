@@ -4,6 +4,7 @@ import {
 } from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
+import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import assert from 'node:assert';
 import PDFParser, {Output} from 'pdf2json';
@@ -71,6 +72,18 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         null,
         2
       );
+
+    case 'llamaparse':
+      const llamaparseRes = await pdfParseWithLlamaparse(file);
+
+      writeToTimestampedFile(
+        llamaparseRes.map((d) => d.getText()).join(''),
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'txt'
+      );
+
+      return JSON.stringify(llamaparseRes, null, 2);
 
     default:
       throw new Error('Not implemented');
@@ -194,4 +207,31 @@ async function pdfParseWithLLMWhisperer(file: File) {
       'LLMWhisperer: Job failed. Status Code: ' + whisperJob.statusCode
     );
   }
+}
+
+async function pdfParseWithLlamaparse(file: File) {
+  // DOCS: https://docs.cloud.llamaindex.ai/llamaparse/getting_started/typescript
+
+  const key = process.env.LLAMA_CLOUD_API_KEY;
+
+  if (!key) {
+    throw new Error('LLAMA_CLOUD_API_KEY is not set');
+  }
+
+  const reader = new LlamaParseReader({
+    resultType: 'text',
+    language: 'en',
+    skipDiagonalText: false,
+    doNotUnrollColumns: true,
+    pageSeparator: '\n>>>\n',
+    gpt4oMode: false,
+  });
+
+  // parse the document
+  const documents = await reader.loadDataAsContent(
+    Buffer.from(await file.arrayBuffer()),
+    file.name
+  );
+
+  return documents;
 }

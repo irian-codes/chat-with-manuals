@@ -102,6 +102,7 @@ export default function UploadPDFPage() {
         <option value="langchain">Langchain PDF Loader</option>
         <option value="unstructured">Unstructured</option>
         <option value="llmwhisperer">LLM Whisperer</option>
+        <option value="llamaparse">Llamaparse</option>
       </select>
     </div>
   );
