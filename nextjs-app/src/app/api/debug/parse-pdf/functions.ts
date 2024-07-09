@@ -219,12 +219,14 @@ async function pdfParseWithLlamaparse(file: File) {
   }
 
   const reader = new LlamaParseReader({
-    resultType: 'text',
+    resultType: 'markdown',
     language: 'en',
     skipDiagonalText: false,
-    doNotUnrollColumns: true,
-    pageSeparator: '\n>>>\n',
-    gpt4oMode: false,
+    doNotUnrollColumns: false,
+    pageSeparator: '\n\n',
+    gpt4oMode: true,
+    parsingInstruction:
+      "You're parsing a ttrpg manual that contains text, tables, images an character cards (treat them as tables). Parse each content appropriately in the markdown format.",
   });
 
   // parse the document
