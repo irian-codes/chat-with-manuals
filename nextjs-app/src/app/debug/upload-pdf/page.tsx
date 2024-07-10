@@ -7,7 +7,7 @@ export default function UploadPDFPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOutput, setSelectedOutput] =
-    useState<PdfParsingOutput>('langchain');
+    useState<PdfParsingOutput>('llamaparse');
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
