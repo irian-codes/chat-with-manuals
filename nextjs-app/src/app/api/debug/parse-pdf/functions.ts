@@ -223,7 +223,7 @@ async function pdfParseWithLlamaparse(file: File) {
     language: 'en',
     skipDiagonalText: false,
     doNotUnrollColumns: false,
-    pageSeparator: '\n\n',
+    pageSeparator: '\n<<<NEW_PAGE>>>\n',
     gpt4oMode: true,
     parsingInstruction:
       "You're parsing a ttrpg manual that contains text, tables, images an character cards (treat them as tables). Parse each content appropriately in the markdown format.",
