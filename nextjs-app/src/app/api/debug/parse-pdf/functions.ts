@@ -3,6 +3,7 @@ import {
   writeToTimestampedFile,
 } from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
+import {isBlankString} from '@/app/common/utils/stringUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
@@ -19,7 +20,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
   switch (output) {
-    case 'json':
+    case 'json': {
       const res = await pdfParseToJson(file);
       writeToTimestampedFile(
         res,
@@ -29,37 +30,43 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
       );
 
       return res;
+    }
 
-    case 'langchain':
+    case 'langchain': {
       const loader = new PDFLoader(file);
       const docs = await loader.load();
+      const text = docs.map((d) => d.pageContent).join('\n\n') ?? '';
 
       writeToTimestampedFile(
-        docs.map((d) => d.pageContent).join('\n\n'),
+        !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
         'txt'
       );
 
       return JSON.stringify(docs, null, 2);
+    }
 
-    case 'unstructured':
+    case 'unstructured': {
       const unstructuredRes = await pdfParseWithUnstructured(file);
+      const text = unstructuredRes?.map((d) => d.text).join('\n\n') ?? '';
 
       writeToTimestampedFile(
-        JSON.stringify(unstructuredRes, null, 2),
+        !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
-        'json'
+        'txt'
       );
 
       return JSON.stringify(unstructuredRes, null, 2);
+    }
 
-    case 'llmwhisperer':
+    case 'llmwhisperer': {
       const llmwhispererRes = await pdfParseWithLLMWhisperer(file);
+      const text = llmwhispererRes ?? '';
 
       writeToTimestampedFile(
-        llmwhispererRes,
+        !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
         'txt'
@@ -72,21 +79,25 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         null,
         2
       );
+    }
 
-    case 'llamaparse':
+    case 'llamaparse': {
       const llamaparseRes = await pdfParseWithLlamaparse(file);
+      const text = llamaparseRes.map((d) => d.getText()).join('') ?? '';
 
       writeToTimestampedFile(
-        llamaparseRes.map((d) => d.getText()).join(''),
+        !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
-        'txt'
+        'md'
       );
 
-      return JSON.stringify(llamaparseRes, null, 2);
+      return JSON.stringify({text}, null, 2);
+    }
 
-    default:
+    default: {
       throw new Error('Not implemented');
+    }
   }
 }
 
@@ -234,6 +245,8 @@ async function pdfParseWithLlamaparse(file: File) {
     Buffer.from(await file.arrayBuffer()),
     file.name
   );
+
+  console.log('heeey 5.2', {documents});
 
   return documents;
 }
