@@ -1,3 +1,7 @@
+import {
+  PdfParsingOutput,
+  pdfParsingOutputEnum,
+} from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
 import {parsePdf} from './functions';
 
@@ -15,13 +19,12 @@ export async function POST(request: NextRequest) {
       throw new Error('The provided file is not a PDF.');
     }
 
-    if (typeof output !== 'string' || output.trim().length === 0) {
-      throw new Error("The 'output' field is required and must be a string.");
-    }
+    pdfParsingOutputEnum.parse(output);
 
-    const result = await parsePdf(file, output);
+    const stringifiedPdf = (await parsePdf(file, output as PdfParsingOutput))
+      .text;
 
-    return NextResponse.json({result});
+    return NextResponse.json({result: stringifiedPdf});
   } catch (error) {
     console.error(error);
 

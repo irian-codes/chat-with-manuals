@@ -16,7 +16,10 @@ import {
   Strategy,
 } from 'unstructured-client/sdk/models/shared';
 
-export async function parsePdf(file: File, output: PdfParsingOutput) {
+export async function parsePdf(
+  file: File,
+  output: PdfParsingOutput
+): Promise<{text: string}> {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
   switch (output) {
@@ -29,7 +32,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         'json'
       );
 
-      return res;
+      return {text: res};
     }
 
     case 'langchain': {
@@ -44,7 +47,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         'txt'
       );
 
-      return JSON.stringify(docs, null, 2);
+      return {text};
     }
 
     case 'unstructured': {
@@ -58,7 +61,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         'txt'
       );
 
-      return JSON.stringify(unstructuredRes, null, 2);
+      return {text};
     }
 
     case 'llmwhisperer': {
@@ -72,13 +75,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         'txt'
       );
 
-      return JSON.stringify(
-        {
-          text: llmwhispererRes,
-        },
-        null,
-        2
-      );
+      return {text};
     }
 
     case 'llamaparse': {
@@ -92,7 +89,7 @@ export async function parsePdf(file: File, output: PdfParsingOutput) {
         'md'
       );
 
-      return JSON.stringify({text}, null, 2);
+      return {text};
     }
 
     default: {
