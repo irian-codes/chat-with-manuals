@@ -89,3 +89,13 @@ export async function saveFileObjectToFileSystem(
     throw new Error('Failed to save file to filesystem. Path: ' + fullPath);
   }
 }
+
+export function readFile(filePath: string): {
+  content: string;
+  fileExtension: string;
+} {
+  return {
+    content: fs.readFileSync(filePath).toString(),
+    fileExtension: path.extname(filePath).slice(1),
+  };
+}

@@ -18,6 +18,8 @@
     "langchain": "^0.2.5",
     "llamaindex": "^0.5.0",
     "llmwhisperer-client": "^0.1.0",
+    "marked": "^13.0.2",
+    "marked-plaintify": "^1.0.1",
     "next": "14.2.3",
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.1.3",

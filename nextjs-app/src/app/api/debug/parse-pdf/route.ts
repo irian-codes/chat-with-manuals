@@ -3,7 +3,7 @@ import {
   pdfParsingOutputEnum,
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
-import {parsePdf} from './functions';
+import {markdownToJson, parsePdf} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -21,10 +21,20 @@ export async function POST(request: NextRequest) {
 
     pdfParsingOutputEnum.parse(output);
 
-    const stringifiedPdf = (await parsePdf(file, output as PdfParsingOutput))
-      .text;
+    const parseResult = await parsePdf(file, output as PdfParsingOutput);
 
-    return NextResponse.json({result: stringifiedPdf});
+    switch (parseResult.contentType) {
+      case 'json':
+      case 'string':
+        return NextResponse.json({result: parseResult.text});
+
+      case 'markdown':
+        const mdToJson = markdownToJson(parseResult.text);
+        return NextResponse.json({result: mdToJson});
+
+      default:
+        throw new Error('Unsupported content type');
+    }
   } catch (error) {
     console.error(error);
 
