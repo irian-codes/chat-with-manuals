@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get('pdf');
   const output = formData.get('output')?.toString();
+  const force = formData.get('force')?.toString() === 'true';
 
   try {
     if (!(file instanceof File)) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     pdfParsingOutputEnum.parse(output);
 
-    const parseResult = await parsePdf(file, output as PdfParsingOutput);
+    const parseResult = await parsePdf(file, output as PdfParsingOutput, force);
 
     switch (parseResult.contentType) {
       case 'json':

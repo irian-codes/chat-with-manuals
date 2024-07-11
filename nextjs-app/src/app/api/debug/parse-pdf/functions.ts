@@ -21,7 +21,8 @@ import {
 
 export async function parsePdf(
   file: File,
-  output: PdfParsingOutput
+  output: PdfParsingOutput,
+  force: boolean = false
 ): Promise<{
   text: string;
   contentType: 'json' | 'string' | 'markdown';
@@ -29,31 +30,33 @@ export async function parsePdf(
 }> {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
-  // Check if file is already parsed and stored in ./tmp folder
-  const cachedFile = await findMostRecentParsedFilePath(file.name, output);
+  if (!force) {
+    // Check if file is already parsed and stored in ./tmp folder
+    const cachedFile = await findMostRecentParsedFilePath(file.name, output);
 
-  if (cachedFile) {
-    const contentType = (() => {
-      switch (path.extname(cachedFile.path)) {
-        case '.json':
-          return 'json';
+    if (cachedFile) {
+      const contentType = (() => {
+        switch (path.extname(cachedFile.path)) {
+          case '.json':
+            return 'json';
 
-        case '.txt':
-          return 'string';
+          case '.txt':
+            return 'string';
 
-        case '.md':
-          return 'markdown';
+          case '.md':
+            return 'markdown';
 
-        default:
-          throw new Error('Unsupported content type');
-      }
-    })();
+          default:
+            throw new Error('Unsupported content type');
+        }
+      })();
 
-    return {
-      text: fs.readFileSync(cachedFile.path).toString('utf-8'),
-      contentType,
-      cachedTime: cachedFile.timestamp,
-    };
+      return {
+        text: fs.readFileSync(cachedFile.path).toString('utf-8'),
+        contentType,
+        cachedTime: cachedFile.timestamp,
+      };
+    }
   }
 
   // If the file is not present, well, then parse it.

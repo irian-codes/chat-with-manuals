@@ -8,6 +8,7 @@ export default function UploadPDFPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOutput, setSelectedOutput] =
     useState<PdfParsingOutput>('llamaparse');
+  const [forceParsing, setForceParsing] = useState(false);
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -30,6 +31,7 @@ export default function UploadPDFPage() {
         })
         .finally(() => {
           setFile(null);
+          setForceParsing(false);
           setIsLoading(false);
         });
     } else {
@@ -41,6 +43,7 @@ export default function UploadPDFPage() {
     const formData = new FormData();
     formData.append('pdf', file);
     formData.append('output', selectedOutput);
+    formData.append('force', forceParsing.toString());
 
     const response = await fetch('/api/debug/parse-pdf', {
       method: 'POST',
@@ -104,6 +107,19 @@ export default function UploadPDFPage() {
         <option value="llmwhisperer">LLM Whisperer</option>
         <option value="llamaparse">Llamaparse</option>
       </select>
+
+      <div className="mt-4">
+        <label>
+          <input
+            type="checkbox"
+            checked={forceParsing}
+            disabled={isLoading}
+            onChange={(event) => setForceParsing(event.target.checked)}
+            className="mr-2"
+          />
+          Force parsing? (Update cache)
+        </label>
+      </div>
     </div>
   );
 }
