@@ -26,6 +26,11 @@ export async function POST(request: NextRequest) {
 
     switch (parseResult.contentType) {
       case 'json':
+        return NextResponse.json({
+          result: JSON.parse(parseResult.text),
+          cachedTimestamp: parseResult.cachedTime,
+        });
+
       case 'string':
         return NextResponse.json({
           result: parseResult.text,
@@ -34,6 +39,7 @@ export async function POST(request: NextRequest) {
 
       case 'markdown':
         const mdToJson = markdownToJson(parseResult.text);
+
         return NextResponse.json({
           result: mdToJson,
           cachedTimestamp: parseResult.cachedTime,

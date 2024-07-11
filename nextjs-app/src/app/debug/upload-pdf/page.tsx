@@ -19,8 +19,8 @@ export default function UploadPDFPage() {
       setIsLoading(true);
 
       uploadFile(files[0])
-        .then((res) => {
-          console.log('File uploaded successfully', JSON.parse(res?.result));
+        .then((json) => {
+          console.log('File uploaded successfully', json);
         })
         .catch((error) => {
           console.error(error);
@@ -50,16 +50,16 @@ export default function UploadPDFPage() {
       body: formData,
     });
 
-    const res = await response.json();
+    const json = await response.json();
 
     if (!response.ok) {
       throw new Error(
         `Failed to upload PDF: ${response.status} - ${response.statusText}
-          ${JSON.stringify(res, null, 2)}`
+          ${JSON.stringify(json, null, 2)}`
       );
     }
 
-    return res;
+    return json;
   }
 
   return (
