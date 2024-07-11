@@ -22,15 +22,19 @@ import {
 export async function parsePdf(
   file: File,
   output: PdfParsingOutput
-): Promise<{text: string; contentType: 'json' | 'string' | 'markdown'}> {
+): Promise<{
+  text: string;
+  contentType: 'json' | 'string' | 'markdown';
+  cachedTime: number | null;
+}> {
   assert(file.type === 'application/pdf', 'File is not a pdf');
 
   // Check if file is already parsed and stored in ./tmp folder
-  const parsedFilePath = await findMostRecentParsedFilePath(file.name, output);
+  const cachedFile = await findMostRecentParsedFilePath(file.name, output);
 
-  if (parsedFilePath) {
+  if (cachedFile) {
     const contentType = (() => {
-      switch (path.extname(parsedFilePath)) {
+      switch (path.extname(cachedFile.path)) {
         case '.json':
           return 'json';
 
@@ -45,10 +49,12 @@ export async function parsePdf(
       }
     })();
 
-    return {text: fs.readFileSync(parsedFilePath).toString(), contentType};
+    return {
+      text: fs.readFileSync(cachedFile.path).toString('utf-8'),
+      contentType,
+      cachedTime: cachedFile.timestamp,
+    };
   }
-
-  throw new Error('CODE SHOULD NEVER GET HERE');
 
   // If the file is not present, well, then parse it.
   switch (output) {
@@ -61,7 +67,7 @@ export async function parsePdf(
         'json'
       );
 
-      return {text: res, contentType: 'json'};
+      return {text: res, contentType: 'json', cachedTime: null};
     }
 
     case 'langchain': {
@@ -76,7 +82,7 @@ export async function parsePdf(
         'txt'
       );
 
-      return {text, contentType: 'string'};
+      return {text, contentType: 'string', cachedTime: null};
     }
 
     case 'unstructured': {
@@ -92,6 +98,7 @@ export async function parsePdf(
       return {
         text: JSON.stringify(unstructuredRes, null, 2),
         contentType: 'json',
+        cachedTime: null,
       };
     }
 
@@ -106,7 +113,7 @@ export async function parsePdf(
         'txt'
       );
 
-      return {text, contentType: 'string'};
+      return {text, contentType: 'string', cachedTime: null};
     }
 
     case 'llamaparse': {
@@ -120,7 +127,7 @@ export async function parsePdf(
         'md'
       );
 
-      return {text, contentType: 'markdown'};
+      return {text, contentType: 'markdown', cachedTime: null};
     }
 
     default: {
@@ -274,8 +281,6 @@ async function pdfParseWithLlamaparse(file: File) {
     file.name
   );
 
-  console.log('heeey 5.2', {documents});
-
   return documents;
 }
 
@@ -288,52 +293,55 @@ export function markdownToJson(markdown: string) {
 async function findMostRecentParsedFilePath(
   fileName: string,
   output: string
-): Promise<string | undefined> {
+): Promise<null | {
+  path: string;
+  timestamp: number;
+}> {
   const tmpDir = path.join(process.cwd(), 'tmp');
 
   try {
     const files = fs.readdirSync(tmpDir);
 
-    console.log('heeey 5.1', {files});
-
     // Filter files based on naming convention and output type
     const filteredFiles = files.filter((file) => {
       const regex = new RegExp(
-        `parsedPdf_${fileName}_parser-${output}.*_\d{1,}\.(json|txt|md)`
+        `^parsedPdf_${fileName.replace('.', '\\.')}_parser-${output}.*_2\\d{11}.(json|txt|md)$`
       );
-
-      console.log('heeey 5.12', {regex});
 
       return regex.test(file);
     });
 
-    console.log('heeey 5.2', {filteredFiles});
-
     if (filteredFiles.length === 0) {
-      return undefined; // No matching parsed file found
+      return null; // No matching parsed file found
     }
 
     // Sort files by timestamp to get the most recent one
     const sortedFiles = filteredFiles.sort((fileA, fileB) => {
       const timestampA = extractTimestamp(fileA);
       const timestampB = extractTimestamp(fileB);
+
       return timestampB - timestampA; // Sort in descending order
     });
 
     // Return the path of the most recent file
-    return path.join(tmpDir, sortedFiles[0]);
+    return {
+      path: path.join(tmpDir, sortedFiles[0]),
+      timestamp: extractTimestamp(sortedFiles[0]),
+    };
   } catch (error) {
     console.error('Error finding most recent parsed file:', error);
-    return undefined;
+
+    return null;
   }
 }
 
 function extractTimestamp(fileName: string): number {
-  const match = fileName.match(/\d{14}/); // Match timestamp part in the filename
+  const match = fileName.match(/2\d{11}/);
 
   if (match) {
     return parseInt(match[0], 10);
   }
 
-  return 0; // Return 0 if timestamp not found (shouldn't happen if file name matches regex)
+  // Return 0 if timestamp not found (shouldn't happen if file name matches regex)
+  return 0;
 }

@@ -26,11 +26,17 @@ export async function POST(request: NextRequest) {
     switch (parseResult.contentType) {
       case 'json':
       case 'string':
-        return NextResponse.json({result: parseResult.text});
+        return NextResponse.json({
+          result: parseResult.text,
+          cachedTimestamp: parseResult.cachedTime,
+        });
 
       case 'markdown':
         const mdToJson = markdownToJson(parseResult.text);
-        return NextResponse.json({result: mdToJson});
+        return NextResponse.json({
+          result: mdToJson,
+          cachedTimestamp: parseResult.cachedTime,
+        });
 
       default:
         throw new Error('Unsupported content type');
