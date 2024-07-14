@@ -1,5 +1,6 @@
 'use server';
 
+import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
 import fs from 'node:fs';
@@ -9,7 +10,11 @@ export async function parseMarkdownToPlainText() {
   const fileContents = readTestFile();
 
   try {
-    return marked.use({gfm: true}, markedPlaintify(marked)).parse(fileContents);
+    const parsedMd = await marked
+      .use({gfm: true}, markedPlaintify(marked))
+      .parse(fileContents);
+
+    return decodeHTML(parsedMd);
   } catch (error) {
     console.error(error);
 
