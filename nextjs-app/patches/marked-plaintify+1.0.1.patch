@@ -1,10 +1,10 @@
 diff --git a/node_modules/marked-plaintify/dist/index.cjs b/node_modules/marked-plaintify/dist/index.cjs
-index 9e046c6..b876307 100644
+index 9e046c6..57fc821 100644
 --- a/node_modules/marked-plaintify/dist/index.cjs
 +++ b/node_modules/marked-plaintify/dist/index.cjs
 @@ -1,14 +1,21 @@
 -"use strict";const f=require("marked");function m(i={}){const t={},c=["constructor","hr","checkbox","br"],r=["strong","em","codespan","del","text"],u=["html","code","codespan"];let a=[];return Object.getOwnPropertyNames(f.Renderer.prototype).forEach(e=>{c.includes(e)?t[e]=()=>"":r.includes(e)?t[e]=n=>n:u.includes(e)?t[e]=n=>_(n)+`
-+"use strict";const g=require("marked");function b(c,a={}){const r=c.Parser,n={},o=["constructor","hr","checkbox ","br","space"],m=["strong","em","del"],h=["html","code"];let u=[];return Object.getOwnPropertyNames(g.Renderer.prototype).forEach(t=>{o.includes(t)?n[t]=()=>"":m.includes(t)?n[t]=e=>r.parseInline(e.tokens):h.includes(t)?n[t]=e=>d(e.text)+`
++"use strict";const g=require("marked");function b(a,c={}){const r=a.Parser,n={},o=["constructor","hr","checkbox ","br","space"],m=["strong","em","del"],h=["html","code"];let u=[];return Object.getOwnPropertyNames(g.Renderer.prototype).forEach(t=>{o.includes(t)?n[t]=()=>"":m.includes(t)?n[t]=e=>r.parseInline(e.tokens):h.includes(t)?n[t]=e=>d(e.text)+`
  
 -`:e==="list"?t[e]=n=>`
 -`+n.trim()+`
@@ -31,7 +31,7 @@ index 9e046c6..b876307 100644
 +
 +`}:t==="heading"?n[t]=e=>r.parseInline(e.tokens)+`
 +
-+`:n[t]=e=>e.text}),{useNewRenderer:!0,renderer:{...n,...a}}}function d(c){const a={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return c.replace(/[&<>"']/g,r=>a[r])}module.exports=b;
++`:n[t]=e=>"tokens"in e&&e.tokens?r.parseInline(e.tokens):e.text}),{useNewRenderer:!0,renderer:{...n,...c}}}function d(a){const c={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return a.replace(/[&<>"']/g,r=>c[r])}module.exports=b;
 diff --git a/node_modules/marked-plaintify/dist/index.d.ts b/node_modules/marked-plaintify/dist/index.d.ts
 index b18b7d3..fb4d812 100644
 --- a/node_modules/marked-plaintify/dist/index.d.ts
@@ -49,7 +49,7 @@ index b18b7d3..fb4d812 100644
 -export default function markedPlaintify(options?: Options): MarkedExtension;
 +export default function markedPlaintify(instance: Marked | typeof marked, options?: Options): MarkedExtension;
 diff --git a/node_modules/marked-plaintify/dist/index.js b/node_modules/marked-plaintify/dist/index.js
-index 03a7d6a..4088e65 100644
+index 03a7d6a..57747ba 100644
 --- a/node_modules/marked-plaintify/dist/index.js
 +++ b/node_modules/marked-plaintify/dist/index.js
 @@ -1,42 +1,76 @@
@@ -124,7 +124,7 @@ index 03a7d6a..4088e65 100644
  `;
 +    } : t === "heading" ? n[t] = (e) => r.parseInline(e.tokens) + `
 +
-+` : n[t] = (e) => e.text;
++` : n[t] = (e) => "tokens" in e && e.tokens ? r.parseInline(e.tokens) : e.text;
    }), {
 +    useNewRenderer: !0,
      renderer: {
@@ -153,12 +153,12 @@ index 03a7d6a..4088e65 100644
 +  _ as default
  };
 diff --git a/node_modules/marked-plaintify/dist/index.umd.js b/node_modules/marked-plaintify/dist/index.umd.js
-index 484b6e6..ed9fb31 100644
+index 484b6e6..98aefac 100644
 --- a/node_modules/marked-plaintify/dist/index.umd.js
 +++ b/node_modules/marked-plaintify/dist/index.umd.js
 @@ -1,14 +1,21 @@
 -(function(i,l){typeof exports=="object"&&typeof module<"u"?module.exports=l(require("marked")):typeof define=="function"&&define.amd?define(["marked"],l):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=l(i.marked))})(this,function(i){"use strict";function l(d={}){const t={},f=["constructor","hr","checkbox","br"],a=["strong","em","codespan","del","text"],m=["html","code","codespan"];let r=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(e=>{f.includes(e)?t[e]=()=>"":a.includes(e)?t[e]=n=>n:m.includes(e)?t[e]=n=>u(n)+`
-+(function(i,c){typeof exports=="object"&&typeof module<"u"?module.exports=c(require("marked")):typeof define=="function"&&define.amd?define(["marked"],c):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=c(i.marked))})(this,function(i){"use strict";function c(f,u={}){const r=f.Parser,n={},h=["constructor","hr","checkbox ","br","space"],g=["strong","em","del"],b=["html","code"];let d=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(t=>{h.includes(t)?n[t]=()=>"":g.includes(t)?n[t]=e=>r.parseInline(e.tokens):b.includes(t)?n[t]=e=>m(e.text)+`
++(function(i,c){typeof exports=="object"&&typeof module<"u"?module.exports=c(require("marked")):typeof define=="function"&&define.amd?define(["marked"],c):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=c(i.marked))})(this,function(i){"use strict";function c(u,f={}){const r=u.Parser,n={},h=["constructor","hr","checkbox ","br","space"],g=["strong","em","del"],b=["html","code"];let d=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(t=>{h.includes(t)?n[t]=()=>"":g.includes(t)?n[t]=e=>r.parseInline(e.tokens):b.includes(t)?n[t]=e=>m(e.text)+`
  
 -`:e==="list"?t[e]=n=>`
 -`+n.trim()+`
@@ -185,4 +185,4 @@ index 484b6e6..ed9fb31 100644
 +
 +`}:t==="heading"?n[t]=e=>r.parseInline(e.tokens)+`
 +
-+`:n[t]=e=>e.text}),{useNewRenderer:!0,renderer:{...n,...u}}}function m(f){const u={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return f.replace(/[&<>"']/g,r=>u[r])}return c});
++`:n[t]=e=>"tokens"in e&&e.tokens?r.parseInline(e.tokens):e.text}),{useNewRenderer:!0,renderer:{...n,...f}}}function m(u){const f={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return u.replace(/[&<>"']/g,r=>f[r])}return c});
