@@ -9,7 +9,7 @@ export async function parseMarkdownToPlainText() {
   const fileContents = readTestFile();
 
   try {
-    return marked.use({gfm: true}, markedPlaintify()).parse(fileContents);
+    return marked.use({gfm: true}, markedPlaintify(marked)).parse(fileContents);
   } catch (error) {
     console.error(error);
 

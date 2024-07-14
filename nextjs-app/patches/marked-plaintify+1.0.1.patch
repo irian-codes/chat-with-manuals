@@ -1,0 +1,188 @@
+diff --git a/node_modules/marked-plaintify/dist/index.cjs b/node_modules/marked-plaintify/dist/index.cjs
+index 9e046c6..b876307 100644
+--- a/node_modules/marked-plaintify/dist/index.cjs
++++ b/node_modules/marked-plaintify/dist/index.cjs
+@@ -1,14 +1,21 @@
+-"use strict";const f=require("marked");function m(i={}){const t={},c=["constructor","hr","checkbox","br"],r=["strong","em","codespan","del","text"],u=["html","code","codespan"];let a=[];return Object.getOwnPropertyNames(f.Renderer.prototype).forEach(e=>{c.includes(e)?t[e]=()=>"":r.includes(e)?t[e]=n=>n:u.includes(e)?t[e]=n=>_(n)+`
++"use strict";const g=require("marked");function b(c,a={}){const r=c.Parser,n={},o=["constructor","hr","checkbox ","br","space"],m=["strong","em","del"],h=["html","code"];let u=[];return Object.getOwnPropertyNames(g.Renderer.prototype).forEach(t=>{o.includes(t)?n[t]=()=>"":m.includes(t)?n[t]=e=>r.parseInline(e.tokens):h.includes(t)?n[t]=e=>d(e.text)+`
+ 
+-`:e==="list"?t[e]=n=>`
+-`+n.trim()+`
++`:t==="codespan"?n[t]=e=>d(e.text):t==="list"?n[t]=e=>{let s="";for(let l=0;l<e.items.length;l++){const i=e.items[l];s+=n.listitem(i).replace(/\n{2,}/g,`
++`)}return`
++`+s.trim()+`
+ 
+-`:e==="listitem"?t[e]=n=>`
+-`+n.trim():e==="blockquote"?t[e]=n=>n.trim()+`
++`}:t==="listitem"?n[t]=e=>`
++`+r.parse(e.tokens).trim():t==="blockquote"?n[t]=e=>r.parse(e.tokens).trim()+`
+ 
+-`:e==="table"?t[e]=(n,s)=>(a=[],s):e==="tablerow"?t[e]=n=>{const s=n.split("__CELL_PAD__").filter(Boolean);return a.map((l,d)=>l+": "+s[d]).join(`
++`:t==="table"?n[t]=e=>{u=[];for(let l=0;l<e.header.length;l++)n.tablecell(e.header[l]);let s="";for(let l=0;l<e.rows.length;l++){const i=e.rows[l];let x="";for(let f=0;f<i.length;f++)x+=n.tablecell(i[f]);s+=n.tablerow({text:x})}return s}:t==="tablerow"?n[t]=e=>{const s=e.text.split("__CELL_PAD__").filter(Boolean);return u.map((l,i)=>l+": "+s[i]).join(`
+ `)+`
+ 
+-`}:e==="tablecell"?t[e]=(n,s)=>(s.header&&a.push(n),n+"__CELL_PAD__"):e==="link"||e==="image"?t[e]=(n,s,l)=>l||"":t[e]=n=>n+`
++`}:t==="tablecell"?n[t]=e=>{const s=r.parseInline(e.tokens);return e.header&&u.push(s),s+"__CELL_PAD__"}:t==="link"?n[t]=e=>r.parseInline(e.tokens)+`
+ 
+-`}),{renderer:{...t,...i}}}function _(i){const t={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return i.replace(/[&<>"']/g,c=>t[c])}module.exports=m;
++`:t==="image"?n[t]=e=>e.text+`
++
++`:t==="paragraph"?n[t]=e=>{let s=r.parseInline(e.tokens);return s=s.replace(/\n{2,}/g,""),s+`
++
++`}:t==="heading"?n[t]=e=>r.parseInline(e.tokens)+`
++
++`:n[t]=e=>e.text}),{useNewRenderer:!0,renderer:{...n,...a}}}function d(c){const a={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return c.replace(/[&<>"']/g,r=>a[r])}module.exports=b;
+diff --git a/node_modules/marked-plaintify/dist/index.d.ts b/node_modules/marked-plaintify/dist/index.d.ts
+index b18b7d3..fb4d812 100644
+--- a/node_modules/marked-plaintify/dist/index.d.ts
++++ b/node_modules/marked-plaintify/dist/index.d.ts
+@@ -1,4 +1,4 @@
+-import { MarkedExtension, RendererObject } from 'marked';
++import { MarkedExtension, RendererObject, Marked, marked } from 'marked';
+ /**
+  * Options for configuring the markedPlaintify extension.
+  */
+@@ -11,4 +11,4 @@ export type Options = RendererObject & {
+ /**
+  * A [marked](https://marked.js.org/) extension to convert Markdown to Plaintext.
+  */
+-export default function markedPlaintify(options?: Options): MarkedExtension;
++export default function markedPlaintify(instance: Marked | typeof marked, options?: Options): MarkedExtension;
+diff --git a/node_modules/marked-plaintify/dist/index.js b/node_modules/marked-plaintify/dist/index.js
+index 03a7d6a..4088e65 100644
+--- a/node_modules/marked-plaintify/dist/index.js
++++ b/node_modules/marked-plaintify/dist/index.js
+@@ -1,42 +1,76 @@
+-import { Renderer as u } from "marked";
+-function o(i = {}) {
+-  const t = {}, c = ["constructor", "hr", "checkbox", "br"], r = ["strong", "em", "codespan", "del", "text"], f = ["html", "code", "codespan"];
+-  let a = [];
+-  return Object.getOwnPropertyNames(u.prototype).forEach((e) => {
+-    c.includes(e) ? t[e] = () => "" : r.includes(e) ? t[e] = (n) => n : f.includes(e) ? t[e] = (n) => m(n) + `
+-
+-` : e === "list" ? t[e] = (n) => `
+-` + n.trim() + `
+-
+-` : e === "listitem" ? t[e] = (n) => `
+-` + n.trim() : e === "blockquote" ? t[e] = (n) => n.trim() + `
+-
+-` : e === "table" ? t[e] = (n, s) => (a = [], s) : e === "tablerow" ? t[e] = (n) => {
+-      const s = n.split("__CELL_PAD__").filter(Boolean);
+-      return a.map((l, d) => l + ": " + s[d]).join(`
++import { Renderer as g } from "marked";
++function _(a, c = {}) {
++  const r = a.Parser, n = {}, o = ["constructor", "hr", "checkbox ", "br", "space"], m = ["strong", "em", "del"], h = ["html", "code"];
++  let u = [];
++  return Object.getOwnPropertyNames(g.prototype).forEach((t) => {
++    o.includes(t) ? n[t] = () => "" : m.includes(t) ? n[t] = (e) => r.parseInline(e.tokens) : h.includes(t) ? n[t] = (e) => d(e.text) + `
++
++` : t === "codespan" ? n[t] = (e) => d(e.text) : t === "list" ? n[t] = (e) => {
++      let s = "";
++      for (let l = 0; l < e.items.length; l++) {
++        const i = e.items[l];
++        s += n.listitem(i).replace(/\n{2,}/g, `
++`);
++      }
++      return `
++` + s.trim() + `
++
++`;
++    } : t === "listitem" ? n[t] = (e) => `
++` + r.parse(e.tokens).trim() : t === "blockquote" ? n[t] = (e) => r.parse(e.tokens).trim() + `
++
++` : t === "table" ? n[t] = (e) => {
++      u = [];
++      for (let l = 0; l < e.header.length; l++)
++        n.tablecell(e.header[l]);
++      let s = "";
++      for (let l = 0; l < e.rows.length; l++) {
++        const i = e.rows[l];
++        let x = "";
++        for (let f = 0; f < i.length; f++)
++          x += n.tablecell(i[f]);
++        s += n.tablerow({ text: x });
++      }
++      return s;
++    } : t === "tablerow" ? n[t] = (e) => {
++      const s = e.text.split("__CELL_PAD__").filter(Boolean);
++      return u.map((l, i) => l + ": " + s[i]).join(`
+ `) + `
+ 
+ `;
+-    } : e === "tablecell" ? t[e] = (n, s) => (s.header && a.push(n), n + "__CELL_PAD__") : e === "link" || e === "image" ? t[e] = (n, s, l) => l || "" : t[e] = (n) => n + `
++    } : t === "tablecell" ? n[t] = (e) => {
++      const s = r.parseInline(e.tokens);
++      return e.header && u.push(s), s + "__CELL_PAD__";
++    } : t === "link" ? n[t] = (e) => r.parseInline(e.tokens) + `
++
++` : t === "image" ? n[t] = (e) => e.text + `
++
++` : t === "paragraph" ? n[t] = (e) => {
++      let s = r.parseInline(e.tokens);
++      return s = s.replace(/\n{2,}/g, ""), s + `
+ 
+ `;
++    } : t === "heading" ? n[t] = (e) => r.parseInline(e.tokens) + `
++
++` : n[t] = (e) => e.text;
+   }), {
++    useNewRenderer: !0,
+     renderer: {
+-      ...t,
+-      ...i
++      ...n,
++      ...c
+     }
+   };
+ }
+-function m(i) {
+-  const t = {
++function d(a) {
++  const c = {
+     "&": "&amp;",
+     "<": "&lt;",
+     ">": "&gt;",
+     '"': "&quot;",
+     "'": "&#39;"
+   };
+-  return i.replace(/[&<>"']/g, (c) => t[c]);
++  return a.replace(/[&<>"']/g, (r) => c[r]);
+ }
+ export {
+-  o as default
++  _ as default
+ };
+diff --git a/node_modules/marked-plaintify/dist/index.umd.js b/node_modules/marked-plaintify/dist/index.umd.js
+index 484b6e6..ed9fb31 100644
+--- a/node_modules/marked-plaintify/dist/index.umd.js
++++ b/node_modules/marked-plaintify/dist/index.umd.js
+@@ -1,14 +1,21 @@
+-(function(i,l){typeof exports=="object"&&typeof module<"u"?module.exports=l(require("marked")):typeof define=="function"&&define.amd?define(["marked"],l):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=l(i.marked))})(this,function(i){"use strict";function l(d={}){const t={},f=["constructor","hr","checkbox","br"],a=["strong","em","codespan","del","text"],m=["html","code","codespan"];let r=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(e=>{f.includes(e)?t[e]=()=>"":a.includes(e)?t[e]=n=>n:m.includes(e)?t[e]=n=>u(n)+`
++(function(i,c){typeof exports=="object"&&typeof module<"u"?module.exports=c(require("marked")):typeof define=="function"&&define.amd?define(["marked"],c):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=c(i.marked))})(this,function(i){"use strict";function c(f,u={}){const r=f.Parser,n={},h=["constructor","hr","checkbox ","br","space"],g=["strong","em","del"],b=["html","code"];let d=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(t=>{h.includes(t)?n[t]=()=>"":g.includes(t)?n[t]=e=>r.parseInline(e.tokens):b.includes(t)?n[t]=e=>m(e.text)+`
+ 
+-`:e==="list"?t[e]=n=>`
+-`+n.trim()+`
++`:t==="codespan"?n[t]=e=>m(e.text):t==="list"?n[t]=e=>{let s="";for(let l=0;l<e.items.length;l++){const a=e.items[l];s+=n.listitem(a).replace(/\n{2,}/g,`
++`)}return`
++`+s.trim()+`
+ 
+-`:e==="listitem"?t[e]=n=>`
+-`+n.trim():e==="blockquote"?t[e]=n=>n.trim()+`
++`}:t==="listitem"?n[t]=e=>`
++`+r.parse(e.tokens).trim():t==="blockquote"?n[t]=e=>r.parse(e.tokens).trim()+`
+ 
+-`:e==="table"?t[e]=(n,s)=>(r=[],s):e==="tablerow"?t[e]=n=>{const s=n.split("__CELL_PAD__").filter(Boolean);return r.map((c,o)=>c+": "+s[o]).join(`
++`:t==="table"?n[t]=e=>{d=[];for(let l=0;l<e.header.length;l++)n.tablecell(e.header[l]);let s="";for(let l=0;l<e.rows.length;l++){const a=e.rows[l];let x="";for(let o=0;o<a.length;o++)x+=n.tablecell(a[o]);s+=n.tablerow({text:x})}return s}:t==="tablerow"?n[t]=e=>{const s=e.text.split("__CELL_PAD__").filter(Boolean);return d.map((l,a)=>l+": "+s[a]).join(`
+ `)+`
+ 
+-`}:e==="tablecell"?t[e]=(n,s)=>(s.header&&r.push(n),n+"__CELL_PAD__"):e==="link"||e==="image"?t[e]=(n,s,c)=>c||"":t[e]=n=>n+`
++`}:t==="tablecell"?n[t]=e=>{const s=r.parseInline(e.tokens);return e.header&&d.push(s),s+"__CELL_PAD__"}:t==="link"?n[t]=e=>r.parseInline(e.tokens)+`
+ 
+-`}),{renderer:{...t,...d}}}function u(d){const t={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return d.replace(/[&<>"']/g,f=>t[f])}return l});
++`:t==="image"?n[t]=e=>e.text+`
++
++`:t==="paragraph"?n[t]=e=>{let s=r.parseInline(e.tokens);return s=s.replace(/\n{2,}/g,""),s+`
++
++`}:t==="heading"?n[t]=e=>r.parseInline(e.tokens)+`
++
++`:n[t]=e=>e.text}),{useNewRenderer:!0,renderer:{...n,...u}}}function m(f){const u={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return f.replace(/[&<>"']/g,r=>u[r])}return c});
