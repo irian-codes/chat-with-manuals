@@ -1,58 +1,66 @@
 diff --git a/node_modules/marked-plaintify/dist/index.cjs b/node_modules/marked-plaintify/dist/index.cjs
-index 9e046c6..57fc821 100644
+index 9e046c6..d70aa56 100644
 --- a/node_modules/marked-plaintify/dist/index.cjs
 +++ b/node_modules/marked-plaintify/dist/index.cjs
 @@ -1,14 +1,21 @@
 -"use strict";const f=require("marked");function m(i={}){const t={},c=["constructor","hr","checkbox","br"],r=["strong","em","codespan","del","text"],u=["html","code","codespan"];let a=[];return Object.getOwnPropertyNames(f.Renderer.prototype).forEach(e=>{c.includes(e)?t[e]=()=>"":r.includes(e)?t[e]=n=>n:u.includes(e)?t[e]=n=>_(n)+`
-+"use strict";const g=require("marked");function b(a,c={}){const r=a.Parser,n={},o=["constructor","hr","checkbox ","br","space"],m=["strong","em","del"],h=["html","code"];let u=[];return Object.getOwnPropertyNames(g.Renderer.prototype).forEach(t=>{o.includes(t)?n[t]=()=>"":m.includes(t)?n[t]=e=>r.parseInline(e.tokens):h.includes(t)?n[t]=e=>d(e.text)+`
++"use strict";const x=require("marked");function m(c={}){const s={},a=["constructor","hr","checkbox","br","space"],h=["strong","em","del"],d=["html","code"];let u=[];return Object.getOwnPropertyNames(x.Renderer.prototype).forEach(t=>{a.includes(t)?s[t]=()=>"":h.includes(t)?s[t]=function(e){return this.parser.parseInline(e.tokens)}:d.includes(t)?s[t]=e=>o(e.text)+`
  
 -`:e==="list"?t[e]=n=>`
--`+n.trim()+`
-+`:t==="codespan"?n[t]=e=>d(e.text):t==="list"?n[t]=e=>{let s="";for(let l=0;l<e.items.length;l++){const i=e.items[l];s+=n.listitem(i).replace(/\n{2,}/g,`
-+`)}return`
-+`+s.trim()+`
++`:t==="codespan"?s[t]=e=>o(e.text):t==="list"?s[t]=function(e){let n="";for(let r=0;r<e.items.length;r++){const i=e.items[r],l=this.listitem(i);typeof l=="string"&&(n+=l.replace(/\n{2,}/g,`
++`))}return`
+ `+n.trim()+`
  
 -`:e==="listitem"?t[e]=n=>`
 -`+n.trim():e==="blockquote"?t[e]=n=>n.trim()+`
-+`}:t==="listitem"?n[t]=e=>`
-+`+r.parse(e.tokens).trim():t==="blockquote"?n[t]=e=>r.parse(e.tokens).trim()+`
++`}:t==="listitem"?s[t]=function(e){return`
++`+this.parser.parse(e.tokens).trim()}:t==="blockquote"?s[t]=function(e){return this.parser.parse(e.tokens).trim()+`
  
 -`:e==="table"?t[e]=(n,s)=>(a=[],s):e==="tablerow"?t[e]=n=>{const s=n.split("__CELL_PAD__").filter(Boolean);return a.map((l,d)=>l+": "+s[d]).join(`
-+`:t==="table"?n[t]=e=>{u=[];for(let l=0;l<e.header.length;l++)n.tablecell(e.header[l]);let s="";for(let l=0;l<e.rows.length;l++){const i=e.rows[l];let x="";for(let f=0;f<i.length;f++)x+=n.tablecell(i[f]);s+=n.tablerow({text:x})}return s}:t==="tablerow"?n[t]=e=>{const s=e.text.split("__CELL_PAD__").filter(Boolean);return u.map((l,i)=>l+": "+s[i]).join(`
++`}:t==="table"?s[t]=function(e){u=[];for(let r=0;r<e.header.length;r++)this.tablecell(e.header[r]);let n="";for(let r=0;r<e.rows.length;r++){const i=e.rows[r];let l="";for(let f=0;f<i.length;f++)l+=this.tablecell(i[f]);n+=this.tablerow({text:l})}return n}:t==="tablerow"?s[t]=e=>{const n=e.text.split("__CELL_PAD__").filter(Boolean);return u.map((r,i)=>r+": "+n[i]).join(`
  `)+`
  
 -`}:e==="tablecell"?t[e]=(n,s)=>(s.header&&a.push(n),n+"__CELL_PAD__"):e==="link"||e==="image"?t[e]=(n,s,l)=>l||"":t[e]=n=>n+`
-+`}:t==="tablecell"?n[t]=e=>{const s=r.parseInline(e.tokens);return e.header&&u.push(s),s+"__CELL_PAD__"}:t==="link"?n[t]=e=>r.parseInline(e.tokens)+`
++`}:t==="tablecell"?s[t]=function(e){const n=this.parser.parseInline(e.tokens);return e.header&&u.push(n),n+"__CELL_PAD__"}:t==="link"?s[t]=function(e){return this.parser.parseInline(e.tokens)+`
  
 -`}),{renderer:{...t,...i}}}function _(i){const t={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return i.replace(/[&<>"']/g,c=>t[c])}module.exports=m;
-+`:t==="image"?n[t]=e=>e.text+`
++`}:t==="image"?s[t]=e=>e.text+`
 +
-+`:t==="paragraph"?n[t]=e=>{let s=r.parseInline(e.tokens);return s=s.replace(/\n{2,}/g,""),s+`
++`:t==="paragraph"?s[t]=function(e){let n=this.parser.parseInline(e.tokens);return n=n.replace(/\n{2,}/g,""),n+`
 +
-+`}:t==="heading"?n[t]=e=>r.parseInline(e.tokens)+`
++`}:t==="heading"?s[t]=function(e){return this.parser.parseInline(e.tokens)+`
 +
-+`:n[t]=e=>"tokens"in e&&e.tokens?r.parseInline(e.tokens):e.text}),{useNewRenderer:!0,renderer:{...n,...c}}}function d(a){const c={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return a.replace(/[&<>"']/g,r=>c[r])}module.exports=b;
++`}:s[t]=function(e){return"tokens"in e&&e.tokens?this.parser.parseInline(e.tokens):e.text}}),{useNewRenderer:!0,renderer:{...s,...c}}}function o(c){const s={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return c.replace(/[&<>"']/g,a=>s[a])}module.exports=m;
+diff --git a/node_modules/marked-plaintify/dist/index.cjs:Zone.Identifier b/node_modules/marked-plaintify/dist/index.cjs:Zone.Identifier
+new file mode 100644
+index 0000000..e69de29
 diff --git a/node_modules/marked-plaintify/dist/index.d.ts b/node_modules/marked-plaintify/dist/index.d.ts
-index b18b7d3..fb4d812 100644
+index b18b7d3..bb3badb 100644
 --- a/node_modules/marked-plaintify/dist/index.d.ts
 +++ b/node_modules/marked-plaintify/dist/index.d.ts
 @@ -1,4 +1,4 @@
 -import { MarkedExtension, RendererObject } from 'marked';
-+import { MarkedExtension, RendererObject, Marked, marked } from 'marked';
++import { Renderer, MarkedExtension, RendererObject } from 'marked';
  /**
   * Options for configuring the markedPlaintify extension.
   */
-@@ -11,4 +11,4 @@ export type Options = RendererObject & {
+@@ -6,7 +6,7 @@ export type Options = RendererObject & {
+     /**
+      * Custom 3rd-party renderers.
+      */
+-    [k: string]: (...args: any[]) => string | false;
++    [k: string]: (this: Renderer, ...args: any[]) => string | false;
+ };
  /**
   * A [marked](https://marked.js.org/) extension to convert Markdown to Plaintext.
-  */
--export default function markedPlaintify(options?: Options): MarkedExtension;
-+export default function markedPlaintify(instance: Marked | typeof marked, options?: Options): MarkedExtension;
+diff --git a/node_modules/marked-plaintify/dist/index.d.ts:Zone.Identifier b/node_modules/marked-plaintify/dist/index.d.ts:Zone.Identifier
+new file mode 100644
+index 0000000..e69de29
 diff --git a/node_modules/marked-plaintify/dist/index.js b/node_modules/marked-plaintify/dist/index.js
-index 03a7d6a..57747ba 100644
+index 03a7d6a..5603567 100644
 --- a/node_modules/marked-plaintify/dist/index.js
 +++ b/node_modules/marked-plaintify/dist/index.js
-@@ -1,42 +1,76 @@
+@@ -1,42 +1,88 @@
 -import { Renderer as u } from "marked";
 -function o(i = {}) {
 -  const t = {}, c = ["constructor", "hr", "checkbox", "br"], r = ["strong", "em", "codespan", "del", "text"], f = ["html", "code", "codespan"];
@@ -61,84 +69,93 @@ index 03a7d6a..57747ba 100644
 -    c.includes(e) ? t[e] = () => "" : r.includes(e) ? t[e] = (n) => n : f.includes(e) ? t[e] = (n) => m(n) + `
 -
 -` : e === "list" ? t[e] = (n) => `
--` + n.trim() + `
--
++import { Renderer as x } from "marked";
++function g(c = {}) {
++  const s = {}, a = ["constructor", "hr", "checkbox", "br", "space"], h = ["strong", "em", "del"], d = ["html", "code"];
++  let f = [];
++  return Object.getOwnPropertyNames(x.prototype).forEach((t) => {
++    a.includes(t) ? s[t] = () => "" : h.includes(t) ? s[t] = function(e) {
++      return this.parser.parseInline(e.tokens);
++    } : d.includes(t) ? s[t] = (e) => o(e.text) + `
++
++` : t === "codespan" ? s[t] = (e) => o(e.text) : t === "list" ? s[t] = function(e) {
++      let n = "";
++      for (let r = 0; r < e.items.length; r++) {
++        const i = e.items[r], l = this.listitem(i);
++        typeof l == "string" && (n += l.replace(/\n{2,}/g, `
++`));
++      }
++      return `
+ ` + n.trim() + `
+ 
 -` : e === "listitem" ? t[e] = (n) => `
 -` + n.trim() : e === "blockquote" ? t[e] = (n) => n.trim() + `
--
++`;
++    } : t === "listitem" ? s[t] = function(e) {
++      return `
++` + this.parser.parse(e.tokens).trim();
++    } : t === "blockquote" ? s[t] = function(e) {
++      return this.parser.parse(e.tokens).trim() + `
+ 
 -` : e === "table" ? t[e] = (n, s) => (a = [], s) : e === "tablerow" ? t[e] = (n) => {
 -      const s = n.split("__CELL_PAD__").filter(Boolean);
 -      return a.map((l, d) => l + ": " + s[d]).join(`
-+import { Renderer as g } from "marked";
-+function _(a, c = {}) {
-+  const r = a.Parser, n = {}, o = ["constructor", "hr", "checkbox ", "br", "space"], m = ["strong", "em", "del"], h = ["html", "code"];
-+  let u = [];
-+  return Object.getOwnPropertyNames(g.prototype).forEach((t) => {
-+    o.includes(t) ? n[t] = () => "" : m.includes(t) ? n[t] = (e) => r.parseInline(e.tokens) : h.includes(t) ? n[t] = (e) => d(e.text) + `
-+
-+` : t === "codespan" ? n[t] = (e) => d(e.text) : t === "list" ? n[t] = (e) => {
-+      let s = "";
-+      for (let l = 0; l < e.items.length; l++) {
-+        const i = e.items[l];
-+        s += n.listitem(i).replace(/\n{2,}/g, `
-+`);
-+      }
-+      return `
-+` + s.trim() + `
-+
 +`;
-+    } : t === "listitem" ? n[t] = (e) => `
-+` + r.parse(e.tokens).trim() : t === "blockquote" ? n[t] = (e) => r.parse(e.tokens).trim() + `
-+
-+` : t === "table" ? n[t] = (e) => {
-+      u = [];
-+      for (let l = 0; l < e.header.length; l++)
-+        n.tablecell(e.header[l]);
-+      let s = "";
-+      for (let l = 0; l < e.rows.length; l++) {
-+        const i = e.rows[l];
-+        let x = "";
-+        for (let f = 0; f < i.length; f++)
-+          x += n.tablecell(i[f]);
-+        s += n.tablerow({ text: x });
++    } : t === "table" ? s[t] = function(e) {
++      f = [];
++      for (let r = 0; r < e.header.length; r++)
++        this.tablecell(e.header[r]);
++      let n = "";
++      for (let r = 0; r < e.rows.length; r++) {
++        const i = e.rows[r];
++        let l = "";
++        for (let u = 0; u < i.length; u++)
++          l += this.tablecell(i[u]);
++        n += this.tablerow({ text: l });
 +      }
-+      return s;
-+    } : t === "tablerow" ? n[t] = (e) => {
-+      const s = e.text.split("__CELL_PAD__").filter(Boolean);
-+      return u.map((l, i) => l + ": " + s[i]).join(`
++      return n;
++    } : t === "tablerow" ? s[t] = (e) => {
++      const n = e.text.split("__CELL_PAD__").filter(Boolean);
++      return f.map((r, i) => r + ": " + n[i]).join(`
  `) + `
  
  `;
 -    } : e === "tablecell" ? t[e] = (n, s) => (s.header && a.push(n), n + "__CELL_PAD__") : e === "link" || e === "image" ? t[e] = (n, s, l) => l || "" : t[e] = (n) => n + `
-+    } : t === "tablecell" ? n[t] = (e) => {
-+      const s = r.parseInline(e.tokens);
-+      return e.header && u.push(s), s + "__CELL_PAD__";
-+    } : t === "link" ? n[t] = (e) => r.parseInline(e.tokens) + `
++    } : t === "tablecell" ? s[t] = function(e) {
++      const n = this.parser.parseInline(e.tokens);
++      return e.header && f.push(n), n + "__CELL_PAD__";
++    } : t === "link" ? s[t] = function(e) {
++      return this.parser.parseInline(e.tokens) + `
 +
-+` : t === "image" ? n[t] = (e) => e.text + `
++`;
++    } : t === "image" ? s[t] = (e) => e.text + `
 +
-+` : t === "paragraph" ? n[t] = (e) => {
-+      let s = r.parseInline(e.tokens);
-+      return s = s.replace(/\n{2,}/g, ""), s + `
++` : t === "paragraph" ? s[t] = function(e) {
++      let n = this.parser.parseInline(e.tokens);
++      return n = n.replace(/\n{2,}/g, ""), n + `
++
++`;
++    } : t === "heading" ? s[t] = function(e) {
++      return this.parser.parseInline(e.tokens) + `
  
  `;
-+    } : t === "heading" ? n[t] = (e) => r.parseInline(e.tokens) + `
-+
-+` : n[t] = (e) => "tokens" in e && e.tokens ? r.parseInline(e.tokens) : e.text;
++    } : s[t] = function(e) {
++      return "tokens" in e && e.tokens ? this.parser.parseInline(e.tokens) : e.text;
++    };
    }), {
 +    useNewRenderer: !0,
      renderer: {
 -      ...t,
 -      ...i
-+      ...n,
++      ...s,
 +      ...c
      }
    };
  }
 -function m(i) {
 -  const t = {
-+function d(a) {
-+  const c = {
++function o(c) {
++  const s = {
      "&": "&amp;",
      "<": "&lt;",
      ">": "&gt;",
@@ -146,43 +163,48 @@ index 03a7d6a..57747ba 100644
      "'": "&#39;"
    };
 -  return i.replace(/[&<>"']/g, (c) => t[c]);
-+  return a.replace(/[&<>"']/g, (r) => c[r]);
++  return c.replace(/[&<>"']/g, (a) => s[a]);
  }
  export {
 -  o as default
-+  _ as default
++  g as default
  };
+diff --git a/node_modules/marked-plaintify/dist/index.js:Zone.Identifier b/node_modules/marked-plaintify/dist/index.js:Zone.Identifier
+new file mode 100644
+index 0000000..e69de29
 diff --git a/node_modules/marked-plaintify/dist/index.umd.js b/node_modules/marked-plaintify/dist/index.umd.js
-index 484b6e6..98aefac 100644
+index 484b6e6..8094116 100644
 --- a/node_modules/marked-plaintify/dist/index.umd.js
 +++ b/node_modules/marked-plaintify/dist/index.umd.js
 @@ -1,14 +1,21 @@
 -(function(i,l){typeof exports=="object"&&typeof module<"u"?module.exports=l(require("marked")):typeof define=="function"&&define.amd?define(["marked"],l):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=l(i.marked))})(this,function(i){"use strict";function l(d={}){const t={},f=["constructor","hr","checkbox","br"],a=["strong","em","codespan","del","text"],m=["html","code","codespan"];let r=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(e=>{f.includes(e)?t[e]=()=>"":a.includes(e)?t[e]=n=>n:m.includes(e)?t[e]=n=>u(n)+`
-+(function(i,c){typeof exports=="object"&&typeof module<"u"?module.exports=c(require("marked")):typeof define=="function"&&define.amd?define(["marked"],c):(i=typeof globalThis<"u"?globalThis:i||self,i.markedPlaintify=c(i.marked))})(this,function(i){"use strict";function c(u,f={}){const r=u.Parser,n={},h=["constructor","hr","checkbox ","br","space"],g=["strong","em","del"],b=["html","code"];let d=[];return Object.getOwnPropertyNames(i.Renderer.prototype).forEach(t=>{h.includes(t)?n[t]=()=>"":g.includes(t)?n[t]=e=>r.parseInline(e.tokens):b.includes(t)?n[t]=e=>m(e.text)+`
++(function(r,c){typeof exports=="object"&&typeof module<"u"?module.exports=c(require("marked")):typeof define=="function"&&define.amd?define(["marked"],c):(r=typeof globalThis<"u"?globalThis:r||self,r.markedPlaintify=c(r.marked))})(this,function(r){"use strict";function c(f={}){const s={},u=["constructor","hr","checkbox","br","space"],m=["strong","em","del"],x=["html","code"];let o=[];return Object.getOwnPropertyNames(r.Renderer.prototype).forEach(t=>{u.includes(t)?s[t]=()=>"":m.includes(t)?s[t]=function(e){return this.parser.parseInline(e.tokens)}:x.includes(t)?s[t]=e=>h(e.text)+`
  
 -`:e==="list"?t[e]=n=>`
--`+n.trim()+`
-+`:t==="codespan"?n[t]=e=>m(e.text):t==="list"?n[t]=e=>{let s="";for(let l=0;l<e.items.length;l++){const a=e.items[l];s+=n.listitem(a).replace(/\n{2,}/g,`
-+`)}return`
-+`+s.trim()+`
++`:t==="codespan"?s[t]=e=>h(e.text):t==="list"?s[t]=function(e){let n="";for(let i=0;i<e.items.length;i++){const l=e.items[i],a=this.listitem(l);typeof a=="string"&&(n+=a.replace(/\n{2,}/g,`
++`))}return`
+ `+n.trim()+`
  
 -`:e==="listitem"?t[e]=n=>`
 -`+n.trim():e==="blockquote"?t[e]=n=>n.trim()+`
-+`}:t==="listitem"?n[t]=e=>`
-+`+r.parse(e.tokens).trim():t==="blockquote"?n[t]=e=>r.parse(e.tokens).trim()+`
++`}:t==="listitem"?s[t]=function(e){return`
++`+this.parser.parse(e.tokens).trim()}:t==="blockquote"?s[t]=function(e){return this.parser.parse(e.tokens).trim()+`
  
 -`:e==="table"?t[e]=(n,s)=>(r=[],s):e==="tablerow"?t[e]=n=>{const s=n.split("__CELL_PAD__").filter(Boolean);return r.map((c,o)=>c+": "+s[o]).join(`
-+`:t==="table"?n[t]=e=>{d=[];for(let l=0;l<e.header.length;l++)n.tablecell(e.header[l]);let s="";for(let l=0;l<e.rows.length;l++){const a=e.rows[l];let x="";for(let o=0;o<a.length;o++)x+=n.tablecell(a[o]);s+=n.tablerow({text:x})}return s}:t==="tablerow"?n[t]=e=>{const s=e.text.split("__CELL_PAD__").filter(Boolean);return d.map((l,a)=>l+": "+s[a]).join(`
++`}:t==="table"?s[t]=function(e){o=[];for(let i=0;i<e.header.length;i++)this.tablecell(e.header[i]);let n="";for(let i=0;i<e.rows.length;i++){const l=e.rows[i];let a="";for(let d=0;d<l.length;d++)a+=this.tablecell(l[d]);n+=this.tablerow({text:a})}return n}:t==="tablerow"?s[t]=e=>{const n=e.text.split("__CELL_PAD__").filter(Boolean);return o.map((i,l)=>i+": "+n[l]).join(`
  `)+`
  
 -`}:e==="tablecell"?t[e]=(n,s)=>(s.header&&r.push(n),n+"__CELL_PAD__"):e==="link"||e==="image"?t[e]=(n,s,c)=>c||"":t[e]=n=>n+`
-+`}:t==="tablecell"?n[t]=e=>{const s=r.parseInline(e.tokens);return e.header&&d.push(s),s+"__CELL_PAD__"}:t==="link"?n[t]=e=>r.parseInline(e.tokens)+`
++`}:t==="tablecell"?s[t]=function(e){const n=this.parser.parseInline(e.tokens);return e.header&&o.push(n),n+"__CELL_PAD__"}:t==="link"?s[t]=function(e){return this.parser.parseInline(e.tokens)+`
  
 -`}),{renderer:{...t,...d}}}function u(d){const t={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return d.replace(/[&<>"']/g,f=>t[f])}return l});
-+`:t==="image"?n[t]=e=>e.text+`
++`}:t==="image"?s[t]=e=>e.text+`
 +
-+`:t==="paragraph"?n[t]=e=>{let s=r.parseInline(e.tokens);return s=s.replace(/\n{2,}/g,""),s+`
++`:t==="paragraph"?s[t]=function(e){let n=this.parser.parseInline(e.tokens);return n=n.replace(/\n{2,}/g,""),n+`
 +
-+`}:t==="heading"?n[t]=e=>r.parseInline(e.tokens)+`
++`}:t==="heading"?s[t]=function(e){return this.parser.parseInline(e.tokens)+`
 +
-+`:n[t]=e=>"tokens"in e&&e.tokens?r.parseInline(e.tokens):e.text}),{useNewRenderer:!0,renderer:{...n,...f}}}function m(u){const f={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return u.replace(/[&<>"']/g,r=>f[r])}return c});
++`}:s[t]=function(e){return"tokens"in e&&e.tokens?this.parser.parseInline(e.tokens):e.text}}),{useNewRenderer:!0,renderer:{...s,...f}}}function h(f){const s={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return f.replace(/[&<>"']/g,u=>s[u])}return c});
+diff --git a/node_modules/marked-plaintify/dist/index.umd.js:Zone.Identifier b/node_modules/marked-plaintify/dist/index.umd.js:Zone.Identifier
+new file mode 100644
+index 0000000..e69de29

@@ -11,7 +11,7 @@ export async function parseMarkdownToPlainText() {
 
   try {
     const parsedMd = await marked
-      .use({gfm: true}, markedPlaintify(marked))
+      .use({gfm: true}, markedPlaintify())
       .parse(fileContents);
 
     return decodeHTML(parsedMd);
