@@ -8,6 +8,7 @@ import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import {Marked} from 'marked';
+import markedPlaintify from 'marked-plaintify';
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -287,10 +288,68 @@ async function pdfParseWithLlamaparse(file: File) {
   return documents;
 }
 
-export function markdownToJson(markdown: string) {
-  const marked = new Marked();
+export async function markdownSectionsJson(markdown: string) {
+  type Node = {
+    type: 'section';
+    level: number;
+    title: string;
+    content: string;
+    subsections: Node[];
+  };
 
-  return marked.lexer(markdown);
+  const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
+  const tokens = plainMarked.lexer(markdown);
+  // This should be an array because the object itself acts as a fake root
+  // node, in case there are more than one level 1 headings in the document
+  const jsonStructure: Node[] = [];
+  const stack: Node[] = [];
+  let currentContent = '';
+
+  for (const token of tokens) {
+    if (token.type === 'heading') {
+      // When we encounter a new heading, we should finalize the previous section content
+      if (currentContent.length > 0) {
+        stack[stack.length - 1].content = await plainMarked.parse(
+          currentContent.trim()
+        );
+
+        currentContent = '';
+      }
+
+      const node: Node = {
+        type: 'section',
+        level: token.depth,
+        title: token.text,
+        content: '',
+        subsections: [],
+      };
+
+      // Find the right place to insert the node based on its level
+      while (stack.length > 0 && stack[stack.length - 1].level >= token.depth) {
+        stack.pop();
+      }
+
+      if (stack.length === 0) {
+        jsonStructure.push(node);
+      } else {
+        stack[stack.length - 1].subsections.push(node);
+      }
+
+      stack.push(node);
+    } else {
+      // Append the current token to the content string
+      currentContent += token.raw;
+    }
+  }
+
+  // Finalize the last section content
+  if (currentContent && stack.length > 0) {
+    stack[stack.length - 1].content = await plainMarked.parse(
+      currentContent.trim()
+    );
+  }
+
+  return jsonStructure;
 }
 
 async function findMostRecentParsedFilePath(
