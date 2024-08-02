@@ -5,6 +5,7 @@ import {
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
+import {decodeHTML} from 'entities';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import {Marked} from 'marked';
@@ -309,8 +310,8 @@ export async function markdownSectionsJson(markdown: string) {
     if (token.type === 'heading') {
       // When we encounter a new heading, we should finalize the previous section content
       if (currentContent.length > 0) {
-        stack[stack.length - 1].content = await plainMarked.parse(
-          currentContent.trim()
+        stack[stack.length - 1].content = decodeHTML(
+          await plainMarked.parse(currentContent.trim())
         );
 
         currentContent = '';
@@ -344,8 +345,8 @@ export async function markdownSectionsJson(markdown: string) {
 
   // Finalize the last section content
   if (currentContent && stack.length > 0) {
-    stack[stack.length - 1].content = await plainMarked.parse(
-      currentContent.trim()
+    stack[stack.length - 1].content = decodeHTML(
+      await plainMarked.parse(currentContent.trim())
     );
   }
 
