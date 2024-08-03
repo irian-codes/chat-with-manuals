@@ -6,6 +6,7 @@ import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {decodeHTML} from 'entities';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import {Marked} from 'marked';
@@ -289,21 +290,21 @@ async function pdfParseWithLlamaparse(file: File) {
   return documents;
 }
 
-export async function markdownSectionsJson(markdown: string) {
-  type Node = {
-    type: 'section';
-    level: number;
-    title: string;
-    content: string;
-    subsections: Node[];
-  };
+type SectionNode = {
+  type: 'section';
+  level: number;
+  title: string;
+  content: string;
+  subsections: SectionNode[];
+};
 
+export async function markdownSectionsJson(markdown: string) {
   const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
   const tokens = plainMarked.lexer(markdown);
   // This should be an array because the object itself acts as a fake root
   // node, in case there are more than one level 1 headings in the document
-  const jsonStructure: Node[] = [];
-  const stack: Node[] = [];
+  const jsonStructure: SectionNode[] = [];
+  const stack: SectionNode[] = [];
   let currentContent = '';
 
   for (const token of tokens) {
@@ -317,7 +318,7 @@ export async function markdownSectionsJson(markdown: string) {
         currentContent = '';
       }
 
-      const node: Node = {
+      const node: SectionNode = {
         type: 'section',
         level: token.depth,
         title: token.text,
@@ -351,6 +352,53 @@ export async function markdownSectionsJson(markdown: string) {
   }
 
   return jsonStructure;
+}
+
+export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 100,
+    chunkOverlap: 0,
+    separators: ['\n\n', '\n', '.', ' ', ''],
+  });
+
+  type Chunk = {
+    headerRoute: string;
+    order: number;
+    charSize: number;
+    content: string;
+  };
+
+  async function chunkSectionContent(
+    section: SectionNode,
+    headerRoute: string,
+    chunks: Chunk[]
+  ) {
+    const splits = await splitter.splitText(section.content);
+
+    const newChunks = splits.map(
+      (text, index): Chunk => ({
+        headerRoute,
+        order: index + 1,
+        charSize: text.length,
+        content: text.trim(),
+      })
+    );
+
+    chunks.push(...newChunks);
+
+    for (const subsection of section.subsections) {
+      const subHeaderRoute = `${headerRoute}>${subsection.title}`;
+      await chunkSectionContent(subsection, subHeaderRoute, chunks);
+    }
+  }
+
+  const chunks: Chunk[] = [];
+
+  for (const section of sectionsJson) {
+    await chunkSectionContent(section, section.title, chunks);
+  }
+
+  return chunks;
 }
 
 async function findMostRecentParsedFilePath(

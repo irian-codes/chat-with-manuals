@@ -1,6 +1,9 @@
 'use server';
 
-import {markdownSectionsJson} from '@/app/api/debug/parse-pdf/functions';
+import {
+  chunkSectionsJson,
+  markdownSectionsJson,
+} from '@/app/api/debug/parse-pdf/functions';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
@@ -29,6 +32,12 @@ export async function getMarkdownLexer() {
 
 export async function parseMarkdownToJson() {
   return await markdownSectionsJson(readTestFile());
+}
+
+export async function chunkSections() {
+  const sectionNodes = await parseMarkdownToJson();
+
+  return await chunkSectionsJson(sectionNodes);
 }
 
 function readTestFile() {
