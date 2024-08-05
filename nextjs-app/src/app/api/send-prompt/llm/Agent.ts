@@ -1,7 +1,7 @@
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
-import {embedPDF, queryCollection} from '../vector-db/VectorDB';
+import {queryCollection} from '../vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
   model: 'gpt-3.5-turbo',
@@ -9,23 +9,12 @@ const llm = new ChatOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function sendPrompt(prompt: string) {
+export async function sendPrompt(prompt: string, collectionName: string) {
   if (typeof prompt !== 'string' || prompt.trim().length === 0) {
     throw new Error('Invalid prompt: prompt must be a non-empty string');
   }
 
-  const collectionName = 'a-test-collection';
-
-  const retrievedContext = await (async () => {
-    const context = await queryCollection(collectionName, prompt);
-
-    if (context.length === 0) {
-      await embedPDF('http://localhost:3000/test-pdf.pdf', collectionName);
-      return await queryCollection(collectionName, prompt);
-    } else {
-      return context;
-    }
-  })();
+  const retrievedContext = await queryCollection(collectionName, prompt);
 
   console.log('heeey 2.4', {retrievedContext});
 

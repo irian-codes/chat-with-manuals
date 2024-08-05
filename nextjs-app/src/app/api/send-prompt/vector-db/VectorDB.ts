@@ -54,15 +54,15 @@ export async function queryCollection(
   prompt: string,
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ) {
+  if (!(await isFileAlreadyEmbedded(collectionName))) {
+    throw new Error('Document not found in vector store');
+  }
+
   const vectorStore = await Chroma.fromExistingCollection(embedder, {
     collectionName,
     url: process.env.CHROMA_DB_HOST,
     ...options,
   });
-
-  if (!vectorStore) {
-    throw new Error('Vector store not found');
-  }
 
   const result = await vectorStore.similaritySearch(prompt);
 
