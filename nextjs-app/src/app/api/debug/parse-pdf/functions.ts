@@ -363,21 +363,29 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
 
   type Chunk = {
     headerRoute: string;
+    headerRouteLevels: string;
     order: number;
     charSize: number;
     content: string;
   };
 
-  async function chunkSectionContent(
-    section: SectionNode,
-    headerRoute: string,
-    chunks: Chunk[]
-  ) {
+  async function chunkSectionContent({
+    section,
+    headerRoute,
+    headerRouteLevels,
+    chunks,
+  }: {
+    section: SectionNode;
+    headerRoute: string;
+    headerRouteLevels: string;
+    chunks: Chunk[];
+  }) {
     const splits = await splitter.splitText(section.content);
 
     const newChunks = splits.map(
       (text, index): Chunk => ({
         headerRoute,
+        headerRouteLevels,
         order: index + 1,
         charSize: text.length,
         content: text.trim(),
@@ -386,16 +394,28 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
 
     chunks.push(...newChunks);
 
-    for (const subsection of section.subsections) {
-      const subHeaderRoute = `${headerRoute}>${subsection.title}`;
-      await chunkSectionContent(subsection, subHeaderRoute, chunks);
+    for (let i = 0; i < section.subsections.length; i++) {
+      const subsection = section.subsections[i];
+
+      await chunkSectionContent({
+        section: subsection,
+        headerRoute: `${headerRoute}>${subsection.title}`,
+        headerRouteLevels: `${headerRouteLevels}>${i + 1}`,
+        chunks,
+      });
     }
   }
 
   const chunks: Chunk[] = [];
 
-  for (const section of sectionsJson) {
-    await chunkSectionContent(section, section.title, chunks);
+  for (let i = 0; i < sectionsJson.length; i++) {
+    const section = sectionsJson[i];
+    await chunkSectionContent({
+      section,
+      headerRoute: section.title,
+      headerRouteLevels: `${i + 1}`,
+      chunks,
+    });
   }
 
   return chunks;
