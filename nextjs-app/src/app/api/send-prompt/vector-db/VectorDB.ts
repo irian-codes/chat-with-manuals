@@ -1,6 +1,6 @@
 import {downloadFile} from '@/app/api/utils/fileUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
-import {Chroma} from '@langchain/community/vectorstores/chroma';
+import {Chroma, ChromaLibArgs} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
 import assert from 'assert';
 import {Document} from 'langchain/document';
@@ -49,9 +49,14 @@ async function createVectorStore(
   return vectorStore;
 }
 
-export async function queryCollection(name: string, prompt: string) {
+export async function queryCollection(
+  name: string,
+  prompt: string,
+  options?: Omit<ChromaLibArgs, 'collectionName'>
+) {
   const vectorStore = await Chroma.fromExistingCollection(embedder, {
     collectionName: name,
+    ...options,
   });
 
   if (!vectorStore) {
