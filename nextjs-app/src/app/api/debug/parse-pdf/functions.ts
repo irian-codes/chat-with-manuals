@@ -298,7 +298,9 @@ type SectionNode = {
   subsections: SectionNode[];
 };
 
-export async function markdownSectionsJson(markdown: string) {
+export async function markdownToSectionsJson(
+  markdown: string
+): Promise<SectionNode[]> {
   const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
   const tokens = plainMarked.lexer(markdown);
   // This should be an array because the object itself acts as a fake root

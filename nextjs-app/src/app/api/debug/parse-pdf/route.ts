@@ -3,7 +3,7 @@ import {
   pdfParsingOutputEnum,
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
-import {markdownSectionsJson, parsePdf} from './functions';
+import {markdownToSectionsJson, parsePdf} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         });
 
       case 'markdown':
-        const mdToJson = await markdownSectionsJson(parseResult.text);
+        const mdToJson = await markdownToSectionsJson(parseResult.text);
 
         return NextResponse.json({
           result: mdToJson,

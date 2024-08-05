@@ -2,7 +2,7 @@
 
 import {
   chunkSectionsJson,
-  markdownSectionsJson,
+  markdownToSectionsJson,
 } from '@/app/api/debug/parse-pdf/functions';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
@@ -31,7 +31,7 @@ export async function getMarkdownLexer() {
 }
 
 export async function parseMarkdownToJson() {
-  return await markdownSectionsJson(readTestFile());
+  return await markdownToSectionsJson(readTestFile());
 }
 
 export async function chunkSections() {
