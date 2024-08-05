@@ -42,7 +42,7 @@ async function createVectorStore(
 ) {
   // Create vector store and index the docs
   const vectorStore = await Chroma.fromDocuments(docs, embedder, {
-    collectionName: collectionName,
+    collectionName,
     url: process.env.CHROMA_DB_HOST,
   });
 
@@ -50,12 +50,13 @@ async function createVectorStore(
 }
 
 export async function queryCollection(
-  name: string,
+  collectionName: string,
   prompt: string,
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ) {
   const vectorStore = await Chroma.fromExistingCollection(embedder, {
-    collectionName: name,
+    collectionName,
+    url: process.env.CHROMA_DB_HOST,
     ...options,
   });
 
@@ -66,4 +67,14 @@ export async function queryCollection(
   const result = await vectorStore.similaritySearch(prompt);
 
   return result;
+}
+
+export async function isFileAlreadyEmbedded(
+  fileHash: string
+): Promise<boolean> {
+  const chromaClient = new Chroma(embedder, {
+    collectionName: fileHash,
+  });
+
+  return ((await chromaClient.collection?.count()) || 0) > 0;
 }

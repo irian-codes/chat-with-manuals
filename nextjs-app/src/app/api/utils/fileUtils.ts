@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -98,4 +99,18 @@ export function readFile(filePath: string): {
     content: fs.readFileSync(filePath).toString(),
     fileExtension: path.extname(filePath).slice(1),
   };
+}
+
+export async function getFileHash(file: File): Promise<string> {
+  const hash = crypto.createHash('sha256');
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    hash.update(buffer);
+
+    return hash.digest('hex');
+  } catch (error) {
+    throw new Error(`Error hashing file: ${error?.message ?? 'Unknown error'}`);
+  }
 }
