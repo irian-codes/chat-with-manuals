@@ -92,11 +92,11 @@ export async function saveFileObjectToFileSystem(
 }
 
 export function readFile(filePath: string): {
-  content: string;
+  content: Buffer;
   fileExtension: string;
 } {
   return {
-    content: fs.readFileSync(filePath).toString(),
+    content: fs.readFileSync(filePath),
     fileExtension: path.extname(filePath).slice(1),
   };
 }
