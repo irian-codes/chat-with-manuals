@@ -3,7 +3,10 @@ import {
   pdfParsingOutputEnum,
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
-import {isFileAlreadyEmbedded} from '../send-prompt/vector-db/VectorDB';
+import {
+  embedPDF,
+  isFileAlreadyEmbedded,
+} from '../send-prompt/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {chunkSectionsJson, markdownToSectionsJson, parsePdf} from './functions';
 
@@ -50,9 +53,10 @@ export async function POST(request: NextRequest) {
       case 'markdown':
         const mdToJson = await markdownToSectionsJson(parseResult.text);
         const chunks = await chunkSectionsJson(mdToJson);
+        await embedPDF(fileHash, chunks);
 
         return NextResponse.json({
-          result: mdToJson,
+          result: chunks,
           cachedTimestamp: parseResult.cachedTime,
         });
 

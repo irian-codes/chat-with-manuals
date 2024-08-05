@@ -6,6 +6,7 @@ import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {decodeHTML} from 'entities';
+import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
@@ -363,14 +364,6 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
     separators: ['\n\n', '\n', '.', ' ', ''],
   });
 
-  type Chunk = {
-    headerRoute: string;
-    headerRouteLevels: string;
-    order: number;
-    charSize: number;
-    content: string;
-  };
-
   async function chunkSectionContent({
     section,
     headerRoute,
@@ -380,18 +373,21 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
     section: SectionNode;
     headerRoute: string;
     headerRouteLevels: string;
-    chunks: Chunk[];
+    chunks: Document[];
   }) {
     const splits = await splitter.splitText(section.content);
 
     const newChunks = splits.map(
-      (text, index): Chunk => ({
-        headerRoute,
-        headerRouteLevels,
-        order: index + 1,
-        charSize: text.length,
-        content: text.trim(),
-      })
+      (text, index): Document =>
+        new Document({
+          pageContent: text.trim(),
+          metadata: {
+            headerRoute,
+            headerRouteLevels,
+            order: index + 1,
+            charSize: text.length,
+          },
+        })
     );
 
     chunks.push(...newChunks);
@@ -408,7 +404,7 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
     }
   }
 
-  const chunks: Chunk[] = [];
+  const chunks: Document[] = [];
 
   for (let i = 0; i < sectionsJson.length; i++) {
     const section = sectionsJson[i];
