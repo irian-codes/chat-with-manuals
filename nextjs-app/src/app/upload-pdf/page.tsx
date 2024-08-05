@@ -45,7 +45,7 @@ export default function UploadPDFPage() {
     formData.append('output', selectedOutput);
     formData.append('force', forceParsing.toString());
 
-    const response = await fetch('/api/debug/parse-pdf', {
+    const response = await fetch('/api/parse-pdf', {
       method: 'POST',
       body: formData,
     });

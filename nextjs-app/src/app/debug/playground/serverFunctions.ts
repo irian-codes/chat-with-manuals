@@ -3,7 +3,7 @@
 import {
   chunkSectionsJson,
   markdownToSectionsJson,
-} from '@/app/api/debug/parse-pdf/functions';
+} from '@/app/api/parse-pdf/functions';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
