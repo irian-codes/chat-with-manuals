@@ -1,24 +1,33 @@
 import {sendPrompt} from '@/app/api/send-prompt/llm/Agent';
 import {NextRequest, NextResponse} from 'next/server';
-import {downloadFile, getFileHash} from '../utils/fileUtils';
+import {z, ZodError} from 'zod';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const prompt = formData.get('prompt') ?? '';
+  const fileId = formData.get('file-id')?.toString().trim().toLowerCase();
 
-  // TEMPORARY HASHING. On the real implementation this should be loaded
-  // from a db instead since we won't hash a file at each prompt as its
-  // damn slow.
-
-  const fileHash = await getFileHash(
-    await downloadFile('http://localhost:3000/test-pdf.pdf')
-  );
+  try {
+    z.string().uuid().parse(fileId);
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        {error: 'Invalid fileId: ' + error.issues[0].message},
+        {status: 400}
+      );
+    } else {
+      return NextResponse.json(
+        {error: 'Invalid fileId: ' + String(error)},
+        {status: 400}
+      );
+    }
+  }
 
   if (typeof prompt === 'string' && prompt.trim().length > 0) {
     const llmAnswer = await (async () => {
       try {
         return {
-          result: await sendPrompt(prompt, fileHash),
+          result: await sendPrompt(prompt, fileId ?? 'N/A'),
           error: null,
         };
       } catch (error) {

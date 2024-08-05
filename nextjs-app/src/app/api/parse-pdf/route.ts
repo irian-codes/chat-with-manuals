@@ -4,8 +4,8 @@ import {
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
 import {
+  doesCollectionExists,
   embedPDF,
-  isFileAlreadyEmbedded,
 } from '../send-prompt/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {chunkSectionsJson, markdownToSectionsJson, parsePdf} from './functions';
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const fileHash = await getFileHash(file);
 
     if (!force) {
-      if (await isFileAlreadyEmbedded(fileHash)) {
+      if (await doesCollectionExists(fileHash)) {
         throw new Error('File already embedded in the database.');
       }
     }
@@ -53,10 +53,13 @@ export async function POST(request: NextRequest) {
       case 'markdown':
         const mdToJson = await markdownToSectionsJson(parseResult.text);
         const chunks = await chunkSectionsJson(mdToJson);
-        await embedPDF(fileHash, chunks);
+        const store = await embedPDF(fileHash, chunks);
 
         return NextResponse.json({
-          result: chunks,
+          result: {
+            id: store.collectionName,
+            metadata: store.collectionMetadata,
+          },
           cachedTimestamp: parseResult.cachedTime,
         });
 

@@ -7,7 +7,10 @@ export function LLMAnswer() {
   const {answer} = useContext(ChatContext);
 
   return (
-    <p id="answer" className="w-full break-words bg-white p-6 text-black">
+    <p
+      id="answer"
+      className="w-full break-words rounded-md border border-gray-300 bg-white p-6 text-black"
+    >
       {answer ?? ''}
     </p>
   );

@@ -1,28 +1,38 @@
 import {Chroma, ChromaLibArgs} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
 import {Document} from 'langchain/document';
+import {v4 as uuidv4} from 'uuid';
+import embeddedFilesDb from '../../db/files';
 
 const embedder = new OpenAIEmbeddings({
   model: 'text-embedding-3-small',
   dimensions: 1536,
 });
 
-export async function embedPDF(collectionName: string, docs: Document[]) {
-  const vectorStore = await createVectorStore(collectionName, docs);
+export async function embedPDF(fileHash: string, docs: Document[]) {
+  const vectorStore = await createVectorStore(docs, {
+    collectionMetadata: {
+      fileHash,
+    },
+  });
 
   return vectorStore;
 }
 
 async function createVectorStore(
-  collectionName: string,
   docs: Document<Record<string, any>>[],
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ) {
   // Create vector store and index the docs
   const vectorStore = await Chroma.fromDocuments(docs, embedder, {
-    collectionName,
+    collectionName: uuidv4(),
     url: process.env.CHROMA_DB_HOST,
     ...options,
+  });
+
+  // Adding to the db
+  embeddedFilesDb.set(vectorStore.collectionMetadata.fileHash, {
+    collectionName: vectorStore.collectionName,
   });
 
   return vectorStore;
@@ -33,7 +43,7 @@ export async function queryCollection(
   prompt: string,
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ) {
-  if (!(await isFileAlreadyEmbedded(collectionName))) {
+  if (!(await doesCollectionExists(collectionName))) {
     throw new Error('Document not found in vector store');
   }
 
@@ -48,12 +58,17 @@ export async function queryCollection(
   return result;
 }
 
-export async function isFileAlreadyEmbedded(
+export async function doesCollectionExists(
   fileHash: string,
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ): Promise<boolean> {
+  if (!embeddedFilesDb.has(fileHash)) {
+    return false;
+  }
+
+  // Double checking
   const chromaClient = new Chroma(embedder, {
-    collectionName: fileHash,
+    collectionName: embeddedFilesDb.get(fileHash)!.collectionName,
     ...options,
   });
 
