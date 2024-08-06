@@ -62,5 +62,7 @@ export async function doesCollectionExists(
     ...options,
   });
 
-  return ((await chromaClient.collection?.count()) || 0) > 0;
+  const collection = await chromaClient.ensureCollection();
+
+  return (await collection.count()) > 0;
 }
