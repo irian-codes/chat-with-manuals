@@ -39,18 +39,16 @@ export async function initStorage() {
   });
 }
 
-export async function getFileById(id: string): Promise<FileIdEntry['data']> {
+export async function getFileById(
+  id: string
+): Promise<FileIdEntry['data'] | null> {
   z.string().uuid().parse(id);
 
   const fileData = (await storage.getItem(id)) as
     | FileIdEntry['data']
     | undefined;
 
-  if (!fileData) {
-    throw new Error('File not found');
-  }
-
-  return fileData;
+  return fileData ?? null;
 }
 
 export async function getAllFilesByUuid(): Promise<FileIdEntry['data'][]> {
@@ -61,9 +59,29 @@ export async function getAllFilesByUuid(): Promise<FileIdEntry['data'][]> {
   return fileDataList;
 }
 
+export async function setFileById(
+  id: string,
+  fileData: FileIdEntry['data'],
+  recurse: boolean = true
+) {
+  z.string().uuid().parse(id);
+
+  await storage.setItem(id, fileData);
+
+  if (recurse) {
+    await setFileByHash(
+      fileData.fileHash,
+      {
+        collectionName: id,
+      },
+      false
+    );
+  }
+}
+
 export async function getFileByHash(
   hash: string
-): Promise<FileHashEntry['data']> {
+): Promise<FileHashEntry['data'] | null> {
   if (/^[a-f0-9]{64}$/i.test(hash) === false) {
     throw new Error(
       'Invalid hash: the provided hash does not seem to be a SHA-256 hash'
@@ -74,11 +92,7 @@ export async function getFileByHash(
     | FileHashEntry['data']
     | undefined;
 
-  if (!fileData) {
-    throw new Error('File not found');
-  }
-
-  return fileData;
+  return fileData ?? null;
 }
 
 export async function getAllFilesByHash(): Promise<FileHashEntry['data'][]> {
@@ -91,7 +105,8 @@ export async function getAllFilesByHash(): Promise<FileHashEntry['data'][]> {
 
 export async function setFileByHash(
   hash: string,
-  fileData: FileHashEntry['data']
+  fileData: FileHashEntry['data'],
+  recurse: boolean = true
 ) {
   if (/^[a-f0-9]{64}$/i.test(hash) === false) {
     throw new Error(
@@ -100,12 +115,16 @@ export async function setFileByHash(
   }
 
   await storage.setItem(hash, fileData);
-}
 
-export async function setFileById(id: string, fileData: FileIdEntry['data']) {
-  z.string().uuid().parse(id);
-
-  await storage.setItem(id, fileData);
+  if (recurse) {
+    await setFileById(
+      fileData.collectionName,
+      {
+        fileHash: hash,
+      },
+      false
+    );
+  }
 }
 
 export async function clearStorage() {

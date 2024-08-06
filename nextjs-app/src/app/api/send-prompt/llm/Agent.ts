@@ -1,6 +1,7 @@
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
+import {z} from 'zod';
 import {queryCollection} from '../vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
@@ -10,7 +11,7 @@ const llm = new ChatOpenAI({
 });
 
 export async function sendPrompt(prompt: string, collectionName: string) {
-  if (typeof prompt !== 'string' || prompt.trim().length === 0) {
+  if (!z.string().min(1).safeParse(prompt).success) {
     throw new Error('Invalid prompt: prompt must be a non-empty string');
   }
 

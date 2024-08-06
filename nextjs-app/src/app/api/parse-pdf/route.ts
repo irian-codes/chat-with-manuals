@@ -3,10 +3,8 @@ import {
   pdfParsingOutputEnum,
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
-import {
-  doesCollectionExists,
-  embedPDF,
-} from '../send-prompt/vector-db/VectorDB';
+import {getFileByHash, initStorage, setFileByHash} from '../db/files';
+import {embedPDF} from '../send-prompt/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {chunkSectionsJson, markdownToSectionsJson, parsePdf} from './functions';
 
@@ -28,9 +26,10 @@ export async function POST(request: NextRequest) {
     pdfParsingOutputEnum.parse(output);
 
     const fileHash = await getFileHash(file);
+    await initStorage();
 
     if (!force) {
-      if (await doesCollectionExists(fileHash)) {
+      if ((await getFileByHash(fileHash)) !== null) {
         throw new Error('File already embedded in the database.');
       }
     }
@@ -54,6 +53,7 @@ export async function POST(request: NextRequest) {
         const mdToJson = await markdownToSectionsJson(parseResult.text);
         const chunks = await chunkSectionsJson(mdToJson);
         const store = await embedPDF(fileHash, chunks);
+        await setFileByHash(fileHash, {collectionName: store.collectionName});
 
         return NextResponse.json({
           result: {
