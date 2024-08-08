@@ -6,7 +6,7 @@ import {queryCollection} from '../vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
   model: 'gpt-4o-mini',
-  temperature: 0,
+  temperature: 0.5,
   apiKey: process.env.OPENAI_API_KEY,
 });
 
