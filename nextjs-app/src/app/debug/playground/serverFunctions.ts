@@ -6,6 +6,8 @@ import {
   markdownToSectionsJson,
 } from '@/app/api/parse-pdf/functions';
 import {decodeHTML} from 'entities';
+import markdownlint from 'markdownlint';
+import markdownlintRuleHelpers from 'markdownlint-rule-helpers';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
 import fs from 'node:fs';
@@ -41,16 +43,45 @@ export async function chunkSections() {
   return await chunkSectionsJson(sectionNodes);
 }
 
+export async function lintMarkdown() {
+  const markdown = readTestFile();
+
+  const results = await markdownlint.promises.markdownlint({
+    strings: {content: markdown},
+    resultVersion: 3,
+  });
+
+  const newMarkdown = markdownlintRuleHelpers.applyFixes(
+    markdown,
+    results.content
+  );
+
+  writeNewFile(newMarkdown);
+
+  return newMarkdown;
+}
+
 export async function clearNodePersistStorage() {
   await initStorage();
   await clearStorage();
 }
 
+const fileName =
+  'parsedPdf_board-game_Root_Base_Law_of_Root_June_30_2023.pdf_parser-llamaparse_202408090012.md';
+
 function readTestFile() {
   const content = fs.readFileSync(
-    path.join(process.cwd(), 'tmp', 'markdown-test-files/test2.md'),
+    path.join(process.cwd(), 'tmp', fileName),
     'utf8'
   );
 
   return content;
+}
+
+function writeNewFile(content: string) {
+  fs.writeFileSync(
+    path.join(process.cwd(), 'tmp', 'new_' + fileName),
+    content,
+    {encoding: 'utf8'}
+  );
 }

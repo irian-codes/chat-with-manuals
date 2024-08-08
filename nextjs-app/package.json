@@ -20,6 +20,8 @@
     "langchain": "^0.2.5",
     "llamaindex": "^0.5.0",
     "llmwhisperer-client": "^0.1.0",
+    "markdownlint": "^0.34.0",
+    "markdownlint-rule-helpers": "^0.25.0",
     "marked": "^13.0.2",
     "marked-plaintify": "^1.1.0",
     "next": "14.2.3",
@@ -34,6 +36,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/markdownlint-rule-helpers": "^0.21.5",
     "@types/node": "^20.14.9",
     "@types/node-persist": "^3.1.8",
     "@types/react": "^18.3.3",

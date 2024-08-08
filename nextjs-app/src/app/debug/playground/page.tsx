@@ -4,6 +4,7 @@ import {
   chunkSections,
   clearNodePersistStorage,
   getMarkdownLexer,
+  lintMarkdown,
   parseMarkdownToJson,
   parseMarkdownToPlainText,
 } from './serverFunctions';
@@ -36,6 +37,12 @@ export default function Page({}: Props) {
   }
 
   function handleButtonClick5() {
+    lintMarkdown().then((res) => {
+      console.log('Linted markdown and saved new file. Content: ', res);
+    });
+  }
+
+  function handleButtonClick6() {
     clearNodePersistStorage().then(() => {
       console.log('Storage cleared');
     });
@@ -74,6 +81,12 @@ export default function Page({}: Props) {
         <button
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
           onClick={handleButtonClick5}
+        >
+          Lint Markdown
+        </button>
+        <button
+          className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
+          onClick={handleButtonClick6}
         >
           Clear node persist storage
         </button>

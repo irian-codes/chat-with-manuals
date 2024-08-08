@@ -10,6 +10,8 @@ import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
+import markdownlint from 'markdownlint';
+import markdownlintRuleHelpers from 'markdownlint-rule-helpers';
 import {Marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
 import assert from 'node:assert';
@@ -292,6 +294,15 @@ async function pdfParseWithLlamaparse(file: File) {
   );
 
   return documents;
+}
+
+export function lintAndFixMarkdown(markdown: string) {
+  const results = markdownlint.sync({
+    strings: {content: markdown},
+    resultVersion: 3,
+  });
+
+  return markdownlintRuleHelpers.applyFixes(markdown, results.content);
 }
 
 type SectionNode = {

@@ -6,7 +6,12 @@ import {NextRequest, NextResponse} from 'next/server';
 import {getFileByHash, initStorage, setFileByHash} from '../db/files';
 import {embedPDF} from '../send-prompt/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
-import {chunkSectionsJson, markdownToSectionsJson, parsePdf} from './functions';
+import {
+  chunkSectionsJson,
+  lintAndFixMarkdown,
+  markdownToSectionsJson,
+  parsePdf,
+} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -38,19 +43,24 @@ export async function POST(request: NextRequest) {
 
     switch (parseResult.contentType) {
       case 'json':
+        // ⚠️ Outdated methods
+        console.warn('Outdated method called');
         return NextResponse.json({
           result: JSON.parse(parseResult.text),
           cachedTimestamp: parseResult.cachedTime,
         });
 
       case 'string':
+        // ⚠️ Outdated methods
+        console.warn('Outdated method called');
         return NextResponse.json({
           result: parseResult.text,
           cachedTimestamp: parseResult.cachedTime,
         });
 
       case 'markdown':
-        const mdToJson = await markdownToSectionsJson(parseResult.text);
+        const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
+        const mdToJson = await markdownToSectionsJson(lintedMarkdown);
         const chunks = await chunkSectionsJson(mdToJson);
         const store = await embedPDF(fileHash, chunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});
