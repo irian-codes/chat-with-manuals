@@ -277,9 +277,12 @@ async function pdfParseWithLlamaparse(file: File) {
     skipDiagonalText: false,
     doNotUnrollColumns: false,
     pageSeparator: '\n',
-    gpt4oMode: true,
+    useVendorMultimodalModel: true,
+    vendorMultimodalModelName: 'openai-gpt-4o-mini',
     parsingInstruction:
-      "You're parsing a ttrpg manual that contains text, tables, images an character cards (treat them as tables). Parse each content appropriately in the markdown format.",
+      "You're parsing a board game or ttrpg manual that contains text, tables and images. It doesn't contain computer code. Parse each content appropriately in the markdown format, adding a new line before each heading.",
+    invalidateCache: true,
+    doNotCache: true,
   });
 
   // parse the document
@@ -415,6 +418,8 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
       chunks,
     });
   }
+
+  console.log('heeey 2.12', {sectionsJson, chunks});
 
   return chunks;
 }
