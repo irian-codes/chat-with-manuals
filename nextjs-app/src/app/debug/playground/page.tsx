@@ -2,6 +2,7 @@
 
 import {
   chunkSections,
+  clearNodePersistStorage,
   getMarkdownLexer,
   parseMarkdownToJson,
   parseMarkdownToPlainText,
@@ -34,6 +35,12 @@ export default function Page({}: Props) {
     });
   }
 
+  function handleButtonClick5() {
+    clearNodePersistStorage().then(() => {
+      console.log('Storage cleared');
+    });
+  }
+
   return (
     <div>
       <h1 className="m-6 bg-red-500 p-3 text-center text-3xl text-white">
@@ -63,6 +70,12 @@ export default function Page({}: Props) {
           onClick={handleButtonClick4}
         >
           Chunk Markdown Sections
+        </button>
+        <button
+          className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
+          onClick={handleButtonClick5}
+        >
+          Clear node persist storage
         </button>
       </div>
     </div>

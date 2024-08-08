@@ -1,5 +1,6 @@
 'use server';
 
+import {clearStorage, initStorage} from '@/app/api/db/files';
 import {
   chunkSectionsJson,
   markdownToSectionsJson,
@@ -38,6 +39,11 @@ export async function chunkSections() {
   const sectionNodes = await parseMarkdownToJson();
 
   return await chunkSectionsJson(sectionNodes);
+}
+
+export async function clearNodePersistStorage() {
+  await initStorage();
+  await clearStorage();
 }
 
 function readTestFile() {
