@@ -15,6 +15,10 @@ export async function embedPDF(fileHash: string, docs: Document[]) {
     },
   });
 
+  if (!(await doesCollectionExists(vectorStore.collectionName))) {
+    throw new Error('Document could not be embedded in vector store');
+  }
+
   return vectorStore;
 }
 
