@@ -9,6 +9,8 @@ export function UserPrompt() {
   async function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
 
+    setAnswer('Thinking... 🤔');
+
     const formData = new FormData(e.target as HTMLFormElement);
 
     const response = await fetch('/api/send-prompt', {
@@ -28,6 +30,8 @@ export function UserPrompt() {
         data.answer
       );
     } else {
+      setAnswer('Error getting answer 😟');
+
       const error = await response.json();
 
       const errorMsg = 'Failed to send prompt, Response object:\n';
