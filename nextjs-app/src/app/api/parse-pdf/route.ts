@@ -3,7 +3,11 @@ import {
   pdfParsingOutputEnum,
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
-import {getFileByHash, initStorage, setFileByHash} from '../db/files';
+import {
+  getFileByHash,
+  initStorage,
+  setFileByHash,
+} from '../db/uploaded-files-db/files';
 import {embedPDF} from '../send-prompt/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {

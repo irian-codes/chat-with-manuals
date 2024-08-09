@@ -1,6 +1,6 @@
 'use server';
 
-import {clearStorage, initStorage} from '@/app/api/db/files';
+import {clearStorage, initStorage} from '@/app/api/db/uploaded-files-db/files';
 import {
   chunkSectionsJson,
   markdownToSectionsJson,
