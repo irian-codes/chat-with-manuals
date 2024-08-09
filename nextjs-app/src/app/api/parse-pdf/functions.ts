@@ -298,6 +298,12 @@ async function pdfParseWithLlamaparse(file: File) {
 }
 
 export function lintAndFixMarkdown(markdown: string) {
+  // Sometimes the parser for whatever reason interprets the text as a code
+  // block, so we fix this issue.
+  if (markdown.startsWith('```') && markdown.endsWith('```')) {
+    markdown = markdown.trim().substring(3, markdown.length - 3);
+  }
+
   const results = markdownlint.sync({
     strings: {content: markdown},
     resultVersion: 3,
