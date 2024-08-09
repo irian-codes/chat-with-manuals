@@ -24,6 +24,7 @@ import {
   ChunkingStrategy,
   Strategy,
 } from 'unstructured-client/sdk/models/shared';
+import {v4 as uuidv4} from 'uuid';
 
 export async function parsePdf(
   file: File,
@@ -394,6 +395,7 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
     const newChunks = splits.map(
       (text, index): Document =>
         new Document({
+          id: uuidv4(),
           pageContent: text.trim(),
           metadata: {
             headerRoute,
