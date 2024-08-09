@@ -2,7 +2,7 @@ import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {z} from 'zod';
-import {queryCollection} from '../vector-db/VectorDB';
+import {queryCollection} from '../../db/vector-db/VectorDB';
 
 const llm = new ChatOpenAI({
   model: 'gpt-4o-mini',

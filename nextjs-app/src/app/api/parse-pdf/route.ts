@@ -8,7 +8,7 @@ import {
   initStorage,
   setFileByHash,
 } from '../db/uploaded-files-db/files';
-import {embedPDF} from '../send-prompt/vector-db/VectorDB';
+import {embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {
   chunkSectionsJson,
