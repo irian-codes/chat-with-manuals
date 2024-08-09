@@ -6,6 +6,7 @@ import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {decodeHTML} from 'entities';
+import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
@@ -398,19 +399,30 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
   }) {
     const splits = await splitter.splitText(section.content);
 
-    const newChunks = splits.map(
-      (text, index): Document =>
-        new Document({
-          id: uuidv4(),
-          pageContent: text.trim(),
-          metadata: {
-            headerRoute,
-            headerRouteLevels,
-            order: index + 1,
-            charSize: text.length,
-          },
-        })
-    );
+    const newChunks = splits.map((text, index): Document => {
+      const tokens = (function () {
+        const res = isWithinTokenLimit(text.trim(), Number.MAX_VALUE);
+
+        if (res === false) {
+          throw new Error(
+            "This shouldn't happen. Attempting to get the token size of a chunk."
+          );
+        } else {
+          return res;
+        }
+      })();
+
+      return new Document({
+        id: uuidv4(),
+        pageContent: text.trim(),
+        metadata: {
+          headerRoute,
+          headerRouteLevels,
+          order: index + 1,
+          tokens,
+        },
+      });
+    });
 
     chunks.push(...newChunks);
 
