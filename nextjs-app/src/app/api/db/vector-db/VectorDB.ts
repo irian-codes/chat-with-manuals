@@ -39,6 +39,7 @@ async function createVectorStore(
 export async function queryCollection(
   collectionName: string,
   prompt: string,
+  topK: number = 4,
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ) {
   if (!(await doesCollectionExists(collectionName))) {
@@ -51,7 +52,7 @@ export async function queryCollection(
     ...options,
   });
 
-  const result = await vectorStore.similaritySearch(prompt);
+  const result = await vectorStore.similaritySearch(prompt, topK);
 
   return result;
 }
