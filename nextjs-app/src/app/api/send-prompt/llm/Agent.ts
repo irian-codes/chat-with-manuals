@@ -9,6 +9,7 @@ import {ChatOpenAI} from '@langchain/openai';
 import {Document} from 'langchain/document';
 import {marked} from 'marked';
 import assert from 'node:assert';
+import sanitizeHtml from 'sanitize-html';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {queryCollection} from '../../db/vector-db/VectorDB';
@@ -85,7 +86,7 @@ export async function sendPrompt(
     .toString()
     .replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
 
-  const finalHtml = await marked.parse(responseContent);
+  const finalHtml = sanitizeHtml(await marked.parse(responseContent));
 
   return finalHtml;
 }

@@ -1,15 +1,13 @@
 'use client';
 
-import DOMPurify from 'dompurify';
 import React, {useContext} from 'react';
+import sanitizeHtml from 'sanitize-html';
 import {ChatContext} from './ChatContext.client';
 
 export function LLMAnswer() {
   const {answer} = useContext(ChatContext);
   const purifiedAnswer = React.useMemo(() => {
-    return DOMPurify.sanitize(answer, {
-      USE_PROFILES: {html: true},
-    });
+    return sanitizeHtml(answer);
   }, [answer]);
 
   return (
