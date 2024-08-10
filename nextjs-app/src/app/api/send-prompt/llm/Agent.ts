@@ -100,7 +100,7 @@ export async function retrieveContext(
       );
 
       lastHeaderRoute = chunk.metadata.headerRoute;
-      leftTotalTokens -= reconstructedSection.metadata.tokens;
+      leftTotalTokens = leftTotalTokens - reconstructedSection.metadata.tokens;
 
       result.push(reconstructedSection);
     }
