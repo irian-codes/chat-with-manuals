@@ -7,6 +7,7 @@ import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {Document} from 'langchain/document';
+import {marked} from 'marked';
 import assert from 'node:assert';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
@@ -78,7 +79,15 @@ export async function sendPrompt(
     response: response.content,
   });
 
-  return response.content;
+  // According to marked we better do this:
+  // https://marked.js.org/#usage
+  const responseContent = response.content
+    .toString()
+    .replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
+
+  const finalHtml = await marked.parse(responseContent);
+
+  return finalHtml;
 }
 
 export async function retrieveContext(
