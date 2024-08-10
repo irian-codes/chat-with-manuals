@@ -34,6 +34,10 @@ export async function sendPrompt(
     sectionPrefix
   );
 
+  console.log('heeey 2.4', {retrievedContext});
+
+  throw new Error('Not implemented');
+
   const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
   {documentDescription}
   The fragments represent sections (classified with headers in the original document).
@@ -170,11 +174,7 @@ async function reconstructSection(
   collectionName: string,
   maxSectionTokens: number
 ): Promise<ReconstructedSectionDoc> {
-  const {
-    headerRoute,
-    headerRouteLevels,
-    order: currentChunkPosition,
-  } = chunk.metadata;
+  const {headerRoute, headerRouteLevels, order} = chunk.metadata;
 
   // Step 1: Query all chunks for the given section using the headerRoute filter
   const allChunksInSection = await queryCollection(
@@ -182,7 +182,7 @@ async function reconstructSection(
     prompt,
     100,
     {
-      filter: {headerRoute},
+      filter: {headerRouteLevels},
     }
   );
 
@@ -192,13 +192,14 @@ async function reconstructSection(
   );
 
   // Step 3: Initialize reconstruction with the current chunk
-  const initialChunk = sortedChunks[currentChunkPosition - 1];
+  const initialChunkIndex = order - 1;
+  const initialChunk = sortedChunks[initialChunkIndex];
   let reconstructedChunks = [initialChunk];
   let currentTokenCount = initialChunk.metadata.tokens;
 
   // Step 4: Reconstruct by adding chunks above and below
-  let priorIndex = currentChunkPosition - 1;
-  let afterIndex = currentChunkPosition + 1;
+  let priorIndex = initialChunkIndex - 1;
+  let afterIndex = initialChunkIndex + 1;
 
   while (priorIndex >= 0 || afterIndex < sortedChunks.length) {
     // Add the chunk above if available and within token limit
