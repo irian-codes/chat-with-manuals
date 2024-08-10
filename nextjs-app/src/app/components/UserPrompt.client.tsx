@@ -43,7 +43,7 @@ export function UserPrompt() {
   return (
     <form onSubmit={handleFormSubmit} method="POST" className="flex flex-col">
       <div className="flex flex-col">
-        <label htmlFor="prompt" className="text-black">
+        <label htmlFor="prompt" className="text-white">
           Prompt
         </label>
         <textarea
@@ -52,6 +52,18 @@ export function UserPrompt() {
           rows={10}
           cols={60}
           required
+          className="mt-2 rounded-md border border-gray-300 p-2 text-black focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div className="mt-4">
+        <label htmlFor="document-description" className="text-white">
+          Document Description
+        </label>
+        <textarea
+          name="document-description"
+          id="document-description"
+          rows={4}
+          cols={60}
           className="mt-2 rounded-md border border-gray-300 p-2 text-black focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>

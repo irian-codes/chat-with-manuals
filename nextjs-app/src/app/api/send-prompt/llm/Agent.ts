@@ -12,9 +12,17 @@ import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {queryCollection} from '../../db/vector-db/VectorDB';
 
-export async function sendPrompt(prompt: string, collectionName: string) {
-  if (!z.string().min(1).safeParse(prompt).success) {
+export async function sendPrompt(
+  prompt: string,
+  documentDescription: string,
+  collectionName: string
+) {
+  if (!z.string().trim().min(1).safeParse(prompt).success) {
     throw new Error('Invalid prompt: prompt must be a non-empty string');
+  }
+
+  if (!z.string().trim().min(1).safeParse(documentDescription).success) {
+    documentDescription = '';
   }
 
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
@@ -25,17 +33,20 @@ export async function sendPrompt(prompt: string, collectionName: string) {
   );
 
   const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
+  {documentDescription}
   The fragments represent sections (classified with headers in the original document).
   The fragments include at the top the header route of the section they belong to in the format "{sectionPrefix}header>subheader>...".
   The fragments are ordered as they appear in the original document.
 
-  DOCUMENT FRAGMENTS: {context}
+  DOCUMENT FRAGMENTS:
+  {context}
   
   USER QUESTION: {question}`;
 
   const chatTemplate = await ChatPromptTemplate.fromTemplate(chatText).invoke({
     context: retrievedContext,
     question: prompt,
+    documentDescription,
     sectionPrefix,
   });
 
@@ -46,13 +57,26 @@ export async function sendPrompt(prompt: string, collectionName: string) {
   });
 
   const systemMessage = new SystemMessage(
-    "You're a helpful AI assistant expert explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I don't know'."
+    "You're a helpful AI assistant expert in explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I don't know'."
   );
 
   const response = await llm.invoke([
     systemMessage,
     ...chatTemplate.toChatMessages(),
   ]);
+
+  console.log('Message sent to the LLM', {
+    prompt:
+      'SYSTEM MESSAGE: \n' +
+      systemMessage.content +
+      '\n\n' +
+      'USER MESSAGE: \n' +
+      chatTemplate
+        .toChatMessages()
+        .map((m) => m.content)
+        .join('\n\n'),
+    response: response.content,
+  });
 
   return response.content;
 }
