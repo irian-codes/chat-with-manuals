@@ -7,16 +7,10 @@ import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {Document} from 'langchain/document';
-import {assert} from 'node:assert';
+import assert from 'node:assert';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {queryCollection} from '../../db/vector-db/VectorDB';
-
-const llm = new ChatOpenAI({
-  model: 'gpt-4o-mini',
-  temperature: 0.5,
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function sendPrompt(prompt: string, collectionName: string) {
   if (!z.string().min(1).safeParse(prompt).success) {
@@ -27,13 +21,22 @@ export async function sendPrompt(prompt: string, collectionName: string) {
 
   console.log('heeey 2.4', {retrievedContext});
 
-  const chatText = `Use the following pieces of text from the document as context to answer the user's question to the best of your ability.
+  const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
+  Take into account that the fragments are ordered as they appear in the original document.
+
   DOCUMENT FRAGMENTS: {context}
+  
   USER QUESTION: {question}`;
 
   const chatTemplate = await ChatPromptTemplate.fromTemplate(chatText).invoke({
     context: retrievedContext.map((doc) => doc.pageContent).join('\n\n'),
     question: prompt,
+  });
+
+  const llm = new ChatOpenAI({
+    model: 'gpt-4o-mini',
+    temperature: 0.5,
+    apiKey: process.env.OPENAI_API_KEY,
   });
 
   const response = await llm.invoke([
@@ -100,9 +103,11 @@ export async function retrieveContext(prompt: string, collectionName: string) {
     return result;
   })();
 
-  // TODO: Sort the reconstructed sections by headerRouteLevel
+  const sortedSections = sortReconstructedSectionsByHeaderRoute(
+    reconstructedSections
+  );
 
-  return reconstructedSections;
+  return sortedSections;
 }
 
 async function reconstructSection(
@@ -179,4 +184,30 @@ async function reconstructSection(
   });
 
   return finalDoc;
+}
+
+export function sortReconstructedSectionsByHeaderRoute(
+  sections: ReconstructedSectionDoc[]
+): ReconstructedSectionDoc[] {
+  return sections.sort((a, b) => {
+    const routeA = a.metadata.headerRouteLevels
+      .split('>')
+      .map((str) => Number(str));
+
+    const routeB = b.metadata.headerRouteLevels
+      .split('>')
+      .map((str) => Number(str));
+
+    for (let i = 0; i < Math.max(routeA.length, routeB.length); i++) {
+      const levelA = routeA[i] ?? 0;
+      const levelB = routeB[i] ?? 0;
+
+      if (levelA !== levelB) {
+        return levelA - levelB;
+      }
+    }
+
+    // If the code didn't return here it means they're equal
+    return 0;
+  });
 }

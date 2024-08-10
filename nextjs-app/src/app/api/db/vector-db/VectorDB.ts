@@ -3,10 +3,12 @@ import {OpenAIEmbeddings} from '@langchain/openai';
 import {Document} from 'langchain/document';
 import {v4 as uuidv4} from 'uuid';
 
-const embedder = new OpenAIEmbeddings({
-  model: 'text-embedding-3-small',
-  dimensions: 1536,
-});
+function createEmbedder() {
+  return new OpenAIEmbeddings({
+    model: 'text-embedding-3-small',
+    dimensions: 1536,
+  });
+}
 
 export async function embedPDF(fileHash: string, docs: Document[]) {
   const vectorStore = await createVectorStore(docs, {
@@ -27,7 +29,7 @@ async function createVectorStore(
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ) {
   // Create vector store and index the docs
-  const vectorStore = await Chroma.fromDocuments(docs, embedder, {
+  const vectorStore = await Chroma.fromDocuments(docs, createEmbedder(), {
     collectionName: uuidv4(),
     url: process.env.CHROMA_DB_HOST,
     ...options,
@@ -46,7 +48,7 @@ export async function queryCollection(
     throw new Error('Document not found in vector store');
   }
 
-  const vectorStore = await Chroma.fromExistingCollection(embedder, {
+  const vectorStore = await Chroma.fromExistingCollection(createEmbedder(), {
     collectionName,
     url: process.env.CHROMA_DB_HOST,
     ...options,
@@ -62,7 +64,7 @@ export async function doesCollectionExists(
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ): Promise<boolean> {
   // Double checking
-  const chromaClient = new Chroma(embedder, {
+  const chromaClient = new Chroma(createEmbedder(), {
     collectionName,
     ...options,
   });
