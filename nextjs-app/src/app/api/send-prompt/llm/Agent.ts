@@ -34,10 +34,6 @@ export async function sendPrompt(
     sectionPrefix
   );
 
-  console.log('heeey 2.4', {retrievedContext});
-
-  throw new Error('Not implemented');
-
   const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
   {documentDescription}
   The fragments represent sections (classified with headers in the original document).
@@ -165,7 +161,7 @@ export async function retrieveContext(
       (doc) =>
         `${sectionHeaderPrefix}${doc.metadata.headerRoute}\n\n${doc.pageContent}`
     )
-    .join('\n\n\n\n');
+    .join('\n\n');
 }
 
 async function reconstructSection(
@@ -230,7 +226,7 @@ async function reconstructSection(
     id: uuidv4(),
     pageContent: reconstructedChunks
       .map((chunk) => chunk.pageContent)
-      .join('\n\n'),
+      .join('\n'),
     metadata: {
       headerRoute,
       headerRouteLevels,
