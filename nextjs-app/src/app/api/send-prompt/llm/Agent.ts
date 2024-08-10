@@ -24,8 +24,6 @@ export async function sendPrompt(prompt: string, collectionName: string) {
     sectionPrefix
   );
 
-  console.log('heeey 2.4', {retrievedContext});
-
   const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
   The fragments represent sections (classified with headers in the original document).
   The fragments include at the top the header route of the section they belong to in the format "{sectionPrefix}header>subheader>...".
@@ -47,10 +45,12 @@ export async function sendPrompt(prompt: string, collectionName: string) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
+  const systemMessage = new SystemMessage(
+    "You're a helpful AI assistant expert explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I don't know'."
+  );
+
   const response = await llm.invoke([
-    new SystemMessage(
-      "You're a helpful AI assistant expert explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I don't know'."
-    ),
+    systemMessage,
     ...chatTemplate.toChatMessages(),
   ]);
 
