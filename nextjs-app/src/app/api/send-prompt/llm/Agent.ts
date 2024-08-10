@@ -1,7 +1,13 @@
+import {ChunkDoc, chunkMetadataSchema} from '@/app/common/types/ChunkDoc';
+import {
+  ReconstructedSectionDoc,
+  reconstructedSectionMetadataSchema,
+} from '@/app/common/types/ReconstructedSectionDoc';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {Document} from 'langchain/document';
+import {assert} from 'node:assert';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {queryCollection} from '../../db/vector-db/VectorDB';
@@ -41,7 +47,17 @@ export async function sendPrompt(prompt: string, collectionName: string) {
 }
 
 export async function retrieveContext(prompt: string, collectionName: string) {
-  const similarChunks = await queryCollection(collectionName, prompt);
+  const similarChunks = (await queryCollection(
+    collectionName,
+    prompt
+  )) as ChunkDoc[];
+
+  assert(
+    similarChunks
+      .map((c) => chunkMetadataSchema.safeParse(c.metadata))
+      .every((r) => r.success),
+    'Invalid chunk metadata'
+  );
 
   let leftTotalTokens = 4000;
 
@@ -50,7 +66,7 @@ export async function retrieveContext(prompt: string, collectionName: string) {
   let lastHeaderRoute = '';
 
   const reconstructedSections = await (async function () {
-    const result: Document[] = [];
+    const result: ReconstructedSectionDoc[] = [];
 
     for (const chunk of similarChunks) {
       if (leftTotalTokens <= 0) {
@@ -74,6 +90,13 @@ export async function retrieveContext(prompt: string, collectionName: string) {
       result.push(reconstructedSection);
     }
 
+    assert(
+      result
+        .map((s) => reconstructedSectionMetadataSchema.safeParse(s.metadata))
+        .every((r) => r.success),
+      'Invalid reconstructed section metadata'
+    );
+
     return result;
   })();
 
@@ -84,10 +107,10 @@ export async function retrieveContext(prompt: string, collectionName: string) {
 
 async function reconstructSection(
   prompt: string,
-  chunk: Document,
+  chunk: ChunkDoc,
   collectionName: string,
   maxSectionTokens: number
-): Promise<Document> {
+): Promise<ReconstructedSectionDoc> {
   const {
     headerRoute,
     headerRouteLevels,

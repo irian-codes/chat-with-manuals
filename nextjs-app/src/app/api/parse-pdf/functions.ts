@@ -2,6 +2,7 @@ import {
   saveFileObjectToFileSystem,
   writeToTimestampedFile,
 } from '@/app/api/utils/fileUtils';
+import {ChunkDoc} from '@/app/common/types/ChunkDoc';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
@@ -399,7 +400,7 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
   }) {
     const splits = await splitter.splitText(section.content);
 
-    const newChunks = splits.map((text, index): Document => {
+    const newChunks = splits.map((text, index): ChunkDoc => {
       const tokens = (function () {
         const res = isWithinTokenLimit(text.trim(), Number.MAX_VALUE);
 
@@ -438,7 +439,7 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
     }
   }
 
-  const chunks: Document[] = [];
+  const chunks: ChunkDoc[] = [];
 
   for (let i = 0; i < sectionsJson.length; i++) {
     const section = sectionsJson[i];
