@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-export const pdfParsingOutputEnum = z.enum([
+export const pdfParsingOutputScheme = z.enum([
   'json',
   'langchain',
   'unstructured',
@@ -8,4 +8,4 @@ export const pdfParsingOutputEnum = z.enum([
   'llamaparse',
 ]);
 
-export type PdfParsingOutput = z.infer<typeof pdfParsingOutputEnum>;
+export type PdfParsingOutput = z.infer<typeof pdfParsingOutputScheme>;

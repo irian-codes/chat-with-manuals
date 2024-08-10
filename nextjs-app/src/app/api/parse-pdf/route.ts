@@ -1,6 +1,6 @@
 import {
   PdfParsingOutput,
-  pdfParsingOutputEnum,
+  pdfParsingOutputScheme,
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
 import {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       throw new Error('The provided file is not a PDF.');
     }
 
-    pdfParsingOutputEnum.parse(output);
+    pdfParsingOutputScheme.parse(output);
 
     const fileHash = await getFileHash(file);
     await initStorage();
