@@ -64,7 +64,8 @@ export async function retrieveContext(
 ): Promise<string> {
   const similarChunks = (await queryCollection(
     collectionName,
-    prompt
+    prompt,
+    10
   )) as ChunkDoc[];
 
   assert(
@@ -74,7 +75,7 @@ export async function retrieveContext(
     'Invalid chunk metadata'
   );
 
-  let leftTotalTokens = 4000;
+  let leftTotalTokens = 3000;
 
   // This is to avoid reconstructing the same section twice. Although it
   // needs refining (check reconstructSection() TODO comment)
