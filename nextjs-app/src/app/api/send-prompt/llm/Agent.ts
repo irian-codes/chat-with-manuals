@@ -78,7 +78,7 @@ export async function retrieveContext(
 
   // This is to avoid reconstructing the same section twice. Although it
   // needs refining (check reconstructSection() TODO comment)
-  let lastHeaderRoute = '';
+  const seenHeaderRoutes = new Set();
 
   const reconstructedSections = await (async function () {
     const result: ReconstructedSectionDoc[] = [];
@@ -88,7 +88,9 @@ export async function retrieveContext(
         break;
       }
 
-      if (chunk.metadata.headerRoute === lastHeaderRoute) {
+      if (
+        seenHeaderRoutes.has(chunk.metadata.headerRoute.trim().toUpperCase())
+      ) {
         continue;
       }
 
@@ -99,7 +101,7 @@ export async function retrieveContext(
         1000
       );
 
-      lastHeaderRoute = chunk.metadata.headerRoute;
+      seenHeaderRoutes.add(chunk.metadata.headerRoute.trim().toUpperCase());
       leftTotalTokens = leftTotalTokens - reconstructedSection.metadata.tokens;
 
       result.push(reconstructedSection);
