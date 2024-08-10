@@ -58,7 +58,7 @@ export async function sendPrompt(
   });
 
   const systemMessage = new SystemMessage(
-    "You're a helpful AI assistant expert in explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I don't know'."
+    "You're a helpful AI assistant expert in explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I couldn't find the answer in the provided document.'."
   );
 
   const response = await llm.invoke([
