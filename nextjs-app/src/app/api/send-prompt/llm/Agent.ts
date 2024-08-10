@@ -192,7 +192,7 @@ async function reconstructSection(
   );
 
   // Step 3: Initialize reconstruction with the current chunk
-  const initialChunk = sortedChunks[currentChunkPosition];
+  const initialChunk = sortedChunks[currentChunkPosition - 1];
   let reconstructedChunks = [initialChunk];
   let currentTokenCount = initialChunk.metadata.tokens;
 
