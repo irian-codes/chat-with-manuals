@@ -34,16 +34,17 @@ export async function sendPrompt(
     sectionPrefix
   );
 
-  const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
-  {documentDescription}
-  The fragments represent sections (classified with headers in the original document).
-  The fragments include at the top the header route of the section they belong to in the format "{sectionPrefix}header>subheader>...".
-  The fragments are ordered as they appear in the original document.
-
-  DOCUMENT FRAGMENTS:
-  {context}
+  const chatText = `{documentDescription}
+From the following fragments of text extracted from the original document, use the relevant fragments as context to answer the user's question to the best of your ability.
   
-  USER QUESTION: {question}`;
+USER QUESTION: {question}
+
+The fragments represent sections (classified with headers in the original document).
+The fragments include at the top the header route of the section they belong to in the format "{sectionPrefix}header>subheader>...".
+The fragments are ordered as they appear in the original document.
+
+DOCUMENT FRAGMENTS:
+{context}`;
 
   const chatTemplate = await ChatPromptTemplate.fromTemplate(chatText).invoke({
     context: retrievedContext,
@@ -69,10 +70,8 @@ export async function sendPrompt(
 
   console.log('Message sent to the LLM', {
     prompt:
-      'SYSTEM MESSAGE: \n' +
       systemMessage.content +
       '\n\n' +
-      'USER MESSAGE: \n' +
       chatTemplate
         .toChatMessages()
         .map((m) => m.content)
