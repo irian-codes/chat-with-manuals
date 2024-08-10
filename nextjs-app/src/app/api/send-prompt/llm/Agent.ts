@@ -17,20 +17,28 @@ export async function sendPrompt(prompt: string, collectionName: string) {
     throw new Error('Invalid prompt: prompt must be a non-empty string');
   }
 
-  const retrievedContext = await retrieveContext(prompt, collectionName);
+  const sectionPrefix = 'SECTION HEADER ROUTE: ';
+  const retrievedContext = await retrieveContext(
+    prompt,
+    collectionName,
+    sectionPrefix
+  );
 
   console.log('heeey 2.4', {retrievedContext});
 
   const chatText = `Use the following fragments of text from the document as context to answer the user's question to the best of your ability.
-  Take into account that the fragments are ordered as they appear in the original document.
+  The fragments represent sections (classified with headers in the original document).
+  The fragments include at the top the header route of the section they belong to in the format "{sectionPrefix}header>subheader>...".
+  The fragments are ordered as they appear in the original document.
 
   DOCUMENT FRAGMENTS: {context}
   
   USER QUESTION: {question}`;
 
   const chatTemplate = await ChatPromptTemplate.fromTemplate(chatText).invoke({
-    context: retrievedContext.map((doc) => doc.pageContent).join('\n\n'),
+    context: retrievedContext,
     question: prompt,
+    sectionPrefix,
   });
 
   const llm = new ChatOpenAI({
@@ -49,7 +57,11 @@ export async function sendPrompt(prompt: string, collectionName: string) {
   return response.content;
 }
 
-export async function retrieveContext(prompt: string, collectionName: string) {
+export async function retrieveContext(
+  prompt: string,
+  collectionName: string,
+  sectionHeaderPrefix: string
+): Promise<string> {
   const similarChunks = (await queryCollection(
     collectionName,
     prompt
@@ -107,7 +119,12 @@ export async function retrieveContext(prompt: string, collectionName: string) {
     reconstructedSections
   );
 
-  return sortedSections;
+  return sortedSections
+    .map(
+      (doc) =>
+        `${sectionHeaderPrefix}${doc.metadata.headerRoute}\n\n${doc.pageContent}`
+    )
+    .join('\n\n\n\n');
 }
 
 async function reconstructSection(
