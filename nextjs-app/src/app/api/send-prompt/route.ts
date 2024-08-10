@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
         error: null,
       };
     } catch (error) {
+      console.error(error);
+
       return {
         result: null,
         error,
@@ -27,6 +29,8 @@ export async function POST(request: NextRequest) {
   })();
 
   if (llmAnswer.error) {
+    console.error(llmAnswer.error);
+
     return NextResponse.json(
       {error: llmAnswer.error.message ?? 'Unknown error'},
       {status: 500}
