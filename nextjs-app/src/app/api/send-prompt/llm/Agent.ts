@@ -28,11 +28,11 @@ export async function sendPrompt(
   }
 
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
-  const retrievedContext = await retrieveContext(
-    prompt,
-    collectionName,
-    sectionPrefix
-  );
+  const retrievedContext = (
+    await retrieveContext(prompt, collectionName, sectionPrefix)
+  )
+    .replaceAll('\n. ', '.\n')
+    .replaceAll('\n.', '.');
 
   const chatText = `{documentDescription}
 From the following fragments of text extracted from the original document, use the relevant fragments as context to answer the user's question to the best of your ability.
