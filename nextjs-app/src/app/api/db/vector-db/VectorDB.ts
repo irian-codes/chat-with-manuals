@@ -13,6 +13,7 @@ function createEmbedder() {
 export async function embedPDF(fileHash: string, docs: Document[]) {
   const vectorStore = await createVectorStore(docs, {
     collectionMetadata: {
+      'hnsw:space': 'cosine',
       fileHash,
     },
   });

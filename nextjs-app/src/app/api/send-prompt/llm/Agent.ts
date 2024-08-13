@@ -114,7 +114,7 @@ export async function retrieveContext(
   const similarChunks = (await queryCollection(
     collectionName,
     prompt,
-    10
+    30
   )) as ChunkDoc[];
 
   assert(
