@@ -13,14 +13,14 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@langchain/community": "^0.2.10",
+    "@langchain/community": "^0.2.27",
     "@xenova/transformers": "^2.17.2",
     "chromadb": "^1.8.1",
     "chromadb-default-embed": "^2.13.2",
     "entities": "^5.0.0",
     "gpt-tokenizer": "^2.2.1",
-    "langchain": "^0.2.5",
-    "llamaindex": "^0.5.0",
+    "langchain": "^0.2.16",
+    "llamaindex": "^0.5.17",
     "llmwhisperer-client": "^0.1.0",
     "markdownlint": "^0.34.0",
     "markdownlint-rule-helpers": "^0.25.0",
