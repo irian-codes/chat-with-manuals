@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       case 'json':
         // ⚠️ Outdated methods
         console.warn('Outdated method called');
+
         return NextResponse.json({
           result: JSON.parse(parseResult.text),
           cachedTimestamp: parseResult.cachedTime,
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       case 'string':
         // ⚠️ Outdated methods
         console.warn('Outdated method called');
+
         return NextResponse.json({
           result: parseResult.text,
           cachedTimestamp: parseResult.cachedTime,
