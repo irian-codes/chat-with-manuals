@@ -382,9 +382,9 @@ export async function markdownToSectionsJson(
 
 export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
   const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 100,
+    chunkSize: 150,
     chunkOverlap: 0,
-    separators: ['\n\n', '\n', '.', ' ', ''],
+    separators: ['\n\n', '\n', '.', '?', '!', ' ', ''],
   });
 
   async function chunkSectionContent({
