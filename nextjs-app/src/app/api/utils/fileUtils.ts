@@ -1,3 +1,4 @@
+import {isBlankString} from '@/app/common/utils/stringUtils';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,12 +39,15 @@ export function writeToTimestampedFile(
   content: string,
   destinationFolderPath: string,
   fileName: string,
-  fileExtension: string
+  fileExtension: string,
+  prefix: string = ''
 ): string {
+  const _prefix = isBlankString(prefix) ? '' : prefix + '_';
+
   const fullPath = path.join(
     process.cwd(),
     destinationFolderPath,
-    `parsedPdf_${fileName}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${new Date().toTimeString().slice(0, 5).replace(/:/g, '')}.${fileExtension}`
+    `${_prefix}${fileName}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${new Date().toTimeString().slice(0, 5).replace(/:/g, '')}.${fileExtension}`
   );
 
   const folderPath = path.dirname(fullPath);

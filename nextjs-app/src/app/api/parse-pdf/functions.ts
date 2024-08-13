@@ -76,7 +76,8 @@ export async function parsePdf(
         res,
         'tmp',
         `${file.name}_parser-${output}`,
-        'json'
+        'json',
+        'parsedPdf'
       );
 
       return {text: res, contentType: 'json', cachedTime: null};
@@ -91,7 +92,8 @@ export async function parsePdf(
         !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
-        'txt'
+        'txt',
+        'parsedPdf'
       );
 
       return {text, contentType: 'string', cachedTime: null};
@@ -104,7 +106,8 @@ export async function parsePdf(
         JSON.stringify(unstructuredRes, null, 2),
         'tmp',
         `${file.name}_parser-${output}`,
-        'json'
+        'json',
+        'parsedPdf'
       );
 
       return {
@@ -122,7 +125,8 @@ export async function parsePdf(
         !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
-        'txt'
+        'txt',
+        'parsedPdf'
       );
 
       return {text, contentType: 'string', cachedTime: null};
@@ -136,7 +140,8 @@ export async function parsePdf(
         !isBlankString(text) ? text : 'UNDEFINED',
         'tmp',
         `${file.name}_parser-${output}`,
-        'md'
+        'md',
+        'parsedPdf'
       );
 
       return {text, contentType: 'markdown', cachedTime: null};
