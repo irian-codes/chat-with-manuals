@@ -13,6 +13,7 @@ import sanitizeHtml from 'sanitize-html';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {queryCollection} from '../../db/vector-db/VectorDB';
+import {writeToTimestampedFile} from '../../utils/fileUtils';
 
 export async function sendPrompt(
   prompt: string,
@@ -86,6 +87,21 @@ DOCUMENT FRAGMENTS:
     .replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, '');
 
   const finalHtml = sanitizeHtml(await marked.parse(responseContent));
+
+  const answerFilePath = writeToTimestampedFile(
+    `[PROMPT]: ${systemMessage.content}\n` +
+      chatTemplate
+        .toChatMessages()
+        .map((m) => m.content)
+        .join('\n\n') +
+      '\n\n' +
+      `[RESPONSE]: ${responseContent}\n`,
+    'tmp',
+    'llmAnswer',
+    'txt'
+  );
+
+  console.log('Saved answer to file:', answerFilePath);
 
   return finalHtml;
 }
