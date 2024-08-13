@@ -5,6 +5,12 @@ import {
 import {ChunkDoc} from '@/app/common/types/ChunkDoc';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
+import DocumentIntelligence, {
+  AnalyzeResultOperationOutput,
+  getLongRunningPoller,
+  isUnexpected,
+} from '@azure-rest/ai-document-intelligence';
+import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
@@ -135,6 +141,23 @@ export async function parsePdf(
     case 'llamaparse': {
       const llamaparseRes = await pdfParseWithLlamaparse(file);
       const text = llamaparseRes.map((d) => d.getText()).join('') ?? '';
+
+      writeToTimestampedFile(
+        !isBlankString(text) ? text : 'UNDEFINED',
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'md',
+        'parsedPdf'
+      );
+
+      return {text, contentType: 'markdown', cachedTime: null};
+    }
+
+    case 'azure-document-intelligence': {
+      const azureDocumentIntelligenceRes =
+        await pdfParseWithAzureDocumentIntelligence(file);
+
+      const text = azureDocumentIntelligenceRes ?? '';
 
       writeToTimestampedFile(
         !isBlankString(text) ? text : 'UNDEFINED',
@@ -304,6 +327,39 @@ async function pdfParseWithLlamaparse(file: File) {
   return documents;
 }
 
+export async function pdfParseWithAzureDocumentIntelligence(file: File) {
+  const client = DocumentIntelligence(
+    'https://chat-with-manuals-document-parser.cognitiveservices.azure.com/',
+    new AzureKeyCredential(
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_API_KEY ?? ''
+    )
+  );
+
+  const initialResponse = await client
+    .path('/documentModels/{modelId}:analyze', 'prebuilt-layout')
+    .post({
+      contentType: 'application/json',
+      body: {
+        base64Source: Buffer.from(await file.arrayBuffer()).toString('base64'),
+      },
+      queryParameters: {outputContentFormat: 'markdown', locale: 'en'},
+    });
+
+  if (isUnexpected(initialResponse)) {
+    throw initialResponse.body.error;
+  }
+
+  const poller = await getLongRunningPoller(client, initialResponse);
+  const result = (await poller.pollUntilDone())
+    .body as AnalyzeResultOperationOutput;
+
+  assert(result.analyzeResult?.contentFormat === 'markdown');
+
+  console.log('heeey 5.2', {result, content: result.analyzeResult.content});
+
+  return result.analyzeResult.content;
+}
+
 export function lintAndFixMarkdown(markdown: string) {
   // Sometimes the parser for whatever reason interprets the text as a code
   // block, so we fix this issue.
@@ -342,9 +398,11 @@ export async function markdownToSectionsJson(
     if (token.type === 'heading') {
       // When we encounter a new heading, we should finalize the previous section content
       if (currentContent.length > 0) {
-        stack[stack.length - 1].content = decodeHTML(
-          await plainMarked.parse(currentContent.trim())
-        );
+        if (stack.length > 0) {
+          stack[stack.length - 1].content = decodeHTML(
+            await plainMarked.parse(currentContent.trim())
+          );
+        }
 
         currentContent = '';
       }
