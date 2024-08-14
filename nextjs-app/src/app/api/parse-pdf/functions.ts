@@ -12,6 +12,7 @@ import DocumentIntelligence, {
 } from '@azure-rest/ai-document-intelligence';
 import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
+import pdf2md from '@opendocsg/pdf2md';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
@@ -158,6 +159,20 @@ export async function parsePdf(
         await pdfParseWithAzureDocumentIntelligence(file);
 
       const text = azureDocumentIntelligenceRes ?? '';
+
+      writeToTimestampedFile(
+        !isBlankString(text) ? text : 'UNDEFINED',
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'md',
+        'parsedPdf'
+      );
+
+      return {text, contentType: 'markdown', cachedTime: null};
+    }
+
+    case '@opendocsg-pdf2md': {
+      const text = await pdf2md(await file.arrayBuffer());
 
       writeToTimestampedFile(
         !isBlankString(text) ? text : 'UNDEFINED',

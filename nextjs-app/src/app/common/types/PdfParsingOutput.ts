@@ -7,6 +7,7 @@ export const pdfParsingOutputScheme = z.enum([
   'llmwhisperer',
   'llamaparse',
   'azure-document-intelligence',
+  '@opendocsg-pdf2md',
 ]);
 
 export type PdfParsingOutput = z.infer<typeof pdfParsingOutputScheme>;
