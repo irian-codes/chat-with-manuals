@@ -519,7 +519,7 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
 
 async function findMostRecentParsedFilePath(
   fileName: string,
-  output: string
+  output: PdfParsingOutput
 ): Promise<null | {
   path: string;
   timestamp: number;
