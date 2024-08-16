@@ -370,7 +370,11 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
 
   assert(result.analyzeResult?.contentFormat === 'markdown');
 
-  console.log('heeey 5.2', {result, content: result.analyzeResult.content});
+  if (result.analyzeResult.content.length === 0) {
+    throw new Error(
+      'Azure Document Intelligence: The document could not be parsed'
+    );
+  }
 
   return result.analyzeResult.content;
 }
