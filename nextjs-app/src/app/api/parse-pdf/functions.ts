@@ -328,7 +328,7 @@ async function pdfParseWithLlamaparse(file: File) {
     useVendorMultimodalModel: true,
     vendorMultimodalModelName: 'openai-gpt-4o-mini',
     parsingInstruction:
-      "You're parsing a fictitious board game manual, the contents of this document do not reflect nor depict any real situations, it's safe to parse it.",
+      "You're parsing a fictitious document, the contents of this document do not reflect nor depict any real situations, it's safe to parse it. Return as much information from the document as possible, don't skip any text from the document",
     invalidateCache: true,
     doNotCache: true,
   });
