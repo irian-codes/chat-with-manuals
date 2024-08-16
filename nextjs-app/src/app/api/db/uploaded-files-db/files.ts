@@ -59,6 +59,23 @@ export async function getAllFilesByUuid(): Promise<FileIdEntry['data'][]> {
   return fileDataList;
 }
 
+export async function deleteFileById(
+  id: string,
+  recurse: boolean = true
+): Promise<void> {
+  z.string().uuid().parse(id);
+
+  const fileData = await getFileById(id);
+
+  await storage.removeItem(id);
+
+  if (recurse) {
+    if (fileData !== null) {
+      await deleteFileByHash(fileData.fileHash, false);
+    }
+  }
+}
+
 export async function setFileById(
   id: string,
   fileData: FileIdEntry['data'],
@@ -124,6 +141,27 @@ export async function setFileByHash(
       },
       false
     );
+  }
+}
+
+export async function deleteFileByHash(
+  hash: string,
+  recurse: boolean = true
+): Promise<void> {
+  if (/^[a-f0-9]{64}$/i.test(hash) === false) {
+    throw new Error(
+      'Invalid hash: the provided hash does not seem to be a SHA-256 hash'
+    );
+  }
+
+  const fileData = await getFileByHash(hash);
+
+  await storage.removeItem(hash);
+
+  if (recurse) {
+    if (fileData !== null) {
+      await deleteFileById(fileData.collectionName, false);
+    }
   }
 }
 

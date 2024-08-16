@@ -76,6 +76,11 @@ export async function doesCollectionExists(
   return (await collection.count()) > 0;
 }
 
+export async function deleteCollection(collectionName: string) {
+  const client = new ChromaClient();
+  await client.deleteCollection({name: collectionName});
+}
+
 export async function clearDatabase() {
   const client = new ChromaClient();
   await client.reset();

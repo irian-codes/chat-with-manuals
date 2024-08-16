@@ -4,11 +4,12 @@ import {
 } from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
 import {
+  deleteFileByHash,
   getFileByHash,
   initStorage,
   setFileByHash,
 } from '../db/uploaded-files-db/files';
-import {embedPDF} from '../db/vector-db/VectorDB';
+import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {
   chunkSectionsJson,
@@ -37,7 +38,28 @@ export async function POST(request: NextRequest) {
     const fileHash = await getFileHash(file);
     await initStorage();
 
-    if (!force) {
+    if (force) {
+      const fileUUID = await getFileByHash(fileHash);
+
+      if (fileUUID !== null) {
+        try {
+          await deleteCollection(fileUUID.collectionName);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === 'Document not found in vector store'
+          ) {
+            console.warn(
+              "Trying to delete a non existent document in vector db, so it's fine"
+            );
+          } else {
+            throw error;
+          }
+        }
+
+        await deleteFileByHash(fileHash);
+      }
+    } else {
       if ((await getFileByHash(fileHash)) !== null) {
         throw new Error('File already embedded in the database.');
       }
