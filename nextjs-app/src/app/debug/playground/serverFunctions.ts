@@ -1,6 +1,7 @@
 'use server';
 
 import {clearStorage, initStorage} from '@/app/api/db/uploaded-files-db/files';
+import {clearDatabase} from '@/app/api/db/vector-db/VectorDB';
 import {
   chunkSectionsJson,
   markdownToSectionsJson,
@@ -70,6 +71,10 @@ wins the game, the Vagabond also wins.`;
 export async function clearNodePersistStorage() {
   await initStorage();
   await clearStorage();
+}
+
+export async function clearVectorDB() {
+  await clearDatabase();
 }
 
 const fileName =

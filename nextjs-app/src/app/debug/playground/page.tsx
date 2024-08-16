@@ -3,6 +3,7 @@
 import {
   chunkSections,
   clearNodePersistStorage,
+  clearVectorDB,
   diffTexts,
   getMarkdownLexer,
   parseMarkdownToJson,
@@ -48,6 +49,12 @@ export default function Page({}: Props) {
     });
   }
 
+  function handleButtonClick7() {
+    clearVectorDB().then(() => {
+      console.log('Vector DB  cleared');
+    });
+  }
+
   return (
     <div>
       <h1 className="m-6 bg-red-500 p-3 text-center text-3xl text-white">
@@ -89,6 +96,12 @@ export default function Page({}: Props) {
           onClick={handleButtonClick6}
         >
           Clear node persist storage
+        </button>
+        <button
+          className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
+          onClick={handleButtonClick7}
+        >
+          Clear Vector DB
         </button>
       </div>
     </div>

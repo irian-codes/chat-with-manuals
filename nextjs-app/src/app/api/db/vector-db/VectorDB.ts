@@ -1,5 +1,6 @@
 import {Chroma, ChromaLibArgs} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
+import {ChromaClient} from 'chromadb';
 import {Document} from 'langchain/document';
 import {v4 as uuidv4} from 'uuid';
 
@@ -73,4 +74,9 @@ export async function doesCollectionExists(
   const collection = await chromaClient.ensureCollection();
 
   return (await collection.count()) > 0;
+}
+
+export async function clearDatabase() {
+  const client = new ChromaClient();
+  await client.reset();
 }
