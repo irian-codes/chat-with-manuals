@@ -20,6 +20,7 @@
     "@xenova/transformers": "^2.17.2",
     "chromadb": "^1.8.1",
     "chromadb-default-embed": "^2.13.2",
+    "diff": "^5.2.0",
     "entities": "^5.0.0",
     "gpt-tokenizer": "^2.2.1",
     "langchain": "^0.2.16",
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.0.0",
+    "@types/diff": "^5.2.1",
     "@types/markdownlint-rule-helpers": "^0.21.5",
     "@types/node": "^20.14.9",
     "@types/node-persist": "^3.1.8",

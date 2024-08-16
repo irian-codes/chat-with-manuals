@@ -3,8 +3,8 @@
 import {
   chunkSections,
   clearNodePersistStorage,
+  diffTexts,
   getMarkdownLexer,
-  lintMarkdown,
   parseMarkdownToJson,
   parseMarkdownToPlainText,
 } from './serverFunctions';
@@ -37,8 +37,8 @@ export default function Page({}: Props) {
   }
 
   function handleButtonClick5() {
-    lintMarkdown().then((res) => {
-      console.log('Linted markdown and saved new file. Content: ', res);
+    diffTexts().then((res) => {
+      console.log('Texts Diff. Response:', res);
     });
   }
 
@@ -82,7 +82,7 @@ export default function Page({}: Props) {
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
           onClick={handleButtonClick5}
         >
-          Lint Markdown
+          Diff texts and fix
         </button>
         <button
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
