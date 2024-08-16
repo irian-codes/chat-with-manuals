@@ -106,6 +106,7 @@ export default function UploadPDFPage() {
         <option value="unstructured">Unstructured</option>
         <option value="llmwhisperer">LLM Whisperer</option>
         <option value="llamaparse">Llamaparse</option>
+        <option value="llamaparse-fastmode">Llamaparse Fast Mode</option>
         <option value="azure-document-intelligence">
           Azure Document Intelligence
         </option>

@@ -6,6 +6,7 @@ export const pdfParsingOutputScheme = z.enum([
   'unstructured',
   'llmwhisperer',
   'llamaparse',
+  'llamaparse-fastmode',
   'azure-document-intelligence',
   '@opendocsg-pdf2md',
 ]);

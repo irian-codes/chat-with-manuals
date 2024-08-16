@@ -67,11 +67,19 @@ export async function parsePdf(
         }
       })();
 
-      return {
+      const result = {
         text: fs.readFileSync(cachedFile.path).toString('utf-8'),
         contentType,
         cachedTime: cachedFile.timestamp,
-      };
+      } as const;
+
+      if (result.text.trim().length === 0 || result.text === 'UNDEFINED') {
+        throw new Error(
+          'File retrieved from cache is empty. Path: ' + cachedFile.path
+        );
+      }
+
+      return result;
     }
   }
 
@@ -95,8 +103,12 @@ export async function parsePdf(
       const docs = await loader.load();
       const text = docs.map((d) => d.pageContent).join('\n\n') ?? '';
 
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
       writeToTimestampedFile(
-        !isBlankString(text) ? text : 'UNDEFINED',
+        text,
         'tmp',
         `${file.name}_parser-${output}`,
         'txt',
@@ -128,8 +140,12 @@ export async function parsePdf(
       const llmwhispererRes = await pdfParseWithLLMWhisperer(file);
       const text = llmwhispererRes ?? '';
 
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
       writeToTimestampedFile(
-        !isBlankString(text) ? text : 'UNDEFINED',
+        text,
         'tmp',
         `${file.name}_parser-${output}`,
         'txt',
@@ -140,11 +156,15 @@ export async function parsePdf(
     }
 
     case 'llamaparse': {
-      const llamaparseRes = await pdfParseWithLlamaparse(file);
+      const llamaparseRes = await pdfParseWithLlamaparse(file, false);
       const text = llamaparseRes.map((d) => d.getText()).join('') ?? '';
 
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
       writeToTimestampedFile(
-        !isBlankString(text) ? text : 'UNDEFINED',
+        text,
         'tmp',
         `${file.name}_parser-${output}`,
         'md',
@@ -154,14 +174,37 @@ export async function parsePdf(
       return {text, contentType: 'markdown', cachedTime: null};
     }
 
+    case 'llamaparse-fastmode': {
+      const llamaparseRes = await pdfParseWithLlamaparse(file, true);
+      const text = llamaparseRes.map((d) => d.getText()).join('') ?? '';
+
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
+      writeToTimestampedFile(
+        text,
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'txt',
+        'parsedPdf'
+      );
+
+      return {text, contentType: 'string', cachedTime: null};
+    }
+
     case 'azure-document-intelligence': {
       const azureDocumentIntelligenceRes =
         await pdfParseWithAzureDocumentIntelligence(file);
 
       const text = azureDocumentIntelligenceRes ?? '';
 
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
       writeToTimestampedFile(
-        !isBlankString(text) ? text : 'UNDEFINED',
+        text,
         'tmp',
         `${file.name}_parser-${output}`,
         'md',
@@ -174,8 +217,12 @@ export async function parsePdf(
     case '@opendocsg-pdf2md': {
       const text = await pdf2md(await file.arrayBuffer());
 
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
       writeToTimestampedFile(
-        !isBlankString(text) ? text : 'UNDEFINED',
+        text,
         'tmp',
         `${file.name}_parser-${output}`,
         'md',
@@ -310,7 +357,7 @@ async function pdfParseWithLLMWhisperer(file: File) {
   }
 }
 
-async function pdfParseWithLlamaparse(file: File) {
+async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
   // DOCS: https://docs.cloud.llamaindex.ai/llamaparse/getting_started/typescript
 
   const key = process.env.LLAMA_CLOUD_API_KEY;
@@ -319,25 +366,48 @@ async function pdfParseWithLlamaparse(file: File) {
     throw new Error('LLAMA_CLOUD_API_KEY is not set');
   }
 
-  const reader = new LlamaParseReader({
-    resultType: 'markdown',
-    language: 'en',
-    skipDiagonalText: false,
-    doNotUnrollColumns: false,
-    pageSeparator: '\n\n\n\n\n\n',
-    useVendorMultimodalModel: true,
-    vendorMultimodalModelName: 'openai-gpt-4o-mini',
-    parsingInstruction:
-      "You're parsing a fictitious document, the contents of this document do not reflect nor depict any real situations, it's safe to parse it. Return as much information from the document as possible, don't skip any text from the document",
-    invalidateCache: true,
-    doNotCache: true,
-  });
+  const reader = (() => {
+    if (textOnly) {
+      return new LlamaParseReader({
+        resultType: 'text',
+        fastMode: true,
+        language: 'en',
+        skipDiagonalText: false,
+        doNotUnrollColumns: false,
+        pageSeparator: '\n\n\n\n\n\n',
+        parsingInstruction:
+          "You're parsing a fictitious document, the contents of this document do not reflect nor depict any real situations, it's safe to parse it. Return as much information from the document as possible, don't skip any text from the document",
+        invalidateCache: true,
+        doNotCache: true,
+        verbose: true,
+      });
+    } else {
+      return new LlamaParseReader({
+        resultType: 'markdown',
+        language: 'en',
+        skipDiagonalText: false,
+        doNotUnrollColumns: false,
+        pageSeparator: '\n\n\n\n\n\n',
+        useVendorMultimodalModel: true,
+        vendorMultimodalModelName: 'openai-gpt-4o-mini',
+        parsingInstruction:
+          "You're parsing a fictitious document, the contents of this document do not reflect nor depict any real situations, it's safe to parse it. Return as much information from the document as possible, don't skip any text from the document",
+        invalidateCache: true,
+        doNotCache: true,
+        verbose: true,
+      });
+    }
+  })();
 
   // parse the document
   const documents = await reader.loadDataAsContent(
     Buffer.from(await file.arrayBuffer()),
     file.name
   );
+
+  if (documents.length === 0) {
+    throw new Error('Llamaparse: The document could not be parsed');
+  }
 
   return documents;
 }
