@@ -666,6 +666,18 @@ function extractTimestamp(fileName: string): number {
   return 0;
 }
 
+/**
+ * Reconciles two texts by comparing and merging their differences.
+ *
+ * This function takes two texts as input, normalizes the first text, generates a diff JSON using jsdiff,
+ * and then iterates over the diff to merge the differences between the two texts.
+ * It handles cases where the second text has extra words, missing words, or equal words.
+ * It tries to preserve the structure and case of the second text with the words of the first text.
+ *
+ * @param {string} firstText - The original text to be reconciled.
+ * @param {string} secondText - The LLM text to be reconciled with the original text.
+ * @return {string} The reconciled text.
+ */
 export function reconcileTexts(firstText: string, secondText: string): string {
   // Normalize the first text for easier diffing
   const normalizedFirstText = firstText
