@@ -15,11 +15,12 @@ describe('reconcileTexts', () => {
       .join(' ');
 
     // Generate the diff JSON using jsdiff
-    const diff = diffWordsWithSpace(normalizedFirstText, secondText, {
+    const trimmedDiff = diffWordsWithSpace(normalizedFirstText, secondText, {
       ignoreCase: true,
-    });
+      ignoreWhitespace: true,
+    }).map((d) => ({...d, value: d.value.trim()}));
 
-    console.log('Diff:', {name: ctx.task.name, diff});
+    console.log('Diff:', {name: ctx.task.name, trimmedDiff});
   }
 
   it('should handle equal words without changes', (ctx) => {
@@ -54,6 +55,9 @@ describe('reconcileTexts', () => {
     const firstText = 'The quick brown fox jumps over the lazy dog.';
     const secondText = 'The quick BROWN JUMPS over the lazy dog.';
     const result = reconcileTexts(firstText, secondText);
+
+    printDiff(firstText, secondText, ctx);
+
     expect(result).toEqual('The quick BROWN FOX JUMPS over the lazy dog.');
   });
 

@@ -686,14 +686,15 @@ export function reconcileTexts(firstText: string, secondText: string): string {
     .join(' ');
 
   // Generate the diff JSON using jsdiff
-  const diff = diffWordsWithSpace(normalizedFirstText, secondText, {
+  const trimmedDiff = diffWordsWithSpace(normalizedFirstText, secondText, {
     ignoreCase: true,
-  });
+    ignoreWhitespace: true,
+  }).map((d) => ({...d, value: d.value.trim()}));
 
-  const result: string[] = [];
+  const words: string[] = [];
   let firstTextIndex = 0;
 
-  diff.forEach((part) => {
+  trimmedDiff.forEach((part) => {
     if (part.added) {
       // LLM has an extra word, we need to remove it.
       // Don't add these words to the result array, as we need to remove them
@@ -705,28 +706,39 @@ export function reconcileTexts(firstText: string, secondText: string): string {
         .filter((w) => !isBlankString(w));
 
       missingWords.forEach((word) => {
-        if (result.length > 0) {
-          const lastWord = result[result.length - 1];
+        let newWord: string = '';
+
+        if (words.length > 0) {
+          const lastWord = words[words.length - 1];
           const nextWordIndex = firstTextIndex + part.value.length;
           const nextWord = secondText
             .slice(nextWordIndex)
             .split(/\s+/)
-            .filter((w) => !isBlankString(w))[0]; // Get next word from LLM text
-          result.push(
-            matchCaseBySurroundingWords(word, lastWord, nextWord) + ' '
-          );
+            .filter((w) => !isBlankString(w))[0]; // Get next word from second text
+
+          newWord = matchCaseBySurroundingWords(word, lastWord, nextWord);
         } else {
-          result.push(word + ' ');
+          newWord = word;
         }
+
+        words.push(newWord);
       });
 
       firstTextIndex += part.value.length;
     } else {
       // Words are equal
-      result.push(part.value); // Directly use the part value from the LLM text
+      words.push(part.value); // Directly use the part value from the LLM text
       firstTextIndex += part.value.length;
     }
   });
 
-  return result.join('').trim();
+  // The final step is to join the words together with a space and remove
+  // any double spaces. We only add a space between words, not other characters.
+  const finalStr = words.reduce((prev, curr) => {
+    const newString = prev + (/^\w/i.test(curr) ? ' ' : '') + curr;
+
+    return newString.replaceAll(/\s{2,}/g, ' ').trim();
+  }, '');
+
+  return finalStr;
 }
