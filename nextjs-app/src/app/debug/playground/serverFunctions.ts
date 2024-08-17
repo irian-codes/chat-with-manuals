@@ -5,9 +5,9 @@ import {clearDatabase} from '@/app/api/db/vector-db/VectorDB';
 import {
   chunkSectionsJson,
   markdownToSectionsJson,
+  reconcileTexts,
 } from '@/app/api/parse-pdf/functions';
-import {isBlankString} from '@/app/common/utils/stringUtils';
-import {diffChars} from 'diff';
+import {diffWordsWithSpace} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
@@ -45,7 +45,7 @@ export async function chunkSections() {
 }
 
 export async function diffTexts() {
-  const one = `The Vagabond
+  let one = `The Vagabond
 cannot activate a dominance card for its normal
 victory condition (3.3.1). Instead, in games with
 four or more players, the Vagabond can activate a
@@ -58,14 +58,21 @@ the coalition, and that player cannot be in a coalition. If there is a tie for f
 chooses one tied player. If the coalitioned player
 wins the game, the Vagabond also wins.`;
   const other =
-    'The Vagabond cannot activate a dominance card for its victory condition (3.3.1). Instead, in games with four or more players, the Vagabond can activate a dominance card to form a coalition with another player, placing his score marker on that player’s faction board. That player must have fewer victory points than each other player active in the coalition, and that player cannot be in a coalition. If there is a tie for fewest victory points, he chooses one tied player. If the coalited player wins the game, the Vagabond player also wins.';
+    'Vagabund cannot activate a dominance card for its victory condition (3.3.1). Instead, in games with four or more players, the Vagabond can activate a dominance card to form a coalition with another player, placing his score marker on that player’s faction board. That player must have fewer victory points than each other player active in the coalition, and that player cannot be in a coalition. If there is a tie for fewest victory points, he chooses one tied player. If the coalited player wins the game, the Vagabond player also win';
 
-  const diff = diffChars(one, other, {ignoreCase: true});
+  const result = reconcileTexts(one, other);
 
-  // Showing only differences, although I need the full return values to keep track of the edits and such.
-  return diff.filter(
-    (d) => !isBlankString(d.value) && ('added' in d || 'removed' in d)
-  );
+  const normalizedFirstText = one
+    .split(/[\s\n]+/)
+    .map((s) => s.trim())
+    .join(' ');
+
+  return {
+    result,
+    secondDiff: diffWordsWithSpace(normalizedFirstText, result, {
+      ignoreCase: true,
+    }).filter((d) => d.added || d.removed),
+  };
 }
 
 export async function clearNodePersistStorage() {

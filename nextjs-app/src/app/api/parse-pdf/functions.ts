@@ -4,7 +4,10 @@ import {
 } from '@/app/api/utils/fileUtils';
 import {ChunkDoc} from '@/app/common/types/ChunkDoc';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
-import {isBlankString} from '@/app/common/utils/stringUtils';
+import {
+  isBlankString,
+  matchCaseBySurroundingWords,
+} from '@/app/common/utils/stringUtils';
 import DocumentIntelligence, {
   AnalyzeResultOperationOutput,
   getLongRunningPoller,
@@ -13,6 +16,7 @@ import DocumentIntelligence, {
 import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import pdf2md from '@opendocsg/pdf2md';
+import {diffWordsWithSpace} from 'diff';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
@@ -660,4 +664,57 @@ function extractTimestamp(fileName: string): number {
 
   // Return 0 if timestamp not found (shouldn't happen if file name matches regex)
   return 0;
+}
+
+export function reconcileTexts(firstText: string, secondText: string): string {
+  // Normalize the first text for easier diffing
+  const normalizedFirstText = firstText
+    .split(/[\s\n]+/)
+    .map((s) => s.trim())
+    .join(' ');
+
+  // Generate the diff JSON using jsdiff
+  const diff = diffWordsWithSpace(normalizedFirstText, secondText, {
+    ignoreCase: true,
+  });
+
+  const result: string[] = [];
+  let firstTextIndex = 0;
+
+  diff.forEach((part) => {
+    if (part.added) {
+      // LLM has an extra word, we need to remove it.
+      // Don't add these words to the result array, as we need to remove them
+    } else if (part.removed) {
+      // Traditional text has a word that LLM is missing
+      // Insert the missing word but handle the case based on the context
+      const missingWords = part.value
+        .split(/\s+/)
+        .filter((w) => !isBlankString(w));
+
+      missingWords.forEach((word) => {
+        if (result.length > 0) {
+          const lastWord = result[result.length - 1];
+          const nextWordIndex = firstTextIndex + part.value.length;
+          const nextWord = secondText
+            .slice(nextWordIndex)
+            .split(/\s+/)
+            .filter((w) => !isBlankString(w))[0]; // Get next word from LLM text
+          result.push(
+            matchCaseBySurroundingWords(word, lastWord, nextWord) + ' '
+          );
+        } else {
+          result.push(word + ' ');
+        }
+      });
+
+      firstTextIndex += part.value.length;
+    } else {
+      // Words are equal
+      result.push(part.value); // Directly use the part value from the LLM text
+      firstTextIndex += part.value.length;
+    }
+  });
+
+  return result.join('').trim();
 }
