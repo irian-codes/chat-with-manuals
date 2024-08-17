@@ -16,7 +16,7 @@ import DocumentIntelligence, {
 import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import pdf2md from '@opendocsg/pdf2md';
-import {diffWordsWithSpace} from 'diff';
+import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
@@ -686,7 +686,7 @@ export function reconcileTexts(firstText: string, secondText: string): string {
     .join(' ');
 
   // Generate the diff JSON using jsdiff
-  const trimmedDiff = diffWordsWithSpace(normalizedFirstText, secondText, {
+  const trimmedDiff = diffWords(normalizedFirstText, secondText, {
     ignoreCase: true,
     ignoreWhitespace: true,
   }).map((d) => ({...d, value: d.value.trim()}));

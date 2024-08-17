@@ -1,5 +1,5 @@
 import {reconcileTexts} from '@/app/api/parse-pdf/functions';
-import {diffWordsWithSpace} from 'diff';
+import {diffWords} from 'diff';
 import {describe, expect, it, TestFunction} from 'vitest';
 
 describe('reconcileTexts', () => {
@@ -15,7 +15,7 @@ describe('reconcileTexts', () => {
       .join(' ');
 
     // Generate the diff JSON using jsdiff
-    const trimmedDiff = diffWordsWithSpace(normalizedFirstText, secondText, {
+    const trimmedDiff = diffWords(normalizedFirstText, secondText, {
       ignoreCase: true,
       ignoreWhitespace: true,
     }).map((d) => ({...d, value: d.value.trim()}));
