@@ -41,6 +41,10 @@ export function isStringLowercase(str: string) {
   return str === str.toLowerCase();
 }
 
+export function isStringSentenceCase(str: string) {
+  return /^[A-Z][a-z]+$/.test(str);
+}
+
 export function matchCaseBySurroundingWords(
   word: string,
   prevWord?: string,
@@ -51,7 +55,7 @@ export function matchCaseBySurroundingWords(
     if (isStringUppercase(prevWord) && isStringUppercase(nextWord)) {
       return word.toUpperCase();
     } else if (isStringLowercase(prevWord) && isStringLowercase(nextWord)) {
-      return word.toLowerCase();
+      return isStringSentenceCase(word) ? word : word.toLowerCase();
     }
     // If the case mismatches we just return the word
     else {
@@ -61,12 +65,16 @@ export function matchCaseBySurroundingWords(
     // Handle case based on the previous word only
     return isStringUppercase(prevWord)
       ? word.toUpperCase()
-      : word.toLowerCase();
+      : isStringSentenceCase(word)
+        ? word
+        : word.toLowerCase();
   } else if (nextWord) {
     // Handle case based on the next word only
     return isStringUppercase(nextWord)
       ? word.toUpperCase()
-      : word.toLowerCase();
+      : isStringSentenceCase(word)
+        ? word
+        : word.toLowerCase();
   }
 
   return word; // Default: return as is
