@@ -686,21 +686,20 @@ export function reconcileTexts(firstText: string, secondText: string): string {
     .join(' ');
 
   // Generate the diff JSON using jsdiff
-  const trimmedDiff = diffWords(normalizedFirstText, secondText, {
+  const diff = diffWords(normalizedFirstText, secondText, {
     ignoreCase: true,
-    ignoreWhitespace: true,
-  }).map((d) => ({...d, value: d.value.trim()}));
+  });
 
-  const words: string[] = [];
+  const chunks: string[] = [];
   let firstTextIndex = 0;
 
-  trimmedDiff.forEach((part) => {
+  diff.forEach((part) => {
     if (part.added) {
-      // LLM has an extra word, we need to remove it.
-      // Don't add these words to the result array, as we need to remove them
+      // LLM has an extra piece of text, we need to remove it. Don't add
+      // this text to the result array, as we need to remove them
     } else if (part.removed) {
-      // Traditional text has a word that LLM is missing
-      // Insert the missing word but handle the case based on the context
+      // Traditional text has a piece of text that LLM is missing.
+      // Insert the missing words but handle the case based on the context
       const missingWords = part.value
         .split(/\s+/)
         .filter((w) => !isBlankString(w));
@@ -708,34 +707,36 @@ export function reconcileTexts(firstText: string, secondText: string): string {
       missingWords.forEach((word) => {
         let newWord: string = '';
 
-        if (words.length > 0) {
-          const lastWord = words[words.length - 1];
-          const nextWordIndex = firstTextIndex + part.value.length;
+        if (chunks.length > 0) {
+          const lastChunkSplit = chunks[chunks.length - 1]
+            .split(/[\s\n]+/)
+            .filter((w) => !isBlankString(w));
+          const lastWord = lastChunkSplit[lastChunkSplit.length - 1];
           const nextWord = secondText
-            .slice(nextWordIndex)
+            .slice(firstTextIndex)
             .split(/\s+/)
-            .filter((w) => !isBlankString(w))[0]; // Get next word from second text
+            .filter((w) => !isBlankString(w))[0];
 
           newWord = matchCaseBySurroundingWords(word, lastWord, nextWord);
         } else {
           newWord = word;
         }
 
-        words.push(newWord);
+        chunks.push(newWord);
       });
-
-      firstTextIndex += part.value.length;
     } else {
       // Words are equal
-      words.push(part.value); // Directly use the part value from the LLM text
-      firstTextIndex += part.value.length;
+      chunks.push(part.value); // Directly use the part value from the LLM text
     }
+
+    firstTextIndex += part.value.length;
   });
 
   // The final step is to join the words together with a space and remove
-  // any double spaces. We only add a space between words, not other characters.
-  const finalStr = words.reduce((prev, curr) => {
-    const newString = prev + (/^\w/i.test(curr) ? ' ' : '') + curr;
+  // any double spaces. We only add a space between words, not other
+  // characters.
+  const finalStr = chunks.reduce((prev, curr) => {
+    const newString = prev + (/^\w/i.test(curr.trim()) ? ' ' : '') + curr;
 
     return newString.replaceAll(/\s{2,}/g, ' ').trim();
   }, '');
