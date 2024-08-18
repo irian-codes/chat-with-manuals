@@ -737,10 +737,9 @@ export function reconcileTexts(firstText: string, secondText: string): string {
   // characters.
   const finalStr = chunks.reduce((prev, curr) => {
     const shouldAddSpace = (() => {
-      // Combine the strings with a special delimiter
+      // Combine the strings with a special delimiter to aid in regex
       const combined = `${prev.trim()}#--#${curr.trim()}`;
 
-      // Define regex patterns for cases where a space should not be added
       const noSpacePatterns = [
         /[(\[{`‘“"'«‹]#--#/, // no space when a parenthesis or quote opens (eg. '["a')
         /\d#--#\d/, // no space between digits (eg. 06)
