@@ -31,6 +31,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import PDFParser, {Output} from 'pdf2json';
+import {DataEntry, PdfReader} from 'pdfreader';
 import {UnstructuredClient} from 'unstructured-client';
 import {PartitionResponse} from 'unstructured-client/sdk/models/operations';
 import {
@@ -234,6 +235,39 @@ export async function parsePdf(
       );
 
       return {text, contentType: 'markdown', cachedTime: null};
+    }
+
+    case 'pdfreader': {
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+      const items: DataEntry[] = await new Promise((resolve, reject) => {
+        const items: DataEntry[] = [];
+
+        new PdfReader().parseBuffer(fileBuffer, (err, item) => {
+          if (err) {
+            reject(err);
+          } else if (!item) {
+            resolve(items);
+          } else if (item.text) {
+            items.push(item);
+          }
+        });
+      });
+
+      const text = items.map((i: DataEntry) => i?.text ?? '').join(' ');
+
+      if (isBlankString(text)) {
+        throw new Error(`Parser ${output} produced an empty file`);
+      }
+
+      writeToTimestampedFile(
+        text,
+        'tmp',
+        `${file.name}_parser-${output}`,
+        'txt',
+        'parsedPdf'
+      );
+
+      return {text, contentType: 'string', cachedTime: null};
     }
 
     default: {
