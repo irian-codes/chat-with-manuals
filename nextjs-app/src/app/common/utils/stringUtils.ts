@@ -50,27 +50,32 @@ export function matchCaseBySurroundingWords(
   prevWord?: string,
   nextWord?: string
 ): string {
-  if (prevWord && nextWord) {
+  const _prevWord =
+    prevWord == null || isBlankString(prevWord) ? undefined : prevWord.trim();
+  const _nextWord =
+    nextWord == null || isBlankString(nextWord) ? undefined : nextWord.trim();
+
+  if (_prevWord && _nextWord) {
     // Handle case based on surrounding words with the same case
-    if (isStringUppercase(prevWord) && isStringUppercase(nextWord)) {
+    if (isStringUppercase(_prevWord) && isStringUppercase(_nextWord)) {
       return word.toUpperCase();
-    } else if (isStringLowercase(prevWord) && isStringLowercase(nextWord)) {
+    } else if (isStringLowercase(_prevWord) && isStringLowercase(_nextWord)) {
       return isStringSentenceCase(word) ? word : word.toLowerCase();
     }
     // If the case mismatches we just return the word
     else {
       return word;
     }
-  } else if (prevWord) {
+  } else if (_prevWord) {
     // Handle case based on the previous word only
-    return isStringUppercase(prevWord)
+    return isStringUppercase(_prevWord)
       ? word.toUpperCase()
       : isStringSentenceCase(word)
         ? word
         : word.toLowerCase();
-  } else if (nextWord) {
+  } else if (_nextWord) {
     // Handle case based on the next word only
-    return isStringUppercase(nextWord)
+    return isStringUppercase(_nextWord)
       ? word.toUpperCase()
       : isStringSentenceCase(word)
         ? word
