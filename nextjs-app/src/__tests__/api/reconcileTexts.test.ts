@@ -117,6 +117,7 @@ chooses one tied player. If the coalitioned player
 wins the game, the Vagabond also wins.`;
     const secondText =
       'Vagabund cannot activate a dominance card for its victory condition (3.3.1). Instead, in games with four or more players, the Vagabond can activate a dominance card to form a coalition with another player, placing his score marker on that player’s faction board. That player must have fewer victory points than each other player active in the coalition, and that player cannot be in a coalition. If there is a tie for fewest victory points, he chooses one tied player. If the coalited player wins the game, the Vagabond player also win';
+
     const result = reconcileTexts(firstText, secondText);
     expect(result).toEqual(
       'The Vagabond cannot activate a dominance card for its normal victory condition (3.3.1). Instead, in games with four or more players, the Vagabond can activate a dominance card to form a coalition with another player, placing his score marker on that player’s faction board. (The Vagabond no longer scores points.) That player must have fewer victory points than each other player except the Vagabond forming the coalition, and that player cannot be in a coalition. If there is a tie for fewest victory points, he chooses one tied player. If the coalitioned player wins the game, the Vagabond also wins.'

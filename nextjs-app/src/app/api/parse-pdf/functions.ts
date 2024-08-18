@@ -736,7 +736,31 @@ export function reconcileTexts(firstText: string, secondText: string): string {
   // any double spaces. We only add a space between words, not other
   // characters.
   const finalStr = chunks.reduce((prev, curr) => {
-    const newString = prev + (/^\w/i.test(curr.trim()) ? ' ' : '') + curr;
+    const shouldAddSpace = (() => {
+      // Combine the strings with a special delimiter
+      const combined = `${prev.trim()}#--#${curr.trim()}`;
+
+      // Define regex patterns for cases where a space should not be added
+      const noSpacePatterns = [
+        /[(\[{`‘“"'«‹]#--#/, // no space when a parenthesis or quote opens (eg. '["a')
+        /\d#--#\d/, // no space between digits (eg. 06)
+        /\w#--#\W/i, // no space between a word char and a non word char (eg. 'a.')
+        /#--#[)\]}`’”"'»›]/, // curr starts with a closing parenthesis or quote (eg. '[a"'),
+        /#--#…/, // No space before an ellipsis (e.g., 'word…'),
+      ];
+
+      // Check if any pattern matches the combined string
+      for (const pattern of noSpacePatterns) {
+        if (pattern.test(combined)) {
+          return false; // No space should be added
+        }
+      }
+
+      // Otherwise, return true (space needed)
+      return true;
+    })();
+
+    const newString = prev + (shouldAddSpace ? ' ' : '') + curr;
 
     return newString.replaceAll(/\s{2,}/g, ' ').trim();
   }, '');
