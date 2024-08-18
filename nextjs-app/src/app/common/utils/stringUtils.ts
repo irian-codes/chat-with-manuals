@@ -42,7 +42,7 @@ export function isStringLowercase(str: string) {
 }
 
 export function isStringSentenceCase(str: string) {
-  return /^[A-Z][a-z]+$/.test(str);
+  return /^[^a-zA-Z]*[A-Z][a-z]+.*$/.test(str);
 }
 
 export function matchCaseBySurroundingWords(
