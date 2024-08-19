@@ -238,22 +238,7 @@ export async function parsePdf(
     }
 
     case 'pdfreader': {
-      const fileBuffer = Buffer.from(await file.arrayBuffer());
-      const items: DataEntry[] = await new Promise((resolve, reject) => {
-        const items: DataEntry[] = [];
-
-        new PdfReader().parseBuffer(fileBuffer, (err, item) => {
-          if (err) {
-            reject(err);
-          } else if (!item) {
-            resolve(items);
-          } else if (item.text) {
-            items.push(item);
-          }
-        });
-      });
-
-      const text = items.map((i: DataEntry) => i?.text ?? '').join(' ');
+      const text = await pdfParseWithPdfreader(file);
 
       if (isBlankString(text)) {
         throw new Error(`Parser ${output} produced an empty file`);
@@ -485,6 +470,25 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
   }
 
   return result.analyzeResult.content;
+}
+
+export async function pdfParseWithPdfreader(file: File): Promise<string> {
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const items: DataEntry[] = await new Promise((resolve, reject) => {
+    const items: DataEntry[] = [];
+
+    new PdfReader().parseBuffer(fileBuffer, (err, item) => {
+      if (err) {
+        reject(err);
+      } else if (!item) {
+        resolve(items);
+      } else if (item.text) {
+        items.push(item);
+      }
+    });
+  });
+
+  return items.map((i: DataEntry) => i?.text ?? '').join(' ');
 }
 
 export function lintAndFixMarkdown(markdown: string) {
