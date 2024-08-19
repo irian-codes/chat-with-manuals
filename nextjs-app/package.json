@@ -35,7 +35,7 @@
     "patch-package": "^8.0.0",
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.1.4",
-    "pdfreader": "github:irian-codes/npm-pdfreader#12c29a3e0a5bd7f70f5353def726a061b14d3f95",
+    "pdfreader": "^3.0.5",
     "react": "^18",
     "react-dom": "^18",
     "sanitize-html": "^2.13.0",
