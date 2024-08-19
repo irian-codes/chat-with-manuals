@@ -31,7 +31,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import PDFParser, {Output} from 'pdf2json';
-import {DataEntry, PdfReader} from 'pdfreader';
+import {Item, PdfReader} from 'pdfreader';
 import {UnstructuredClient} from 'unstructured-client';
 import {PartitionResponse} from 'unstructured-client/sdk/models/operations';
 import {
@@ -474,21 +474,39 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
 
 export async function pdfParseWithPdfreader(file: File): Promise<string> {
   const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const items: DataEntry[] = await new Promise((resolve, reject) => {
-    const items: DataEntry[] = [];
 
-    new PdfReader().parseBuffer(fileBuffer, (err, item) => {
+  type Page = {page: number; width: number; height: number};
+  type ItemWithPage = Item & {
+    page: {num: number; width: number; height: number};
+  };
+  type File = {file: {path: string}};
+  type PdfItem = File | Page | Item;
+
+  const items: ItemWithPage[] = await new Promise((resolve, reject) => {
+    const items: ItemWithPage[] = [];
+    let currentPage: Page = {page: 0, width: 0, height: 0};
+
+    new PdfReader().parseBuffer(fileBuffer, (err, item: PdfItem | null) => {
       if (err) {
         reject(err);
-      } else if (!item) {
+      } else if (item == null) {
         resolve(items);
-      } else if (item.text) {
-        items.push(item);
+      } else if ('text' in item) {
+        items.push({
+          ...item,
+          page: {
+            num: currentPage.page,
+            height: currentPage.height,
+            width: currentPage.width,
+          },
+        });
+      } else if ('page' in item) {
+        currentPage = item;
       }
     });
   });
 
-  return items.map((i: DataEntry) => i?.text ?? '').join(' ');
+  return items.map((i: ItemWithPage) => i?.text ?? '').join(' ');
 }
 
 export function lintAndFixMarkdown(markdown: string) {
