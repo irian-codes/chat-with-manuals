@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
       case 'markdown':
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
+        // TODO: 1. Parse with pdfreader. 2. Match section text on pdfreader text. 3. Reconcile SectionNode[] to fix hallucinations with some difference tolerance
         const chunks = await chunkSectionsJson(mdToJson);
         const store = await embedPDF(fileHash, chunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});
