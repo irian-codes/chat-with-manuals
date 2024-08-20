@@ -479,88 +479,92 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
 }
 
 export async function pdfParseWithPdfreader(
-  file: File,
+  file: File | Buffer,
   columnsNumber: number
 ): Promise<string> {
-  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const fileBuffer = Buffer.isBuffer(file)
+    ? file
+    : Buffer.from(await file.arrayBuffer());
 
-  type Page = {page: number; width: number; height: number};
-  type ItemWithPage = Item & {
+  type PageData = {page: number; width: number; height: number};
+  type ItemData = Item & {
     page: {num: number; width: number; height: number};
   };
-  type File = {file: {path: string}};
-  type PdfItem = File | Page | Item;
+  type FileData = {file: {path: string}};
+  type PdfItem = FileData | PageData | Item;
+
+  const pages: string[] = [];
 
   // Obtaining all items
-  const items: ItemWithPage[] = await new Promise((resolve, reject) => {
-    const items: ItemWithPage[] = [];
-    let currentPage: Page = {page: 0, width: 0, height: 0};
+  await new Promise((resolve, reject) => {
+    let leftColumn: ItemData[] = [];
+    let rightColumn: ItemData[] = [];
+    let currentPage: PageData = {page: 0, width: 0, height: 0};
 
     new PdfReader().parseBuffer(fileBuffer, (err, item: PdfItem | null) => {
       if (err) {
         reject(err);
       } else if (item == null) {
-        resolve(items);
+        // Processing last page
+        pages.push(
+          leftColumn.map((i) => i.text).join(' ') +
+            ' ' +
+            rightColumn.map((i) => i.text).join(' ')
+        );
+
+        resolve([]);
       } else if ('text' in item) {
-        items.push({
-          ...item,
-          page: {
-            num: currentPage.page,
-            height: currentPage.height,
-            width: currentPage.width,
-          },
-        });
+        // Determine which column the text belongs to based on the x-coordinate
+        const columnBoundary = currentPage.width / columnsNumber;
+
+        if (item.x <= columnBoundary) {
+          leftColumn.push({
+            ...item,
+            page: {
+              num: currentPage.page,
+              height: currentPage.height,
+              width: currentPage.width,
+            },
+          });
+        } else {
+          rightColumn.push({
+            ...item,
+            page: {
+              num: currentPage.page,
+              height: currentPage.height,
+              width: currentPage.width,
+            },
+          });
+        }
       } else if ('page' in item) {
+        // Processing previous page
+        if (currentPage.page > 0) {
+          pages.push(
+            leftColumn.map((i) => i.text).join(' ') +
+              ' ' +
+              rightColumn.map((i) => i.text).join(' ')
+          );
+        }
+
+        leftColumn = [];
+        rightColumn = [];
         currentPage = item;
       }
     });
   });
 
-  if (columnsNumber < 2) {
-    return items
-      .map((i: ItemWithPage) => i?.text ?? '')
+  return (
+    pages
       .join(' ')
+      // Replacing double spaces from single ones
       .replaceAll(/\s+/g, ' ')
-      .trim();
-  }
-
-  // PDF with two columns
-  const pages: string[] = [];
-  let currentPageNum = 0;
-  let leftColumn: string[] = [];
-  let rightColumn: string[] = [];
-  let pageWidth = 0;
-
-  for (const item of items) {
-    if (item.page.num !== currentPageNum) {
-      // Process the previous page before moving on to the new one
-      if (currentPageNum > 0) {
-        pages.push(leftColumn.join(' ') + ' ' + rightColumn.join(' '));
-      }
-
-      // Reset for the new page
-      currentPageNum = item.page.num;
-      pageWidth = item.page.width;
-      leftColumn = [];
-      rightColumn = [];
-    }
-
-    // Determine which column the text belongs to based on the x-coordinate
-    const columnBoundary = pageWidth / 2;
-
-    if (item.x <= columnBoundary) {
-      leftColumn.push(item.text);
-    } else {
-      rightColumn.push(item.text);
-    }
-  }
-
-  // Process the last page
-  if (currentPageNum > 0) {
-    pages.push(leftColumn.join('') + ' ' + rightColumn.join(''));
-  }
-
-  return pages.join(' ').replaceAll(/\s+/g, ' ').trim();
+      // Sometimes in some PDFs the words are split with hyphens when they
+      // change lines or columns, we remove it with this.
+      .replaceAll(/(\w)\s-\s(\w)/gi, '$1$2')
+      // Replacing unwanted extra spaces before punctuation characters
+      .replaceAll(/([\w,:;!?\])’”"'»›])\s+([.,:;!?\])’”"'»›])/g, '$1$2')
+      .trim()
+  );
 }
 
 export function lintAndFixMarkdown(markdown: string) {
