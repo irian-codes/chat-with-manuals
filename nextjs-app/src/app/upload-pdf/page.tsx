@@ -42,7 +42,7 @@ export default function UploadPDFPage() {
 
   async function uploadFile(file: File) {
     const formData = new FormData();
-    formData.append('pdf', file);
+    formData.append('file', file);
     formData.append('columnsNumber', columnsNumber.toString());
     formData.append('output', selectedOutput);
     formData.append('force', forceParsing.toString());
