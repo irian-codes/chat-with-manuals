@@ -559,10 +559,14 @@ export async function pdfParseWithPdfreader(
       // Replacing double spaces from single ones
       .replaceAll(/\s+/g, ' ')
       // Sometimes in some PDFs the words are split with hyphens when they
-      // change lines or columns, we remove it with this.
-      .replaceAll(/(\w)\s-\s(\w)/gi, '$1$2')
-      // Replacing unwanted extra spaces before punctuation characters
+      // change lines or columns, we transform the sequence to a regular
+      // hyphen. We cannot flat out remove the hyphens because if the PDF
+      // contains mathematical formulas or composite words we could remove
+      // those and confuse the LLM even more.
+      .replaceAll(/(\w)\s-\s(\w)/gi, '$1-$2')
+      // Replacing unwanted extra spaces before and after punctuation characters
       .replaceAll(/([\w,:;!?\])’”"'»›])\s+([.,:;!?\])’”"'»›])/g, '$1$2')
+      .replaceAll(/([\(\[`‘“"'«‹])\s+(\w)/g, '$1$2')
       .trim()
   );
 }
