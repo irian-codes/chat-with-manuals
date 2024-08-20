@@ -4,6 +4,8 @@ import {ChromaClient} from 'chromadb';
 import {Document} from 'langchain/document';
 import {v4 as uuidv4} from 'uuid';
 
+const chromaDbHost = process.env.CHROMA_DB_HOST;
+
 function createEmbedder() {
   return new OpenAIEmbeddings({
     model: 'text-embedding-3-small',
@@ -33,7 +35,7 @@ async function createVectorStore(
   // Create vector store and index the docs
   const vectorStore = await Chroma.fromDocuments(docs, createEmbedder(), {
     collectionName: uuidv4(),
-    url: process.env.CHROMA_DB_HOST,
+    url: chromaDbHost,
     ...options,
   });
 
@@ -52,7 +54,7 @@ export async function queryCollection(
 
   const vectorStore = await Chroma.fromExistingCollection(createEmbedder(), {
     collectionName,
-    url: process.env.CHROMA_DB_HOST,
+    url: chromaDbHost,
     ...options,
   });
 
@@ -68,6 +70,7 @@ export async function doesCollectionExists(
   // Double checking
   const chromaClient = new Chroma(createEmbedder(), {
     collectionName,
+    url: chromaDbHost,
     ...options,
   });
 
@@ -77,11 +80,50 @@ export async function doesCollectionExists(
 }
 
 export async function deleteCollection(collectionName: string) {
-  const client = new ChromaClient();
-  await client.deleteCollection({name: collectionName});
+  const client = new ChromaClient({path: chromaDbHost});
+
+  try {
+    await client.deleteCollection({name: collectionName});
+  } catch (error) {
+    if (String(error.cause).includes('ECONNREFUSED')) {
+      throw new Error(
+        'Could not connect to ChromaDB. Please restart the instance and try again.',
+        {
+          cause: error,
+        }
+      );
+    } else {
+      throw error;
+    }
+  }
 }
 
 export async function clearDatabase() {
-  const client = new ChromaClient();
-  await client.reset();
+  const client = new ChromaClient({path: chromaDbHost});
+
+  try {
+    await client.reset();
+  } catch (error) {
+    if (error instanceof Error) {
+      if (String(error.cause).includes('ECONNREFUSED')) {
+        throw new Error(
+          'Could not connect to ChromaDB. Please restart the instance and try again.',
+          {
+            cause: error,
+          }
+        );
+      }
+    } else {
+      if (error.status === 500) {
+        throw new Error(
+          "Couldn't reset ChromaDB. Please ensure environment variable ALLOW_RESET is set to true in ChromaDB Docker container. Also, check the underlaying error to be sure what's wrong.",
+          {
+            cause: error,
+          }
+        );
+      } else {
+        throw error;
+      }
+    }
+  }
 }
