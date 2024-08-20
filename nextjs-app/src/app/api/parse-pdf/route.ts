@@ -1,8 +1,6 @@
-import {
-  PdfParsingOutput,
-  pdfParsingOutputScheme,
-} from '@/app/common/types/PdfParsingOutput';
+import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
 import {NextRequest, NextResponse} from 'next/server';
+import {z} from 'zod';
 import {
   deleteFileByHash,
   getFileByHash,
@@ -21,6 +19,7 @@ import {
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get('pdf');
+  const columnsNumber = Number(formData.get('columnsNumber'));
   const output = formData.get('output')?.toString();
   const force = formData.get('force')?.toString() === 'true';
 
@@ -34,6 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     pdfParsingOutputScheme.parse(output);
+    z.number().int().gt(0).parse(columnsNumber);
 
     const fileHash = await getFileHash(file);
     await initStorage();
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const parseResult = await parsePdf(file, output as PdfParsingOutput, force);
+    const parseResult = await parsePdf({file, output, force, columnsNumber});
 
     switch (parseResult.contentType) {
       case 'json':

@@ -9,6 +9,7 @@ export default function UploadPDFPage() {
   const [selectedOutput, setSelectedOutput] =
     useState<PdfParsingOutput>('llamaparse');
   const [forceParsing, setForceParsing] = useState(false);
+  const [columnsNumber, setColumnsNumber] = useState(0);
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -42,6 +43,7 @@ export default function UploadPDFPage() {
   async function uploadFile(file: File) {
     const formData = new FormData();
     formData.append('pdf', file);
+    formData.append('columnsNumber', columnsNumber.toString());
     formData.append('output', selectedOutput);
     formData.append('force', forceParsing.toString());
 
@@ -113,6 +115,30 @@ export default function UploadPDFPage() {
         <option value="@opendocsg-pdf2md">@opendocsg/pdf2md</option>
         <option value="pdfreader">PDFReader</option>
       </select>
+
+      <div className="mt-4 flex items-center">
+        <label>
+          PDF columns number
+          <input
+            type="number"
+            min={1}
+            value={columnsNumber}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+
+              if (Number.isNaN(value) || value < 1) {
+                alert('PDF columns number must be greater than 0');
+                setColumnsNumber(0);
+              } else {
+                setColumnsNumber(value);
+              }
+            }}
+            className="ml-2 w-24 rounded-md border-2 border-gray-300 p-2 text-black"
+            disabled={isLoading}
+            required
+          />
+        </label>
+      </div>
 
       <div className="mt-4">
         <label>

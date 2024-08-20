@@ -40,11 +40,17 @@ import {
 } from 'unstructured-client/sdk/models/shared';
 import {v4 as uuidv4} from 'uuid';
 
-export async function parsePdf(
-  file: File,
-  output: PdfParsingOutput,
-  force: boolean = false
-): Promise<{
+export async function parsePdf({
+  file,
+  columnsNumber = 1,
+  output,
+  force = false,
+}: {
+  file: File;
+  columnsNumber: number;
+  output: PdfParsingOutput;
+  force?: boolean;
+}): Promise<{
   text: string;
   contentType: 'json' | 'string' | 'markdown';
   cachedTime: number | null;
@@ -238,7 +244,7 @@ export async function parsePdf(
     }
 
     case 'pdfreader': {
-      const text = await pdfParseWithPdfreader(file);
+      const text = await pdfParseWithPdfreader(file, columnsNumber);
 
       if (isBlankString(text)) {
         throw new Error(`Parser ${output} produced an empty file`);
@@ -472,7 +478,10 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
   return result.analyzeResult.content;
 }
 
-export async function pdfParseWithPdfreader(file: File): Promise<string> {
+export async function pdfParseWithPdfreader(
+  file: File,
+  columnsNumber: number
+): Promise<string> {
   const fileBuffer = Buffer.from(await file.arrayBuffer());
 
   type Page = {page: number; width: number; height: number};
@@ -482,6 +491,7 @@ export async function pdfParseWithPdfreader(file: File): Promise<string> {
   type File = {file: {path: string}};
   type PdfItem = File | Page | Item;
 
+  // Obtaining all items
   const items: ItemWithPage[] = await new Promise((resolve, reject) => {
     const items: ItemWithPage[] = [];
     let currentPage: Page = {page: 0, width: 0, height: 0};
@@ -506,7 +516,51 @@ export async function pdfParseWithPdfreader(file: File): Promise<string> {
     });
   });
 
-  return items.map((i: ItemWithPage) => i?.text ?? '').join(' ');
+  if (columnsNumber < 2) {
+    return items
+      .map((i: ItemWithPage) => i?.text ?? '')
+      .join(' ')
+      .replaceAll(/\s+/g, ' ')
+      .trim();
+  }
+
+  // PDF with two columns
+  const pages: string[] = [];
+  let currentPageNum = 0;
+  let leftColumn: string[] = [];
+  let rightColumn: string[] = [];
+  let pageWidth = 0;
+
+  for (const item of items) {
+    if (item.page.num !== currentPageNum) {
+      // Process the previous page before moving on to the new one
+      if (currentPageNum > 0) {
+        pages.push(leftColumn.join(' ') + ' ' + rightColumn.join(' '));
+      }
+
+      // Reset for the new page
+      currentPageNum = item.page.num;
+      pageWidth = item.page.width;
+      leftColumn = [];
+      rightColumn = [];
+    }
+
+    // Determine which column the text belongs to based on the x-coordinate
+    const columnBoundary = pageWidth / 2;
+
+    if (item.x <= columnBoundary) {
+      leftColumn.push(item.text);
+    } else {
+      rightColumn.push(item.text);
+    }
+  }
+
+  // Process the last page
+  if (currentPageNum > 0) {
+    pages.push(leftColumn.join('') + ' ' + rightColumn.join(''));
+  }
+
+  return pages.join(' ').replaceAll(/\s+/g, ' ').trim();
 }
 
 export function lintAndFixMarkdown(markdown: string) {
