@@ -39,6 +39,7 @@ import {
   Strategy,
 } from 'unstructured-client/sdk/models/shared';
 import {v4 as uuidv4} from 'uuid';
+import {z} from 'zod';
 
 export async function parsePdf({
   file,
@@ -244,7 +245,7 @@ export async function parsePdf({
     }
 
     case 'pdfreader': {
-      const text = await pdfParseWithPdfreader(file, columnsNumber);
+      const text = await pdfParseWithPdfreader({file, columnsNumber});
 
       if (isBlankString(text)) {
         throw new Error(`Parser ${output} produced an empty file`);
@@ -478,10 +479,23 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
   return result.analyzeResult.content;
 }
 
-export async function pdfParseWithPdfreader(
-  file: File | Buffer,
-  columnsNumber: number
-): Promise<string> {
+export async function pdfParseWithPdfreader({
+  file,
+  columnsNumber,
+}: {
+  file: File | Buffer;
+  columnsNumber: number;
+}): Promise<string> {
+  const pdfParseWithPdfreaderSchema = z.object({
+    file: z.union([z.instanceof(File), z.instanceof(Buffer)]),
+    columnsNumber: z.number().int().min(1).max(2),
+  });
+
+  pdfParseWithPdfreaderSchema.parse({
+    file,
+    columnsNumber,
+  });
+
   const fileBuffer = Buffer.isBuffer(file)
     ? file
     : Buffer.from(await file.arrayBuffer());

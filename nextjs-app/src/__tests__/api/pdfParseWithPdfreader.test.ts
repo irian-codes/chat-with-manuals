@@ -17,7 +17,7 @@ describe('pdfParseWithPdfreader', (a) => {
 
     const file = fs.readFileSync(pdfPath);
 
-    const result = await pdfParseWithPdfreader(file, 2);
+    const result = await pdfParseWithPdfreader({file, columnsNumber: 2});
 
     // Note: The "correct" text contains hyphens that should be removed but for now it's a close enough approximation.
     expect(result).toBe(
@@ -37,7 +37,7 @@ describe('pdfParseWithPdfreader', (a) => {
 
     const file = fs.readFileSync(pdfPath);
 
-    const result = await pdfParseWithPdfreader(file, 1);
+    const result = await pdfParseWithPdfreader({file, columnsNumber: 1});
 
     // Note: It has some extra spaces but that's not an issue. Improving it further probably offers almost no gain.
     expect(result).toBe(
@@ -54,7 +54,7 @@ describe('pdfParseWithPdfreader', (a) => {
 
     const file = fs.readFileSync(pdfPath);
 
-    const result = await pdfParseWithPdfreader(file, 1);
+    const result = await pdfParseWithPdfreader({file, columnsNumber: 1});
 
     // Expect result to be empty or handle gracefully
     expect(result).toBe('');
