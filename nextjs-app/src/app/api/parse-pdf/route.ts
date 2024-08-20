@@ -24,7 +24,14 @@ export async function POST(request: NextRequest) {
       .object({
         file: z
           .instanceof(File)
-          .refine((file) => file.type === 'application/pdf'),
+          .refine(
+            (file) => file.type === 'application/pdf',
+            'File must be a PDF'
+          )
+          .refine(
+            (file) => file.size > 0,
+            'File must have a size greater than 0. Maybe the file is corrupted.'
+          ),
         columnsNumber: z.coerce.number().min(1),
         output: z.lazy(() => pdfParsingOutputScheme),
         force: z
@@ -40,13 +47,6 @@ export async function POST(request: NextRequest) {
       output,
       force = false,
     } = inputSchema.parse(Object.fromEntries(formData));
-
-    console.log('heeey 3.4. Form data: ', {
-      file,
-      columnsNumber,
-      output,
-      force,
-    });
 
     const fileHash = await getFileHash(file);
     await initStorage();
