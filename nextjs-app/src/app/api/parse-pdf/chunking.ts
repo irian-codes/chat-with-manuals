@@ -29,9 +29,9 @@ export type SectionNode = {
  *
  * @param {string} markdown - The markdown string to be parsed. It replaces
  * tables with a placeholder for table content in the format of
- * `<<<TABLE:%d>>>` that will be added to the body of the section to replace
- * it for the table later on. The placeholder includes '%d' which will be
- * replaced with the table index.
+ * {@link tableDelimiter} for more information on how tables are it for the
+ * table later on. The placeholder includes '%d' which will be replaced
+ * with the table index.
  * @return {Promise<SectionNode[]>} A Promise that resolves to an array of
  * SectionNode objects representing the sections and their content.
  */
