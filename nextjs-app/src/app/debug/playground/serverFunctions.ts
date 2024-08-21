@@ -40,8 +40,12 @@ export async function parseMarkdownToJson() {
 
 export async function chunkSections() {
   const sectionNodes = await parseMarkdownToJson();
+  const chunkedSections = await chunkSectionsJson(sectionNodes);
 
-  return await chunkSectionsJson(sectionNodes);
+  return chunkedSections.map((d) => ({
+    metadata: d.metadata,
+    content: d.pageContent,
+  }));
 }
 
 export async function diffTexts() {
