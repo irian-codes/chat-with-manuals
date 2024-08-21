@@ -17,7 +17,6 @@ describe('reconcileTexts', () => {
     // Generate the diff JSON using jsdiff
     const diff = diffWords(normalizedFirstText, secondText, {
       ignoreCase: true,
-      ignoreWhitespace: true,
     });
 
     console.log('Diff:', {name: ctx.task.name, diff});
