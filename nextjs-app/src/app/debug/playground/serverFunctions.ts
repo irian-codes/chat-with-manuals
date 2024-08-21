@@ -82,8 +82,8 @@ wins the game, the Vagabond also wins.`;
         ignoreCase: true,
       }),
       differences: diffWords(normalizedFirstText, result, {
-      ignoreCase: true,
-    }).filter((d) => d.added || d.removed),
+        ignoreCase: true,
+      }).filter((d) => d.added || d.removed),
     },
   };
 }
@@ -97,12 +97,11 @@ export async function clearVectorDB() {
   await clearDatabase();
 }
 
-const fileName =
-  'parsedPdf_board-game_Root_Base_Law_of_Root_June_30_2023.pdf_parser-llamaparse_202408090012.md';
+const fileRoute = 'markdown-test-files/test1.md';
 
 function readTestFile() {
   const content = fs.readFileSync(
-    path.join(process.cwd(), 'tmp', fileName),
+    path.join(process.cwd(), 'tmp', fileRoute),
     'utf8'
   );
 
@@ -111,7 +110,7 @@ function readTestFile() {
 
 function writeNewFile(content: string) {
   fs.writeFileSync(
-    path.join(process.cwd(), 'tmp', 'new_' + fileName),
+    path.join(process.cwd(), 'tmp', 'new_' + fileRoute),
     content,
     {encoding: 'utf8'}
   );

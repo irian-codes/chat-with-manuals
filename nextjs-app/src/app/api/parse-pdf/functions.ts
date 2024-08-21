@@ -605,11 +605,25 @@ type SectionNode = {
   level: number;
   title: string;
   content: string;
+  tables: Map<number, string>;
   subsections: SectionNode[];
 };
 
+/**
+ * Parses a markdown string into a JSON structure representing the sections
+ * and their content.
+ *
+ * @param {string} markdown - The markdown string to be parsed.
+ * @param {string} [tablePlaceholder] - The placeholder for table content
+ * that will be added to the body of the section to replace it for the
+ * table later on. The placeholder includes '%d' which will be replaced
+ * with the table index.
+ * @return {Promise<SectionNode[]>} A Promise that resolves to an array of
+ * SectionNode objects representing the sections and their content.
+ */
 export async function markdownToSectionsJson(
-  markdown: string
+  markdown: string,
+  tablePlaceholder: string = '<<<TABLE:%d>>>'
 ): Promise<SectionNode[]> {
   const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
   const tokens = plainMarked.lexer(markdown);
@@ -617,26 +631,42 @@ export async function markdownToSectionsJson(
   // node, in case there are more than one level 1 headings in the document
   const jsonStructure: SectionNode[] = [];
   const stack: SectionNode[] = [];
-  let currentContent = '';
+  let currentContent = {
+    text: '',
+    tables: new Map<number, string>(),
+    lastTableCount: -1,
+  };
+
+  function pushContent() {
+    if (currentContent.text.length > 0) {
+      if (stack.length > 0) {
+        stack[stack.length - 1].content = currentContent.text;
+      }
+
+      currentContent.text = '';
+    }
+
+    if (currentContent.tables.size > 0) {
+      if (stack.length > 0) {
+        stack[stack.length - 1].tables = currentContent.tables;
+      }
+
+      currentContent.tables = new Map();
+      currentContent.lastTableCount = -1;
+    }
+  }
 
   for (const token of tokens) {
     if (token.type === 'heading') {
       // When we encounter a new heading, we should finalize the previous section content
-      if (currentContent.length > 0) {
-        if (stack.length > 0) {
-          stack[stack.length - 1].content = decodeHTML(
-            await plainMarked.parse(currentContent.trim())
-          );
-        }
-
-        currentContent = '';
-      }
+      pushContent();
 
       const node: SectionNode = {
         type: 'section',
         level: token.depth,
         title: token.text,
         content: '',
+        tables: new Map(),
         subsections: [],
       };
 
@@ -652,18 +682,25 @@ export async function markdownToSectionsJson(
       }
 
       stack.push(node);
+    } else if (token.type === 'table') {
+      currentContent.tables.set(
+        ++currentContent.lastTableCount,
+        (await plainMarked.parse(token.raw)).trim()
+      );
+
+      // Add a table placeholder to restore this table later
+      currentContent.text += tablePlaceholder.replace(
+        '%d',
+        String(currentContent.lastTableCount)
+      );
     } else {
       // Append the current token to the content string
-      currentContent += token.raw;
+      currentContent.text += decodeHTML(await plainMarked.parse(token.raw));
     }
   }
 
   // Finalize the last section content
-  if (currentContent && stack.length > 0) {
-    stack[stack.length - 1].content = decodeHTML(
-      await plainMarked.parse(currentContent.trim())
-    );
-  }
+  pushContent();
 
   return jsonStructure;
 }
