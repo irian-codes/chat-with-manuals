@@ -42,10 +42,9 @@ export async function chunkSections() {
   const sectionNodes = await parseMarkdownToJson();
   const chunkedSections = await chunkSectionsJson(sectionNodes);
 
-  return chunkedSections.map((d) => ({
-    metadata: d.metadata,
-    content: d.pageContent,
-  }));
+  // Without doing this Next.js complaints that we cannot return class
+  // instances to a client component.
+  return chunkedSections.map((d) => structuredClone(d));
 }
 
 export async function diffTexts() {
