@@ -609,22 +609,24 @@ type SectionNode = {
   subsections: SectionNode[];
 };
 
+const metadataDelimiter = '<<<%s>>>';
+
 /**
  * Parses a markdown string into a JSON structure representing the sections
  * and their content.
  *
- * @param {string} markdown - The markdown string to be parsed.
- * @param {string} [tablePlaceholder] - The placeholder for table content
- * that will be added to the body of the section to replace it for the
- * table later on. The placeholder includes '%d' which will be replaced
- * with the table index.
+ * @param {string} markdown - The markdown string to be parsed. It replaces
+ * tables with a placeholder for table content in the format of
+ * `<<<TABLE:%d>>>` that will be added to the body of the section to replace
+ * it for the table later on. The placeholder includes '%d' which will be
+ * replaced with the table index.
  * @return {Promise<SectionNode[]>} A Promise that resolves to an array of
  * SectionNode objects representing the sections and their content.
  */
 export async function markdownToSectionsJson(
-  markdown: string,
-  tablePlaceholder: string = '<<<TABLE:%d>>>'
+  markdown: string
 ): Promise<SectionNode[]> {
+  const tablePlaceholder = metadataDelimiter.replace('%s', 'TABLE:%d');
   const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
   const tokens = plainMarked.lexer(markdown);
   // This should be an array because the object itself acts as a fake root
@@ -709,7 +711,17 @@ export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 150,
     chunkOverlap: 0,
-    separators: ['\n\n', '\n', '.', '?', '!', ' ', ''],
+    separators: [
+      metadataDelimiter.substring(0, 3),
+      metadataDelimiter.substring(metadataDelimiter.length - 3),
+      '\n\n',
+      '\n',
+      '.',
+      '?',
+      '!',
+      ' ',
+      '',
+    ],
   });
 
   async function chunkSectionContent({
