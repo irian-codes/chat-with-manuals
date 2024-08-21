@@ -7,7 +7,7 @@ import {
   markdownToSectionsJson,
   reconcileTexts,
 } from '@/app/api/parse-pdf/functions';
-import {diffWordsWithSpace} from 'diff';
+import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
@@ -60,18 +60,31 @@ wins the game, the Vagabond also wins.`;
   const other =
     'Vagabund cannot activate a dominance card for its victory condition (3.3.1). Instead, in games with four or more players, the Vagabond can activate a dominance card to form a coalition with another player, placing his score marker on that player’s faction board. That player must have fewer victory points than each other player active in the coalition, and that player cannot be in a coalition. If there is a tie for fewest victory points, he chooses one tied player. If the coalited player wins the game, the Vagabond player also win';
 
-  const result = reconcileTexts(one, other);
-
   const normalizedFirstText = one
     .split(/[\s\n]+/)
     .map((s) => s.trim())
     .join(' ');
 
+  const result = reconcileTexts(one, other);
+
   return {
     result,
-    secondDiff: diffWordsWithSpace(normalizedFirstText, result, {
+    firstDiff: {
+      diff: diffWords(normalizedFirstText, other, {
+        ignoreCase: true,
+      }),
+      differences: diffWords(normalizedFirstText, other, {
+        ignoreCase: true,
+      }).filter((d) => d.added || d.removed),
+    },
+    secondDiff: {
+      diff: diffWords(normalizedFirstText, result, {
+        ignoreCase: true,
+      }),
+      differences: diffWords(normalizedFirstText, result, {
       ignoreCase: true,
     }).filter((d) => d.added || d.removed),
+    },
   };
 }
 
