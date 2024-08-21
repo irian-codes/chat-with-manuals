@@ -308,6 +308,17 @@ async function chunkSingleSplit({
   const splits = await splitter.splitText(text);
 
   for (let j = 0; j < splits.length; j++) {
+    const tokens: number | boolean = isWithinTokenLimit(
+      splits[j],
+      Number.MAX_VALUE
+    );
+
+    if (tokens === false) {
+      throw new Error(
+        "This shouldn't happen. Attempting to get the token size of a chunk."
+      );
+    }
+
     chunks.push(
       new Document({
         id: uuidv4(),
