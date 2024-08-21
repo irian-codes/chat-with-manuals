@@ -9,8 +9,8 @@ import {
 } from '../db/uploaded-files-db/files';
 import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
+import {chunkSectionNodes} from './chunking';
 import {
-  chunkSectionsJson,
   lintAndFixMarkdown,
   markdownToSectionsJson,
   parsePdf,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
         // TODO: 1. Parse with pdfreader. 2. Match section text on pdfreader text. 3. Reconcile SectionNode[] to fix hallucinations with some difference tolerance
-        const chunks = await chunkSectionsJson(mdToJson);
+        const chunks = await chunkSectionNodes(mdToJson);
         const store = await embedPDF(fileHash, chunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});
 

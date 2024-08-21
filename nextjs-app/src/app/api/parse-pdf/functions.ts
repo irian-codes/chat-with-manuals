@@ -2,7 +2,6 @@ import {
   saveFileObjectToFileSystem,
   writeToTimestampedFile,
 } from '@/app/api/utils/fileUtils';
-import {ChunkDoc} from '@/app/common/types/ChunkDoc';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {
   isBlankString,
@@ -17,16 +16,10 @@ import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import pdf2md from '@opendocsg/pdf2md';
 import {diffWords} from 'diff';
-import {decodeHTML} from 'entities';
-import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
-import {Document} from 'langchain/document';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import markdownlint from 'markdownlint';
 import markdownlintRuleHelpers from 'markdownlint-rule-helpers';
-import {Marked} from 'marked';
-import markedPlaintify from 'marked-plaintify';
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,7 +31,6 @@ import {
   ChunkingStrategy,
   Strategy,
 } from 'unstructured-client/sdk/models/shared';
-import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 
 export async function parsePdf({
@@ -598,197 +590,6 @@ export function lintAndFixMarkdown(markdown: string) {
   });
 
   return markdownlintRuleHelpers.applyFixes(markdown, results.content);
-}
-
-type SectionNode = {
-  type: 'section';
-  level: number;
-  title: string;
-  content: string;
-  tables: Map<number, string>;
-  subsections: SectionNode[];
-};
-
-const metadataDelimiter = '<<<%s>>>';
-
-/**
- * Parses a markdown string into a JSON structure representing the sections
- * and their content.
- *
- * @param {string} markdown - The markdown string to be parsed. It replaces
- * tables with a placeholder for table content in the format of
- * `<<<TABLE:%d>>>` that will be added to the body of the section to replace
- * it for the table later on. The placeholder includes '%d' which will be
- * replaced with the table index.
- * @return {Promise<SectionNode[]>} A Promise that resolves to an array of
- * SectionNode objects representing the sections and their content.
- */
-export async function markdownToSectionsJson(
-  markdown: string
-): Promise<SectionNode[]> {
-  const tablePlaceholder = metadataDelimiter.replace('%s', 'TABLE:%d');
-  const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
-  const tokens = plainMarked.lexer(markdown);
-  // This should be an array because the object itself acts as a fake root
-  // node, in case there are more than one level 1 headings in the document
-  const jsonStructure: SectionNode[] = [];
-  const stack: SectionNode[] = [];
-  let currentContent = {
-    text: '',
-    tables: new Map<number, string>(),
-    lastTableCount: -1,
-  };
-
-  function pushContent() {
-    if (currentContent.text.length > 0) {
-      if (stack.length > 0) {
-        stack[stack.length - 1].content = currentContent.text;
-      }
-
-      currentContent.text = '';
-    }
-
-    if (currentContent.tables.size > 0) {
-      if (stack.length > 0) {
-        stack[stack.length - 1].tables = currentContent.tables;
-      }
-
-      currentContent.tables = new Map();
-      currentContent.lastTableCount = -1;
-    }
-  }
-
-  for (const token of tokens) {
-    if (token.type === 'heading') {
-      // When we encounter a new heading, we should finalize the previous section content
-      pushContent();
-
-      const node: SectionNode = {
-        type: 'section',
-        level: token.depth,
-        title: token.text,
-        content: '',
-        tables: new Map(),
-        subsections: [],
-      };
-
-      // Find the right place to insert the node based on its level
-      while (stack.length > 0 && stack[stack.length - 1].level >= token.depth) {
-        stack.pop();
-      }
-
-      if (stack.length === 0) {
-        jsonStructure.push(node);
-      } else {
-        stack[stack.length - 1].subsections.push(node);
-      }
-
-      stack.push(node);
-    } else if (token.type === 'table') {
-      currentContent.tables.set(
-        ++currentContent.lastTableCount,
-        (await plainMarked.parse(token.raw)).trim()
-      );
-
-      // Add a table placeholder to restore this table later
-      currentContent.text += tablePlaceholder.replace(
-        '%d',
-        String(currentContent.lastTableCount)
-      );
-    } else {
-      // Append the current token to the content string
-      currentContent.text += decodeHTML(await plainMarked.parse(token.raw));
-    }
-  }
-
-  // Finalize the last section content
-  pushContent();
-
-  return jsonStructure;
-}
-
-export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 150,
-    chunkOverlap: 0,
-    separators: [
-      metadataDelimiter.substring(0, 3),
-      metadataDelimiter.substring(metadataDelimiter.length - 3),
-      '\n\n',
-      '\n',
-      '.',
-      '?',
-      '!',
-      ' ',
-      '',
-    ],
-  });
-
-  async function chunkSectionContent({
-    section,
-    headerRoute,
-    headerRouteLevels,
-    chunks,
-  }: {
-    section: SectionNode;
-    headerRoute: string;
-    headerRouteLevels: string;
-    chunks: Document[];
-  }) {
-    const splits = await splitter.splitText(section.content);
-
-    const newChunks = splits.map((text, index): ChunkDoc => {
-      const tokens = (function () {
-        const res = isWithinTokenLimit(text.trim(), Number.MAX_VALUE);
-
-        if (res === false) {
-          throw new Error(
-            "This shouldn't happen. Attempting to get the token size of a chunk."
-          );
-        } else {
-          return res;
-        }
-      })();
-
-      return new Document({
-        id: uuidv4(),
-        pageContent: text.trim(),
-        metadata: {
-          headerRoute,
-          headerRouteLevels,
-          order: index + 1,
-          tokens,
-        },
-      });
-    });
-
-    chunks.push(...newChunks);
-
-    for (let i = 0; i < section.subsections.length; i++) {
-      const subsection = section.subsections[i];
-
-      await chunkSectionContent({
-        section: subsection,
-        headerRoute: `${headerRoute}>${subsection.title}`,
-        headerRouteLevels: `${headerRouteLevels}>${i + 1}`,
-        chunks,
-      });
-    }
-  }
-
-  const chunks: ChunkDoc[] = [];
-
-  for (let i = 0; i < sectionsJson.length; i++) {
-    const section = sectionsJson[i];
-    await chunkSectionContent({
-      section,
-      headerRoute: section.title,
-      headerRouteLevels: `${i + 1}`,
-      chunks,
-    });
-  }
-
-  return chunks;
 }
 
 async function findMostRecentParsedFilePath(

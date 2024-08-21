@@ -3,10 +3,10 @@
 import {clearStorage, initStorage} from '@/app/api/db/uploaded-files-db/files';
 import {clearDatabase} from '@/app/api/db/vector-db/VectorDB';
 import {
-  chunkSectionsJson,
+  chunkSectionNodes,
   markdownToSectionsJson,
-  reconcileTexts,
-} from '@/app/api/parse-pdf/functions';
+} from '@/app/api/parse-pdf/chunking';
+import {reconcileTexts} from '@/app/api/parse-pdf/functions';
 import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
@@ -40,7 +40,7 @@ export async function parseMarkdownToJson() {
 
 export async function chunkSections() {
   const sectionNodes = await parseMarkdownToJson();
-  const chunkedSections = await chunkSectionsJson(sectionNodes);
+  const chunkedSections = await chunkSectionNodes(sectionNodes);
 
   // Without doing this Next.js complaints that we cannot return class
   // instances to a client component.

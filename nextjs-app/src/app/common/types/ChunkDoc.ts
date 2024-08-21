@@ -6,6 +6,7 @@ export const chunkMetadataSchema = z.object({
   headerRouteLevels: z.string().min(1),
   order: z.number().gt(0),
   tokens: z.number().gt(0),
+  table: z.boolean(),
 });
 
 export type ChunkMetadata = z.infer<typeof chunkMetadataSchema>;
