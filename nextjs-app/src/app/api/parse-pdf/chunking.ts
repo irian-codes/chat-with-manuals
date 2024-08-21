@@ -53,7 +53,7 @@ export async function markdownToSectionsJson(
   function pushContent() {
     if (currentContent.text.length > 0) {
       if (stack.length > 0) {
-        stack[stack.length - 1].content = currentContent.text;
+        stack[stack.length - 1].content = currentContent.text.trim();
       }
 
       currentContent.text = '';
@@ -102,10 +102,9 @@ export async function markdownToSectionsJson(
       );
 
       // Add a table placeholder to restore this table later
-      currentContent.text += tableDelimiter.replace(
-        '%d',
-        String(currentContent.lastTableIndex)
-      );
+      currentContent.text +=
+        tableDelimiter.replace('%d', String(currentContent.lastTableIndex)) +
+        '\n\n';
     } else {
       // Append the current token to the content string
       currentContent.text += decodeHTML(await plainMarked.parse(token.raw));
