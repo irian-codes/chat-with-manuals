@@ -47,7 +47,7 @@ export async function markdownToSectionsJson(
   let currentContent = {
     text: '',
     tables: new Map<number, string>(),
-    lastTableCount: -1,
+    lastTableIndex: -1,
   };
 
   function pushContent() {
@@ -65,7 +65,7 @@ export async function markdownToSectionsJson(
       }
 
       currentContent.tables = new Map();
-      currentContent.lastTableCount = -1;
+      currentContent.lastTableIndex = -1;
     }
   }
 
@@ -97,14 +97,14 @@ export async function markdownToSectionsJson(
       stack.push(node);
     } else if (token.type === 'table') {
       currentContent.tables.set(
-        ++currentContent.lastTableCount,
+        ++currentContent.lastTableIndex,
         (await plainMarked.parse(token.raw)).trim()
       );
 
       // Add a table placeholder to restore this table later
       currentContent.text += tableDelimiter.replace(
         '%d',
-        String(currentContent.lastTableCount)
+        String(currentContent.lastTableIndex)
       );
     } else {
       // Append the current token to the content string
@@ -255,7 +255,7 @@ async function chunkSingleSplit({
   // Detecting if chunk is a table
   const tableRegex = new RegExp(tableDelimiter.replace('%d', '(\\d+)'), 'i');
   const tableMatch = part.match(tableRegex);
-  const tableNum = tableMatch && tableMatch[1] ? Number(tableMatch[1]) : -1;
+  const tableIndex = tableMatch && tableMatch[1] ? Number(tableMatch[1]) : -1;
   const isTable = z
     .literal(-1)
     .or(
@@ -264,10 +264,10 @@ async function chunkSingleSplit({
         .min(0)
         .max(Math.max(0, section.tables.size - 1))
     )
-    .transform((tableNum) => tableNum >= 0)
-    .parse(tableNum);
+    .transform((tableIndex) => tableIndex >= 0)
+    .parse(tableIndex);
 
-  const text = (isTable ? (section.tables.get(tableNum) ?? '') : part).trim();
+  const text = (isTable ? (section.tables.get(tableIndex) ?? '') : part).trim();
 
   const tokens = (function () {
     const tokenNum: number | boolean = isWithinTokenLimit(
@@ -281,7 +281,7 @@ async function chunkSingleSplit({
       );
     } else if (isTable && tokenNum < 1) {
       throw new Error(
-        `Table ${tableNum} does not exist. Attempting to get the token size of a chunk.`
+        `Table index ${tableIndex} does not exist. Attempting to get the token size of a chunk.`
       );
     } else {
       return tokenNum;
