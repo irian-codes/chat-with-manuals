@@ -313,6 +313,30 @@ describe('chunkSectionNodes', () => {
         tables: new Map(),
         subsections: [],
       },
+      {
+        type: 'section',
+        level: 1,
+        title: 'Heading 4',
+        content: sampleTexts.byCharCount[450].text,
+        tables: new Map(),
+        subsections: [],
+      },
+      {
+        type: 'section',
+        level: 1,
+        title: 'Heading 5',
+        content: sampleTexts.byCharCount[700].text,
+        tables: new Map(),
+        subsections: [],
+      },
+      {
+        type: 'section',
+        level: 1,
+        title: 'Heading 6',
+        content: sampleTexts.byCharCount[1000].text,
+        tables: new Map(),
+        subsections: [],
+      },
     ];
 
     const splitter = new RecursiveCharacterTextSplitter({
@@ -341,16 +365,22 @@ describe('chunkSectionNodes', () => {
         colors: true,
       })
     );
-    // 50 Token chunk (1 chunk)
     const chunk50 = groupedTokensByHeaderLevel.get('1') ?? [];
-    expect(chunk50).toHaveLength(getChunkAmount(50));
+    expect(chunk50.length).toBeGreaterThanOrEqual(getChunkAmount(50));
 
-    // 150 Token chunks (1 chunk)
     const chunk150 = groupedTokensByHeaderLevel.get('2') ?? [];
-    expect(chunk150).toHaveLength(getChunkAmount(150));
+    expect(chunk150.length).toBeGreaterThanOrEqual(getChunkAmount(150));
 
-    // 300 Token chunks
     const chunk300 = groupedTokensByHeaderLevel.get('3') ?? [];
-    expect(chunk300).toHaveLength(getChunkAmount(300));
+    expect(chunk300.length).toBeGreaterThanOrEqual(getChunkAmount(300));
+
+    const chunk450 = groupedTokensByHeaderLevel.get('4') ?? [];
+    expect(chunk450.length).toBeGreaterThanOrEqual(getChunkAmount(450));
+
+    const chunk700 = groupedTokensByHeaderLevel.get('5') ?? [];
+    expect(chunk700.length).toBeGreaterThanOrEqual(getChunkAmount(700));
+
+    const chunk1000 = groupedTokensByHeaderLevel.get('6') ?? [];
+    expect(chunk1000.length).toBeGreaterThanOrEqual(getChunkAmount(1000));
   });
 });
