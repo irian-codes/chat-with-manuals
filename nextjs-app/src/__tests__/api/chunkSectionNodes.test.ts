@@ -1,6 +1,9 @@
 import {chunkSectionNodes, SectionNode} from '@/app/api/parse-pdf/chunking';
 import {ChunkDoc} from '@/app/common/types/ChunkDoc';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
+import {
+  CharacterTextSplitter,
+  RecursiveCharacterTextSplitter,
+} from 'langchain/text_splitter';
 import util from 'node:util';
 import {describe, expect, it} from 'vitest';
 
@@ -8,7 +11,7 @@ describe('chunkSectionNodes', () => {
   const sampleTexts = {
     byCharCount: {
       50: {
-        text: '9.2.4 Defenseless. n battle, the Vagabond is aaaaa',
+        text: '9.2.4 Defenseless. In battle, the Vagabond is aaaa',
       },
       150: {
         text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the",
@@ -287,7 +290,7 @@ describe('chunkSectionNodes', () => {
     expect(lastChunk.metadata.table).toBe(false);
   });
 
-  it('should correctly split section contents with specific tokens sizes to the appropriate chunk amount', async () => {
+  it('should correctly split section contents by sentences in the text', async () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
@@ -339,15 +342,22 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 150,
+    const separator = '. ';
+    const separatorRegex = /\.\s/g;
+    const splitter = new CharacterTextSplitter({
+      chunkSize: 20,
       chunkOverlap: 0,
       keepSeparator: false,
-      separators: ['\n\n', '\n', '.', ' ', ''],
+      separator,
     });
 
-    function getChunkAmount(textTokenSize: number) {
-      return Math.ceil(textTokenSize / splitter.chunkSize);
+    function getTargetChunkAmount(
+      charCount: keyof typeof sampleTexts.byCharCount
+    ) {
+      const text = sampleTexts.byCharCount[charCount].text;
+      expect(typeof text === 'string' && text.length === charCount).toBe(true);
+
+      return (Array.from(text.matchAll(separatorRegex)) ?? []).length + 1;
     }
 
     const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
@@ -365,22 +375,23 @@ describe('chunkSectionNodes', () => {
         colors: true,
       })
     );
-    const chunk50 = groupedTokensByHeaderLevel.get('1') ?? [];
-    expect(chunk50.length).toBeGreaterThanOrEqual(getChunkAmount(50));
 
-    const chunk150 = groupedTokensByHeaderLevel.get('2') ?? [];
-    expect(chunk150.length).toBeGreaterThanOrEqual(getChunkAmount(150));
+    const chunks50 = groupedTokensByHeaderLevel.get('1') ?? [];
+    expect(chunks50.length).toBe(getTargetChunkAmount(50));
 
-    const chunk300 = groupedTokensByHeaderLevel.get('3') ?? [];
-    expect(chunk300.length).toBeGreaterThanOrEqual(getChunkAmount(300));
+    const chunks150 = groupedTokensByHeaderLevel.get('2') ?? [];
+    expect(chunks150.length).toBe(getTargetChunkAmount(150));
 
-    const chunk450 = groupedTokensByHeaderLevel.get('4') ?? [];
-    expect(chunk450.length).toBeGreaterThanOrEqual(getChunkAmount(450));
+    const chunks300 = groupedTokensByHeaderLevel.get('3') ?? [];
+    expect(chunks300.length).toBe(getTargetChunkAmount(300));
 
-    const chunk700 = groupedTokensByHeaderLevel.get('5') ?? [];
-    expect(chunk700.length).toBeGreaterThanOrEqual(getChunkAmount(700));
+    const chunks450 = groupedTokensByHeaderLevel.get('4') ?? [];
+    expect(chunks450.length).toBe(getTargetChunkAmount(450));
 
-    const chunk1000 = groupedTokensByHeaderLevel.get('6') ?? [];
-    expect(chunk1000.length).toBeGreaterThanOrEqual(getChunkAmount(1000));
+    const chunks700 = groupedTokensByHeaderLevel.get('5') ?? [];
+    expect(chunks700.length).toBe(getTargetChunkAmount(700));
+
+    const chunks1000 = groupedTokensByHeaderLevel.get('6') ?? [];
+    expect(chunks1000.length).toBe(getTargetChunkAmount(1000));
   });
 });
