@@ -1,10 +1,34 @@
-import {chunkSectionNodes, SectionNode} from '@/app/api/parse-pdf/chunking'; // Adjust the import path
+import {chunkSectionNodes, SectionNode} from '@/app/api/parse-pdf/chunking';
 import {ChunkDoc} from '@/app/common/types/ChunkDoc';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
+import util from 'node:util';
 import {describe, expect, it} from 'vitest';
 
 describe('chunkSectionNodes', () => {
-  const splitter = new RecursiveCharacterTextSplitter({
+  const sampleTexts = {
+    byCharCount: {
+      50: {
+        text: '9.2.4 Defenseless. n battle, the Vagabond is aaaaa',
+      },
+      150: {
+        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the",
+      },
+      300: {
+        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or.",
+      },
+      450: {
+        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up.",
+      },
+      700: {
+        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up in the Satchel, T, X, and B are placed face up on their matching tracks. When flipped face down, T, X, or B on tracks are placed face down in the Satchel. Each track can only hold three matching items. II The Satchel. When gained, M, S, C , F, and H.",
+      },
+      1000: {
+        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up in the Satchel, T, X, and B are placed face up on their matching tracks. When flipped face down, T, X, or B on tracks are placed face down in the Satchel. Each track can only hold three matching items. II The Satchel. When gained, M, S, C , F, and H are placed face up in the Vagabond's Satchel. 9.2.6 Maximum Rolled Hits. In battle, the Vagabond's maximum rolled hits (4.3.2.I) equals his undamaged S, face up or face down, in his Satchel. 9.2.7 Taking Hits. Whenever the Vagabond takes a hit (4.3.3), he must damage one undamaged item, moving it to",
+      },
+    },
+  } as const;
+
+  const globalSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 150,
     chunkOverlap: 0,
     separators: ['<<<', '>>>', '\n\n', '\n', '.', '?', '!', ' ', ''],
@@ -22,7 +46,10 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     expect(chunks).toHaveLength(1);
     expect(chunks[0].pageContent).toBe(
@@ -32,7 +59,9 @@ describe('chunkSectionNodes', () => {
     expect(chunks[0].metadata.headerRouteLevels).toBe('1');
     expect(chunks[0].metadata.order).toBe(1);
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
     expect(chunks[0].metadata.table).toBe(false);
   });
 
@@ -54,7 +83,10 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     expect(chunks).toHaveLength(3);
 
@@ -62,7 +94,9 @@ describe('chunkSectionNodes', () => {
     expect(chunks[0].metadata.headerRouteLevels).toBe('1');
     expect(chunks[0].metadata.order).toBe(1);
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
     expect(chunks[0].metadata.table).toBe(false);
 
     expect(chunks[1].pageContent).toBe(
@@ -70,12 +104,16 @@ describe('chunkSectionNodes', () => {
     );
     expect(chunks[1].metadata.order).toBe(2);
     expect(chunks[1].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[1].metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(chunks[1].metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
     expect(chunks[1].metadata.table).toBe(true);
 
     expect(chunks[2].pageContent).toBe('More text after the table.');
     expect(chunks[2].metadata.order).toBe(3);
-    expect(chunks[2].metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(chunks[2].metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
     expect(chunks[2].metadata.table).toBe(false);
   });
 
@@ -100,7 +138,10 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     expect(chunks).toHaveLength(2);
 
@@ -128,7 +169,10 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     expect(chunks.length).toBeGreaterThan(1);
     chunks.forEach((chunk, index) => {
@@ -150,7 +194,10 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     expect(chunks).toHaveLength(0);
   });
@@ -167,14 +214,19 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     expect(chunks).toHaveLength(1);
     expect(chunks[0].pageContent).toBe(
       'Text with special characters: 😊, 👍, and symbols: ©, ™.'
     );
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
     expect(chunks[0].metadata.table).toBe(false);
   });
 
@@ -195,14 +247,19 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: ChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
 
     // Validate that the first chunk is the text before the table
     expect(chunks[0].pageContent).toBe('This section contains a large table.');
     expect(chunks[0].metadata.order).toBe(1);
     expect(chunks[0].metadata.table).toBe(false);
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
 
     // Validate that subsequent chunks are parts of the table
     const tableChunks = chunks.filter((chunk) => chunk.metadata.table);
@@ -213,7 +270,9 @@ describe('chunkSectionNodes', () => {
       expect(chunk.pageContent).toContain('Header 2: Data'); // Ensure both headers and data are present in chunks
       expect(chunk.metadata.order).toBe(index + 2); // Should follow the order after the initial text chunk
       expect(chunk.metadata.tokens).toBeGreaterThan(0);
-      expect(chunk.metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+      expect(chunk.metadata.tokens).toBeLessThanOrEqual(
+        globalSplitter.chunkSize
+      );
       expect(chunk.metadata.table).toBe(true);
     });
 
@@ -222,7 +281,76 @@ describe('chunkSectionNodes', () => {
     expect(lastChunk.pageContent).toBe('End of section content.');
     expect(lastChunk.metadata.order).toBe(chunks.length);
     expect(lastChunk.metadata.tokens).toBeGreaterThan(0);
-    expect(lastChunk.metadata.tokens).toBeLessThanOrEqual(splitter.chunkSize);
+    expect(lastChunk.metadata.tokens).toBeLessThanOrEqual(
+      globalSplitter.chunkSize
+    );
     expect(lastChunk.metadata.table).toBe(false);
+  });
+
+  it('should correctly split section contents with specific tokens sizes to the appropriate chunk amount', async () => {
+    const sectionsJson: SectionNode[] = [
+      {
+        type: 'section',
+        level: 1,
+        title: 'Heading 1',
+        content: sampleTexts.byCharCount[50].text,
+        tables: new Map(),
+        subsections: [],
+      },
+      {
+        type: 'section',
+        level: 1,
+        title: 'Heading 2',
+        content: sampleTexts.byCharCount[150].text,
+        tables: new Map(),
+        subsections: [],
+      },
+      {
+        type: 'section',
+        level: 1,
+        title: 'Heading 3',
+        content: sampleTexts.byCharCount[300].text,
+        tables: new Map(),
+        subsections: [],
+      },
+    ];
+
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 150,
+      chunkOverlap: 0,
+      keepSeparator: false,
+      separators: ['\n\n', '\n', '.', ' ', ''],
+    });
+
+    function getChunkAmount(textTokenSize: number) {
+      return Math.ceil(textTokenSize / splitter.chunkSize);
+    }
+
+    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+
+    const groupedTokensByHeaderLevel = Map.groupBy(
+      chunks,
+      (c) => c.metadata.headerRouteLevels
+    );
+
+    console.log(
+      'heeeey 4.6',
+      util.inspect(groupedTokensByHeaderLevel, {
+        showHidden: false,
+        depth: null,
+        colors: true,
+      })
+    );
+    // 50 Token chunk (1 chunk)
+    const chunk50 = groupedTokensByHeaderLevel.get('1') ?? [];
+    expect(chunk50).toHaveLength(getChunkAmount(50));
+
+    // 150 Token chunks (1 chunk)
+    const chunk150 = groupedTokensByHeaderLevel.get('2') ?? [];
+    expect(chunk150).toHaveLength(getChunkAmount(150));
+
+    // 300 Token chunks
+    const chunk300 = groupedTokensByHeaderLevel.get('3') ?? [];
+    expect(chunk300).toHaveLength(getChunkAmount(300));
   });
 });
