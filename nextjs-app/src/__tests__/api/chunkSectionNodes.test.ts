@@ -62,7 +62,8 @@ describe('chunkSectionNodes', () => {
     expect(chunks[0].metadata.headerRouteLevels).toBe('1');
     expect(chunks[0].metadata.order).toBe(1);
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+    expect(chunks[0].metadata.charCount).toBeGreaterThan(0);
+    expect(chunks[0].metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
     expect(chunks[0].metadata.table).toBe(false);
@@ -97,7 +98,8 @@ describe('chunkSectionNodes', () => {
     expect(chunks[0].metadata.headerRouteLevels).toBe('1');
     expect(chunks[0].metadata.order).toBe(1);
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+    expect(chunks[0].metadata.charCount).toBeGreaterThan(0);
+    expect(chunks[0].metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
     expect(chunks[0].metadata.table).toBe(false);
@@ -107,14 +109,15 @@ describe('chunkSectionNodes', () => {
     );
     expect(chunks[1].metadata.order).toBe(2);
     expect(chunks[1].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[1].metadata.tokens).toBeLessThanOrEqual(
+    expect(chunks[1].metadata.charCount).toBeGreaterThan(0);
+    expect(chunks[1].metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
     expect(chunks[1].metadata.table).toBe(true);
 
     expect(chunks[2].pageContent).toBe('More text after the table.');
     expect(chunks[2].metadata.order).toBe(3);
-    expect(chunks[2].metadata.tokens).toBeLessThanOrEqual(
+    expect(chunks[2].metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
     expect(chunks[2].metadata.table).toBe(false);
@@ -227,7 +230,8 @@ describe('chunkSectionNodes', () => {
       'Text with special characters: 😊, 👍, and symbols: ©, ™.'
     );
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+    expect(chunks[0].metadata.charCount).toBeGreaterThan(0);
+    expect(chunks[0].metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
     expect(chunks[0].metadata.table).toBe(false);
@@ -260,7 +264,8 @@ describe('chunkSectionNodes', () => {
     expect(chunks[0].metadata.order).toBe(1);
     expect(chunks[0].metadata.table).toBe(false);
     expect(chunks[0].metadata.tokens).toBeGreaterThan(0);
-    expect(chunks[0].metadata.tokens).toBeLessThanOrEqual(
+    expect(chunks[0].metadata.charCount).toBeGreaterThan(0);
+    expect(chunks[0].metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
 
@@ -273,7 +278,8 @@ describe('chunkSectionNodes', () => {
       expect(chunk.pageContent).toContain('Header 2: Data'); // Ensure both headers and data are present in chunks
       expect(chunk.metadata.order).toBe(index + 2); // Should follow the order after the initial text chunk
       expect(chunk.metadata.tokens).toBeGreaterThan(0);
-      expect(chunk.metadata.tokens).toBeLessThanOrEqual(
+      expect(chunk.metadata.charCount).toBeGreaterThan(0);
+      expect(chunk.metadata.charCount).toBeLessThanOrEqual(
         globalSplitter.chunkSize
       );
       expect(chunk.metadata.table).toBe(true);
@@ -284,7 +290,8 @@ describe('chunkSectionNodes', () => {
     expect(lastChunk.pageContent).toBe('End of section content.');
     expect(lastChunk.metadata.order).toBe(chunks.length);
     expect(lastChunk.metadata.tokens).toBeGreaterThan(0);
-    expect(lastChunk.metadata.tokens).toBeLessThanOrEqual(
+    expect(lastChunk.metadata.charCount).toBeGreaterThan(0);
+    expect(lastChunk.metadata.charCount).toBeLessThanOrEqual(
       globalSplitter.chunkSize
     );
     expect(lastChunk.metadata.table).toBe(false);
