@@ -237,15 +237,18 @@ async function reconstructSection(
   // TODO: Return all the order numbers of tokens included in this section,
   // so we can check on the call if the current chunk was included or not.
 
+  const finalText = reconstructedChunks
+    .map((chunk) => chunk.pageContent)
+    .join('\n');
+
   const finalDoc = new Document({
     id: uuidv4(),
-    pageContent: reconstructedChunks
-      .map((chunk) => chunk.pageContent)
-      .join('\n'),
+    pageContent: finalText,
     metadata: {
       headerRoute,
       headerRouteLevels,
       tokens: currentTokenCount,
+      charCount: finalText.length,
     },
   });
 

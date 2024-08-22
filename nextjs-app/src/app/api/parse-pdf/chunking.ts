@@ -306,6 +306,7 @@ async function chunkSingleSplit({
           headerRouteLevels,
           order: currentOrder++,
           tokens,
+          charCount: text.length,
           table: isTable,
         },
       }),
@@ -317,10 +318,8 @@ async function chunkSingleSplit({
   const splits = await splitter.splitText(text);
 
   for (let j = 0; j < splits.length; j++) {
-    const tokens: number | boolean = isWithinTokenLimit(
-      splits[j],
-      Number.MAX_VALUE
-    );
+    const text = splits[j];
+    const tokens: number | boolean = isWithinTokenLimit(text, Number.MAX_VALUE);
 
     if (tokens === false) {
       throw new Error(
@@ -331,12 +330,13 @@ async function chunkSingleSplit({
     chunks.push(
       new Document({
         id: uuidv4(),
-        pageContent: splits[j],
+        pageContent: text,
         metadata: {
           headerRoute,
           headerRouteLevels,
           order: currentOrder++,
           tokens,
+          charCount: text.length,
           table: isTable,
         },
       })
