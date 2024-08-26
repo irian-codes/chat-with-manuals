@@ -9,12 +9,8 @@ import {
 } from '../db/uploaded-files-db/files';
 import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
-import {chunkSectionNodes} from './chunking';
-import {
-  lintAndFixMarkdown,
-  markdownToSectionsJson,
-  parsePdf,
-} from './functions';
+import {chunkSectionNodes, markdownToSectionsJson} from './chunking';
+import {lintAndFixMarkdown, parsePdf} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
