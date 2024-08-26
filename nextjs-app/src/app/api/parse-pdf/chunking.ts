@@ -1,8 +1,10 @@
-import {ChunkDoc} from '@/app/common/types/ChunkDoc';
+import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
+import {TextChunkDoc, TextChunkMetadata} from '@/app/common/types/TextChunkDoc';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
 import {
+  CharacterTextSplitter,
   RecursiveCharacterTextSplitter,
   TextSplitter,
 } from 'langchain/text_splitter';
@@ -139,7 +141,7 @@ export async function chunkSectionNodes(
     });
   }
 
-  const chunks: ChunkDoc[] = [];
+  const chunks: SectionChunkDoc[] = [];
 
   for (let i = 0; i < sectionsJson.length; i++) {
     const section = sectionsJson[i];
@@ -166,8 +168,8 @@ async function chunkSectionNode({
   headerRoute: string;
   headerRouteLevels: string;
   splitter: TextSplitter;
-}): Promise<ChunkDoc[]> {
-  const chunks: ChunkDoc[] = [];
+}): Promise<SectionChunkDoc[]> {
+  const chunks: SectionChunkDoc[] = [];
   // This keeps the delimiters because of the capturing group syntax, which
   // is what we want
   const delimiterSplit = section.content.split(
@@ -236,7 +238,7 @@ async function chunkSectionNode({
  * with levels.
  * @param {TextSplitter} splitter - The splitter instance to use.
  *
- * @return {Promise<ChunkDoc[]>} A Promise that resolves to an array of
+ * @return {Promise<SectionChunkDoc[]>} A Promise that resolves to an array of
  * ChunkDoc objects.
  */
 async function chunkSingleSplit({
@@ -253,7 +255,7 @@ async function chunkSingleSplit({
   headerRoute: string;
   headerRouteLevels: string;
   splitter: TextSplitter;
-}): Promise<ChunkDoc[]> {
+}): Promise<SectionChunkDoc[]> {
   let currentOrder = startOrder;
 
   // Detecting if chunk is a table
@@ -310,7 +312,7 @@ async function chunkSingleSplit({
   }
 
   // Big table detected that needs to be chunked as well
-  const chunks: ChunkDoc[] = [];
+  const chunks: SectionChunkDoc[] = [];
   const splits = await splitter.splitText(text);
 
   for (let j = 0; j < splits.length; j++) {
@@ -334,6 +336,56 @@ async function chunkSingleSplit({
           tokens,
           charCount: text.length,
           table: isTable,
+        },
+      })
+    );
+  }
+
+  return chunks;
+}
+
+export async function chunkString({
+  text,
+  splitter,
+}: {
+  text: string;
+  splitter?: TextSplitter;
+}): Promise<TextChunkDoc[]> {
+  if (splitter == null) {
+    splitter = new CharacterTextSplitter({
+      chunkSize: 20,
+      chunkOverlap: 0,
+      keepSeparator: false,
+      separator: '. ',
+    });
+  }
+
+  const splits = await splitter.splitText(text);
+
+  const chunks: TextChunkDoc[] = [];
+
+  for (let i = 0; i < splits.length; i++) {
+    const split = splits[i];
+
+    const tokens: number | boolean = isWithinTokenLimit(
+      split,
+      Number.MAX_VALUE
+    );
+
+    if (tokens === false) {
+      throw new Error(
+        "This shouldn't happen. Attempting to get the token size of a chunk."
+      );
+    }
+
+    chunks.push(
+      new Document<TextChunkMetadata>({
+        id: uuidv4(),
+        pageContent: split,
+        metadata: {
+          order: 1,
+          tokens,
+          charCount: split.length,
         },
       })
     );

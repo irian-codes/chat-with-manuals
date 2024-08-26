@@ -1,7 +1,7 @@
 import {Document} from 'langchain/document';
 import {z} from 'zod';
 
-export const chunkMetadataSchema = z.object({
+export const sectionChunkMetadataSchema = z.object({
   headerRoute: z.string().min(1),
   headerRouteLevels: z.string().min(1),
   order: z.number().gt(0),
@@ -10,5 +10,5 @@ export const chunkMetadataSchema = z.object({
   table: z.boolean(),
 });
 
-export type ChunkMetadata = z.infer<typeof chunkMetadataSchema>;
-export type ChunkDoc = Document<ChunkMetadata>;
+export type SectionChunkMetadata = z.infer<typeof sectionChunkMetadataSchema>;
+export type SectionChunkDoc = Document<SectionChunkMetadata>;

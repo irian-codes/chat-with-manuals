@@ -1,4 +1,5 @@
 import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
+import {CharacterTextSplitter} from 'langchain/text_splitter';
 import {NextRequest, NextResponse} from 'next/server';
 import {z} from 'zod';
 import {
@@ -98,8 +99,26 @@ export async function POST(request: NextRequest) {
       case 'markdown':
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
-        // TODO: 1. Parse with pdfreader. 2. Match section text on pdfreader text. 3. Reconcile SectionNode[] to fix hallucinations with some difference tolerance
-        const chunks = await chunkSectionNodes(mdToJson);
+
+        const splitter = new CharacterTextSplitter({
+          chunkSize: 20,
+          chunkOverlap: 0,
+          keepSeparator: false,
+          separator: '. ',
+        });
+
+        const chunks = await chunkSectionNodes(mdToJson, splitter);
+        // TODO:
+        // - Parse with pdfreader.
+        //
+        // - Chunk pdfreader output
+        //
+        // - Match section text chunk to pdfreader chunk (or maybe chunks
+        //   if they aren't the same).
+        //     -- Skip table chunks
+        //
+        // - Reconcile LLM chunk with pdfreader chunk(s) to fix
+        //   hallucinations with some difference tolerance.
         const store = await embedPDF(fileHash, chunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});
 
