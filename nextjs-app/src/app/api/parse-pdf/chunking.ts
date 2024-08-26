@@ -1,4 +1,7 @@
-import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
+import {
+  SectionChunkDoc,
+  SectionChunkMetadata,
+} from '@/app/common/types/SectionChunkDoc';
 import {TextChunkDoc, TextChunkMetadata} from '@/app/common/types/TextChunkDoc';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
@@ -296,7 +299,7 @@ async function chunkSingleSplit({
 
   if (tokens <= splitter.chunkSize) {
     return [
-      new Document({
+      new Document<SectionChunkMetadata>({
         id: uuidv4(),
         pageContent: text,
         metadata: {
@@ -326,7 +329,7 @@ async function chunkSingleSplit({
     }
 
     chunks.push(
-      new Document({
+      new Document<SectionChunkMetadata>({
         id: uuidv4(),
         pageContent: text,
         metadata: {
