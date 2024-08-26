@@ -121,12 +121,8 @@ export async function chunkSectionNodes(
   sectionsJson: SectionNode[],
   splitter?: TextSplitter
 ) {
-  splitter = ((): TextSplitter => {
-    if (splitter) {
-      return splitter;
-    }
-
-    return new RecursiveCharacterTextSplitter({
+  if (splitter == null) {
+    splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 150,
       chunkOverlap: 0,
       separators: [
@@ -141,7 +137,7 @@ export async function chunkSectionNodes(
         '',
       ],
     });
-  })();
+  }
 
   const chunks: ChunkDoc[] = [];
 
