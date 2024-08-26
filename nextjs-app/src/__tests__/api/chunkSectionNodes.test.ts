@@ -4,7 +4,6 @@ import {
   CharacterTextSplitter,
   RecursiveCharacterTextSplitter,
 } from 'langchain/text_splitter';
-import util from 'node:util';
 import {describe, expect, it} from 'vitest';
 
 describe('chunkSectionNodes', () => {
@@ -372,15 +371,6 @@ describe('chunkSectionNodes', () => {
     const groupedTokensByHeaderLevel = Map.groupBy(
       chunks,
       (c) => c.metadata.headerRouteLevels
-    );
-
-    console.log(
-      'heeeey 4.6',
-      util.inspect(groupedTokensByHeaderLevel, {
-        showHidden: false,
-        depth: null,
-        colors: true,
-      })
     );
 
     const chunks50 = groupedTokensByHeaderLevel.get('1') ?? [];
