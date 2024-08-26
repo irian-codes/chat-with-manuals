@@ -3,6 +3,7 @@ import {
   SectionChunkMetadata,
 } from '@/app/common/types/SectionChunkDoc';
 import {TextChunkDoc, TextChunkMetadata} from '@/app/common/types/TextChunkDoc';
+import {isBlankString} from '@/app/common/utils/stringUtils';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
@@ -368,7 +369,11 @@ export async function chunkString({
   const chunks: TextChunkDoc[] = [];
 
   for (let i = 0; i < splits.length; i++) {
-    const split = splits[i];
+    const split = splits[i].trim();
+
+    if (isBlankString(split)) {
+      continue;
+    }
 
     const tokens: number | boolean = isWithinTokenLimit(
       split,
