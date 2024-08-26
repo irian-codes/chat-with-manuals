@@ -1,3 +1,4 @@
+import {testsRootPath} from '@/__tests__/utils/constants';
 import {pdfParseWithPdfreader} from '@/app/api/parse-pdf/functions'; // Adjust the path accordingly
 import fs from 'fs';
 import path from 'path';
@@ -9,7 +10,10 @@ function doesFileExist(filePath: string): boolean {
 
 describe('pdfParseWithPdfreader', (a) => {
   it('should correctly parse a two-column PDF', async () => {
-    const pdfPath = path.join(__dirname, 'fixtures/two-column-two-pages.pdf');
+    const pdfPath = path.join(
+      testsRootPath,
+      'api/fixtures/two-column-two-pages.pdf'
+    );
 
     if (!doesFileExist(pdfPath)) {
       throw new Error(`File ${pdfPath} does not exist`);
@@ -27,8 +31,8 @@ describe('pdfParseWithPdfreader', (a) => {
 
   it('should correctly parse a one-column PDF', async () => {
     const pdfPath = path.join(
-      __dirname,
-      'fixtures/single-column-four-pages.pdf'
+      testsRootPath,
+      'api/fixtures/single-column-four-pages.pdf'
     );
 
     if (!doesFileExist(pdfPath)) {
@@ -46,7 +50,7 @@ describe('pdfParseWithPdfreader', (a) => {
   });
 
   it('should handle an empty PDF gracefully', async () => {
-    const pdfPath = path.join(__dirname, 'fixtures/empty.pdf');
+    const pdfPath = path.join(testsRootPath, 'api/fixtures/empty.pdf');
 
     if (!doesFileExist(pdfPath)) {
       throw new Error(`File ${pdfPath} does not exist`);
