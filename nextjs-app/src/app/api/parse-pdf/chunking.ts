@@ -391,7 +391,7 @@ export async function chunkString({
         id: uuidv4(),
         pageContent: split,
         metadata: {
-          order: 1,
+          order: i + 1,
           tokens,
           charCount: split.length,
         },
