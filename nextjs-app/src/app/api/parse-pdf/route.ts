@@ -144,11 +144,11 @@ export async function POST(request: NextRequest) {
         });
 
         const sortedSectionChunks = sectionChunks
-          .sort((a, b) => a.pageContent.localeCompare(b.pageContent, 'en'))
+          .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
           .slice(0, 15);
 
         const traditionalSortedChunks = traditionalChunks
-          .sort((a, b) => a.pageContent.localeCompare(b.pageContent, 'en'))
+          .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
           .slice(0, 15);
 
         console.log(
@@ -169,11 +169,11 @@ export async function POST(request: NextRequest) {
         console.log('heeey 6.8', {
           sectionChunks: sortedSectionChunks.map((c) => ({
             text: c.pageContent,
-            order: c.metadata.order,
+            order: c.metadata.totalOrder,
           })),
           traditionalChunks: traditionalSortedChunks.map((c) => ({
             text: c.pageContent,
-            order: c.metadata.order,
+            order: c.metadata.totalOrder,
           })),
         });
 

@@ -146,6 +146,7 @@ export async function chunkSectionNodes(
   }
 
   const chunks: SectionChunkDoc[] = [];
+  let totalOrder = 1;
 
   for (let i = 0; i < sectionsJson.length; i++) {
     const section = sectionsJson[i];
@@ -154,9 +155,13 @@ export async function chunkSectionNodes(
         section,
         headerRoute: section.title,
         headerRouteLevels: `${i + 1}`,
+        startTotalOrder: totalOrder,
         splitter,
       }))
     );
+
+    totalOrder += chunks.length;
+    console.log('heeey 3.4', totalOrder);
   }
 
   return chunks;
@@ -166,13 +171,17 @@ async function chunkSectionNode({
   section,
   headerRoute,
   headerRouteLevels,
+  startTotalOrder,
   splitter,
 }: {
   section: SectionNode;
   headerRoute: string;
   headerRouteLevels: string;
+  startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
+  console.log('heeey 3.5', startTotalOrder);
+
   const chunks: SectionChunkDoc[] = [];
   // This keeps the delimiters because of the capturing group syntax, which
   // is what we want
@@ -195,6 +204,7 @@ async function chunkSectionNode({
   })();
 
   let currentOrder = 1;
+  let totalOrder = startTotalOrder;
   for (let i = 0; i < splits.length; i++) {
     const part = splits[i];
 
@@ -204,11 +214,13 @@ async function chunkSectionNode({
       startOrder: currentOrder,
       headerRoute,
       headerRouteLevels,
+      startTotalOrder: totalOrder,
       splitter,
     });
 
     chunks.push(...newChunks);
     currentOrder += newChunks.length;
+    totalOrder += newChunks.length;
   }
 
   for (let i = 0; i < section.subsections.length; i++) {
@@ -219,9 +231,12 @@ async function chunkSectionNode({
         section: subsection,
         headerRoute: `${headerRoute}>${subsection.title}`,
         headerRouteLevels: `${headerRouteLevels}>${i + 1}`,
+        startTotalOrder: totalOrder,
         splitter,
       }))
     );
+
+    totalOrder += chunks.length;
   }
 
   return chunks;
@@ -237,13 +252,15 @@ async function chunkSectionNode({
  * @param {SectionNode} section - The section the chunk belongs to.
  * @param {number} startOrder - The starting order num of this chunk.
  * Defaults to 1.
+ * @param {number} startTotalOrder - The starting totalOrder num of the
+ * whole document.
  * @param {string} headerRoute - The route of the current section.
  * @param {string} headerRouteLevels - The route of the current section
  * with levels.
  * @param {TextSplitter} splitter - The splitter instance to use.
  *
- * @return {Promise<SectionChunkDoc[]>} A Promise that resolves to an array of
- * ChunkDoc objects.
+ * @return {Promise<SectionChunkDoc[]>} A Promise that resolves to an array
+ * of ChunkDoc objects.
  */
 async function chunkSingleSplit({
   part,
@@ -251,6 +268,7 @@ async function chunkSingleSplit({
   startOrder = 1,
   headerRoute,
   headerRouteLevels,
+  startTotalOrder,
   splitter,
 }: {
   part: string;
@@ -258,9 +276,13 @@ async function chunkSingleSplit({
   section: SectionNode;
   headerRoute: string;
   headerRouteLevels: string;
+  startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
+  console.log('heeey 3.6', startTotalOrder);
+
   let currentOrder = startOrder;
+  let totalOrder = startTotalOrder;
 
   // Detecting if chunk is a table
   const tableRegex = new RegExp(tableDelimiter.replace('%d', '(\\d+)'), 'i');
@@ -306,7 +328,8 @@ async function chunkSingleSplit({
         metadata: {
           headerRoute,
           headerRouteLevels,
-          order: currentOrder++,
+          order: currentOrder,
+          totalOrder,
           tokens,
           charCount: text.length,
           table: isTable,
@@ -337,6 +360,7 @@ async function chunkSingleSplit({
           headerRoute,
           headerRouteLevels,
           order: currentOrder++,
+          totalOrder: totalOrder++,
           tokens,
           charCount: text.length,
           table: isTable,
@@ -391,7 +415,7 @@ export async function chunkString({
         id: uuidv4(),
         pageContent: split,
         metadata: {
-          order: i + 1,
+          totalOrder: i + 1,
           tokens,
           charCount: split.length,
         },
