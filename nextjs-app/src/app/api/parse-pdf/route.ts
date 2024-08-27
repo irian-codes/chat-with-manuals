@@ -1,6 +1,8 @@
 import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
+import {isBlankString} from '@/app/common/utils/stringUtils';
 import {CharacterTextSplitter} from 'langchain/text_splitter';
 import {NextRequest, NextResponse} from 'next/server';
+import util from 'node:util';
 import {z} from 'zod';
 import {
   deleteFileByHash,
@@ -10,8 +12,12 @@ import {
 } from '../db/uploaded-files-db/files';
 import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
-import {chunkSectionNodes, markdownToSectionsJson} from './chunking';
-import {lintAndFixMarkdown, parsePdf} from './functions';
+import {
+  chunkSectionNodes,
+  chunkString,
+  markdownToSectionsJson,
+} from './chunking';
+import {lintAndFixMarkdown, parsePdf, pdfParseWithPdfreader} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -100,14 +106,17 @@ export async function POST(request: NextRequest) {
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
 
-        const splitter = new CharacterTextSplitter({
+        const sentenceSplitter = new CharacterTextSplitter({
           chunkSize: 20,
           chunkOverlap: 0,
           keepSeparator: false,
           separator: '. ',
         });
 
-        const chunks = await chunkSectionNodes(mdToJson, splitter);
+        const sectionChunks = await chunkSectionNodes(
+          mdToJson,
+          sentenceSplitter
+        );
         // TODO:
         // - Parse with pdfreader.
         //
@@ -119,7 +128,58 @@ export async function POST(request: NextRequest) {
         //
         // - Reconcile LLM chunk with pdfreader chunk(s) to fix
         //   hallucinations with some difference tolerance.
-        const store = await embedPDF(fileHash, chunks);
+
+        const traditionalParsedText = await pdfParseWithPdfreader({
+          file,
+          columnsNumber,
+        });
+
+        if (isBlankString(traditionalParsedText)) {
+          throw new Error("Parser 'pdfreader' produced an empty file");
+        }
+
+        const traditionalChunks = await chunkString({
+          text: traditionalParsedText,
+          splitter: sentenceSplitter,
+        });
+
+        const sortedSectionChunks = sectionChunks
+          .sort((a, b) => a.pageContent.localeCompare(b.pageContent, 'en'))
+          .slice(0, 15);
+
+        const traditionalSortedChunks = traditionalChunks
+          .sort((a, b) => a.pageContent.localeCompare(b.pageContent, 'en'))
+          .slice(0, 15);
+
+        console.log(
+          'heeey 6.7',
+          util.inspect(
+            {
+              sectionChunks: sortedSectionChunks,
+              traditionalChunks: traditionalSortedChunks,
+            },
+            {
+              showHidden: false,
+              colors: true,
+              depth: null,
+            }
+          )
+        );
+
+        console.log('heeey 6.8', {
+          sectionChunks: sortedSectionChunks.map((c) => ({
+            text: c.pageContent,
+            order: c.metadata.order,
+          })),
+          traditionalChunks: traditionalSortedChunks.map((c) => ({
+            text: c.pageContent,
+            order: c.metadata.order,
+          })),
+        });
+
+        throw new Error('TEMPORARY DEBUG ERROR');
+
+        const store = await embedPDF(fileHash, sectionChunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});
 
         return NextResponse.json({
