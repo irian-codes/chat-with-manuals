@@ -161,7 +161,6 @@ export async function chunkSectionNodes(
     );
 
     totalOrder += chunks.length;
-    console.log('heeey 3.4', totalOrder);
   }
 
   return chunks;
@@ -180,8 +179,6 @@ async function chunkSectionNode({
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
-  console.log('heeey 3.5', startTotalOrder);
-
   const chunks: SectionChunkDoc[] = [];
   // This keeps the delimiters because of the capturing group syntax, which
   // is what we want
@@ -236,6 +233,9 @@ async function chunkSectionNode({
       }))
     );
 
+// TODO: For some reason sometimes here it adds one more than what it
+    // should add. I.e. it goes from 9 to 11. It's not important for now,
+    // but we should be aware of it.
     totalOrder += chunks.length;
   }
 
@@ -279,8 +279,6 @@ async function chunkSingleSplit({
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
-  console.log('heeey 3.6', startTotalOrder);
-
   let currentOrder = startOrder;
   let totalOrder = startTotalOrder;
 
