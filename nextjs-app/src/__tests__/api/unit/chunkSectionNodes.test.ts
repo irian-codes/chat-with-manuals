@@ -7,29 +7,6 @@ import {
 import {describe, expect, it} from 'vitest';
 
 describe('chunkSectionNodes', () => {
-  const sampleTexts = {
-    byCharCount: {
-      50: {
-        text: '9.2.4 Defenseless. In battle, the Vagabond is aaaa',
-      },
-      150: {
-        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the",
-      },
-      300: {
-        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or.",
-      },
-      450: {
-        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up.",
-      },
-      700: {
-        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up in the Satchel, T, X, and B are placed face up on their matching tracks. When flipped face down, T, X, or B on tracks are placed face down in the Satchel. Each track can only hold three matching items. II The Satchel. When gained, M, S, C , F, and H.",
-      },
-      1000: {
-        text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up in the Satchel, T, X, and B are placed face up on their matching tracks. When flipped face down, T, X, or B on tracks are placed face down in the Satchel. Each track can only hold three matching items. II The Satchel. When gained, M, S, C , F, and H are placed face up in the Vagabond's Satchel. 9.2.6 Maximum Rolled Hits. In battle, the Vagabond's maximum rolled hits (4.3.2.I) equals his undamaged S, face up or face down, in his Satchel. 9.2.7 Taking Hits. Whenever the Vagabond takes a hit (4.3.3), he must damage one undamaged item, moving it to",
-      },
-    },
-  } as const;
-
   const globalSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 150,
     chunkOverlap: 0,
@@ -297,6 +274,29 @@ describe('chunkSectionNodes', () => {
   });
 
   it('should correctly split section contents by sentences in the text', async () => {
+    const sampleTexts = {
+      byCharCount: {
+        50: {
+          text: '9.2.4 Defenseless. In battle, the Vagabond is aaaa',
+        },
+        150: {
+          text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the",
+        },
+        300: {
+          text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or.",
+        },
+        450: {
+          text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up.",
+        },
+        700: {
+          text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up in the Satchel, T, X, and B are placed face up on their matching tracks. When flipped face down, T, X, or B on tracks are placed face down in the Satchel. Each track can only hold three matching items. II The Satchel. When gained, M, S, C , F, and H.",
+        },
+        1000: {
+          text: "9.2.4 Defenseless. In battle, the Vagabond is defenseless (4.3.2.III) if he has no undamaged S. 9.2.5 Items. The Vagabond's capabilities depend on the items he acquires. Instead of a Crafted Items box, he has a Satchel and various item tracks. Items on the Vagabond's faction board can be face up or face down. The Vagabond exhausts faceup undamaged items, flipping them face down, to take many actions. I Item Tracks. When gained or flipped face up in the Satchel, T, X, and B are placed face up on their matching tracks. When flipped face down, T, X, or B on tracks are placed face down in the Satchel. Each track can only hold three matching items. II The Satchel. When gained, M, S, C , F, and H are placed face up in the Vagabond's Satchel. 9.2.6 Maximum Rolled Hits. In battle, the Vagabond's maximum rolled hits (4.3.2.I) equals his undamaged S, face up or face down, in his Satchel. 9.2.7 Taking Hits. Whenever the Vagabond takes a hit (4.3.3), he must damage one undamaged item, moving it to",
+        },
+      },
+    } as const;
+
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
