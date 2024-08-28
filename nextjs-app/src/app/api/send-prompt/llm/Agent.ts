@@ -1,8 +1,11 @@
-import {ChunkDoc, chunkMetadataSchema} from '@/app/common/types/ChunkDoc';
 import {
   ReconstructedSectionDoc,
   reconstructedSectionMetadataSchema,
 } from '@/app/common/types/ReconstructedSectionDoc';
+import {
+  SectionChunkDoc,
+  sectionChunkMetadataSchema,
+} from '@/app/common/types/SectionChunkDoc';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
@@ -115,11 +118,11 @@ export async function retrieveContext(
     collectionName,
     prompt,
     30
-  )) as ChunkDoc[];
+  )) as SectionChunkDoc[];
 
   assert(
     similarChunks
-      .map((c) => chunkMetadataSchema.safeParse(c.metadata))
+      .map((c) => sectionChunkMetadataSchema.safeParse(c.metadata))
       .every((r) => r.success),
     'Invalid chunk metadata'
   );
@@ -181,7 +184,7 @@ export async function retrieveContext(
 
 async function reconstructSection(
   prompt: string,
-  chunk: ChunkDoc,
+  chunk: SectionChunkDoc,
   collectionName: string,
   maxSectionTokens: number
 ): Promise<ReconstructedSectionDoc> {

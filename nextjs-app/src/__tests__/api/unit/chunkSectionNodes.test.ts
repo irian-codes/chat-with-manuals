@@ -1,5 +1,5 @@
 import {chunkSectionNodes, SectionNode} from '@/app/api/parse-pdf/chunking';
-import {ChunkDoc} from '@/app/common/types/ChunkDoc';
+import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {
   CharacterTextSplitter,
   RecursiveCharacterTextSplitter,
@@ -48,7 +48,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -86,7 +86,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -143,7 +143,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -174,7 +174,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -199,7 +199,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -219,7 +219,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -253,7 +253,7 @@ describe('chunkSectionNodes', () => {
       },
     ];
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
       sectionsJson,
       globalSplitter
     );
@@ -366,7 +366,10 @@ describe('chunkSectionNodes', () => {
       return (Array.from(text.matchAll(separatorRegex)) ?? []).length + 1;
     }
 
-    const chunks: ChunkDoc[] = await chunkSectionNodes(sectionsJson, splitter);
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      splitter
+    );
 
     const groupedTokensByHeaderLevel = Map.groupBy(
       chunks,
