@@ -166,16 +166,26 @@ export async function POST(request: NextRequest) {
           )
         );
 
-        console.log('heeey 6.8', {
-          sectionChunks: sortedSectionChunks.map((c) => ({
-            text: c.pageContent,
-            order: c.metadata.totalOrder,
-          })),
-          traditionalChunks: traditionalSortedChunks.map((c) => ({
-            text: c.pageContent,
-            order: c.metadata.totalOrder,
-          })),
-        });
+        console.log(
+          'heeey 6.8',
+          util.inspect(
+            {
+              sectionChunks: sortedSectionChunks.map((c) => ({
+                text: c.pageContent,
+                totalOrder: c.metadata.totalOrder,
+              })),
+              traditionalChunks: traditionalSortedChunks.map((c) => ({
+                text: c.pageContent,
+                totalOrder: c.metadata.totalOrder,
+              })),
+            },
+            {
+              showHidden: false,
+              colors: true,
+              depth: null,
+            }
+          )
+        );
 
         throw new Error('TEMPORARY DEBUG ERROR');
 
