@@ -320,25 +320,7 @@ async function chunkSingleSplit({
     }
   })();
 
-  if (tokens <= splitter.chunkSize) {
-    return [
-      new Document<SectionChunkMetadata>({
-        id: uuidv4(),
-        pageContent: text,
-        metadata: {
-          headerRoute,
-          headerRouteLevels,
-          order: currentOrder,
-          totalOrder,
-          tokens,
-          charCount: text.length,
-          table: isTable,
-        },
-      }),
-    ];
-  }
-
-  // Big table detected that needs to be chunked as well
+  // Split just in case it's a big table that needs to be chunked as well
   const chunks: SectionChunkDoc[] = [];
   const splits = await splitter.splitText(text);
 
