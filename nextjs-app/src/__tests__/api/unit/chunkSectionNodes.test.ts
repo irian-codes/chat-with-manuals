@@ -218,14 +218,21 @@ describe('chunkSectionNodes', () => {
       'Header 1: Row 1\nHeader 2: Data 1\n\n' +
       Array(100).fill('Header 1: Row 2\nHeader 2: Data 2').join('\n\n');
 
+    const largePlaintifiedTableContent2 =
+      'Header 1: Row 1\nHeader 2: Data 1\n\n' +
+      Array(100).fill('Header 1: Row 2\nHeader 2: Data 2').join('\n\n');
+
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
         level: 1,
         title: 'Heading 1',
         content:
-          'This section contains a large table.\n\n<<<TABLE:0>>>\n\nEnd of section content.',
-        tables: new Map([[0, largePlaintifiedTableContent]]),
+          'This section contains a large table.\n\n<<<TABLE:0>>>\n\n\n\n<<<TABLE:1>>>\n\nEnd of section content.',
+        tables: new Map([
+          [0, largePlaintifiedTableContent],
+          [1, largePlaintifiedTableContent2],
+        ]),
         subsections: [],
       },
     ];
@@ -250,8 +257,8 @@ describe('chunkSectionNodes', () => {
     expect(tableChunks.length).toBeGreaterThan(5); // Should be split into multiple chunks
 
     tableChunks.forEach((chunk, index) => {
-      expect(chunk.pageContent).toContain('Header 1: Row'); // Part of the table should be in each chunk
-      expect(chunk.pageContent).toContain('Header 2: Data'); // Ensure both headers and data are present in chunks
+      expect(chunk.pageContent).toContain('Header 1: Row');
+      expect(chunk.pageContent).toContain('Header 2: Data');
       expect(chunk.metadata.order).toBe(index + 2); // Should follow the order after the initial text chunk
       expect(chunk.metadata.tokens).toBeGreaterThan(0);
       expect(chunk.metadata.charCount).toBeGreaterThan(0);
