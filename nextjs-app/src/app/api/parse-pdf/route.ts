@@ -124,11 +124,14 @@ export async function POST(request: NextRequest) {
         // TODO:
         // - Parse with pdfreader.
         //
-        // - Chunk pdfreader output
+        // - Chunk pdfreader output and sections by sentences
         //
         // - Match section text chunk to pdfreader chunk (or maybe chunks
         //   if they aren't the same).
-        //     -- Skip table chunks
+        //    -- Skip table chunks
+        //    -- Tools:
+        //      totalOrder prop segmentation, Levenhstein Distance, Cosine
+        //      similarity, Approximate String Matching (natural package)
         //
         // - Reconcile LLM chunk with pdfreader chunk(s) to fix
         //   hallucinations with some difference tolerance.
