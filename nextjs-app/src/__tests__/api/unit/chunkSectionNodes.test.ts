@@ -143,6 +143,73 @@ describe('chunkSectionNodes', () => {
     expect(chunks[1].metadata.order).toBe(1);
   });
 
+  it('should correctly chunk nested sections skipping empty ones correctly', async () => {
+    const sectionsJson: SectionNode[] = [
+      {
+        type: 'section',
+        title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
+        content: 'Text under heading 1.',
+        tables: new Map(),
+        subsections: [
+          {
+            type: 'section',
+            title: 'Heading 1.1',
+            level: 2,
+            headerRouteLevels: '1>1',
+            content: '',
+            tables: new Map(),
+            subsections: [],
+          },
+          {
+            type: 'section',
+            title: 'Heading 1.2',
+            level: 2,
+            headerRouteLevels: '1>2',
+            content: 'Text under heading 1.2.',
+            tables: new Map(),
+            subsections: [
+              {
+                type: 'section',
+                title: 'Heading 1.2.1',
+                level: 3,
+                headerRouteLevels: '1>2>1',
+                content: 'Text under heading 1.2.1.',
+                tables: new Map(),
+                subsections: [],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
+
+    expect(chunks).toHaveLength(3);
+
+    expect(chunks[0].pageContent).toBe('Text under heading 1.');
+    expect(chunks[0].metadata.headerRoute).toBe('Heading 1');
+    expect(chunks[0].metadata.headerRouteLevels).toBe('1');
+    expect(chunks[0].metadata.order).toBe(1);
+
+    expect(chunks[1].pageContent).toBe('Text under heading 1.2.');
+    expect(chunks[1].metadata.headerRoute).toBe('Heading 1>Heading 1.2');
+    expect(chunks[1].metadata.headerRouteLevels).toBe('1>2');
+    expect(chunks[1].metadata.order).toBe(1);
+
+    expect(chunks[2].pageContent).toBe('Text under heading 1.2.1.');
+    expect(chunks[2].metadata.headerRoute).toBe(
+      'Heading 1>Heading 1.2>Heading 1.2.1'
+    );
+    expect(chunks[2].metadata.headerRouteLevels).toBe('1>2>1');
+    expect(chunks[2].metadata.order).toBe(1);
+  });
+
   it('should handle large content by splitting it into multiple chunks', async () => {
     const largeContent = 'A'.repeat(1000);
     const sectionsJson: SectionNode[] = [
