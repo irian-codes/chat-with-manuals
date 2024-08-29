@@ -5,6 +5,7 @@ import {
   clearNodePersistStorage,
   clearVectorDB,
   diffTexts,
+  getLevenhsteinDistance,
   getMarkdownLexer,
   parseMarkdownToJson,
   parseMarkdownToPlainText,
@@ -51,7 +52,13 @@ export default function Page({}: Props) {
 
   function handleButtonClick7() {
     clearVectorDB().then(() => {
-      console.log('Vector DB  cleared');
+      console.log('Vector DB cleared');
+    });
+  }
+
+  function handleButtonClick8() {
+    getLevenhsteinDistance().then((res) => {
+      console.log('Levenstein result: ', res);
     });
   }
 
@@ -90,6 +97,12 @@ export default function Page({}: Props) {
           onClick={handleButtonClick5}
         >
           Diff texts and fix
+        </button>
+        <button
+          className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
+          onClick={handleButtonClick8}
+        >
+          Levenshtein Distance
         </button>
         <button
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"

@@ -11,6 +11,7 @@ import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
+import {LevenshteinDistance} from 'natural';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -89,6 +90,17 @@ wins the game, the Vagabond also wins.`;
       }).filter((d) => d.added || d.removed),
     },
   };
+}
+
+export async function getLevenhsteinDistance() {
+  const str1 = 'hello';
+  const str2 = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+  return LevenshteinDistance(str1, str2, {
+    insertion_cost: 1,
+    deletion_cost: 1,
+    substitution_cost: 1,
+  });
 }
 
 export async function clearNodePersistStorage() {

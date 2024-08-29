@@ -30,6 +30,7 @@
     "markdownlint-rule-helpers": "^0.25.0",
     "marked": "^13.0.2",
     "marked-plaintify": "^1.1.0",
+    "natural": "^8.0.1",
     "next": "14.2.3",
     "node-persist": "^4.0.3",
     "patch-package": "^8.0.0",
