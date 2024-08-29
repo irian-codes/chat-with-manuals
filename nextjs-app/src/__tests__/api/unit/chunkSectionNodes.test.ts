@@ -1,5 +1,6 @@
-import {chunkSectionNodes, SectionNode} from '@/app/api/parse-pdf/chunking';
+import {chunkSectionNodes} from '@/app/api/parse-pdf/chunking';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
+import {SectionNode} from '@/app/common/types/SectionNode';
 import {
   CharacterTextSplitter,
   RecursiveCharacterTextSplitter,
@@ -17,8 +18,9 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: 'This is a simple section with some text.',
         tables: new Map(),
         subsections: [],
@@ -49,8 +51,9 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content:
           'This is a section with a table.<<<TABLE:0>>>More text after the table.',
         tables: new Map([
@@ -103,15 +106,17 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: 'Text under heading 1.',
         tables: new Map(),
         subsections: [
           {
             type: 'section',
-            level: 2,
             title: 'Heading 1.1',
+            level: 2,
+            headerRouteLevels: '1>1',
             content: 'Text under heading 1.1.',
             tables: new Map(),
             subsections: [],
@@ -143,8 +148,9 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: largeContent,
         tables: new Map(),
         subsections: [],
@@ -168,8 +174,9 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: '',
         tables: new Map(),
         subsections: [],
@@ -188,8 +195,9 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Special Section',
+        level: 1,
+        headerRouteLevels: '1',
         content: 'Text with special characters: 😊, 👍, and symbols: ©, ™.',
         tables: new Map(),
         subsections: [],
@@ -225,8 +233,9 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content:
           'This section contains a large table.\n\n<<<TABLE:0>>>\n\n\n\n<<<TABLE:1>>>\n\nEnd of section content.',
         tables: new Map([
@@ -307,48 +316,54 @@ describe('chunkSectionNodes', () => {
     const sectionsJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: sampleTexts.byCharCount[50].text,
         tables: new Map(),
         subsections: [],
       },
       {
         type: 'section',
-        level: 1,
         title: 'Heading 2',
+        level: 1,
+        headerRouteLevels: '2',
         content: sampleTexts.byCharCount[150].text,
         tables: new Map(),
         subsections: [],
       },
       {
         type: 'section',
-        level: 1,
         title: 'Heading 3',
+        level: 1,
+        headerRouteLevels: '3',
         content: sampleTexts.byCharCount[300].text,
         tables: new Map(),
         subsections: [],
       },
       {
         type: 'section',
-        level: 1,
         title: 'Heading 4',
+        level: 1,
+        headerRouteLevels: '4',
         content: sampleTexts.byCharCount[450].text,
         tables: new Map(),
         subsections: [],
       },
       {
         type: 'section',
-        level: 1,
         title: 'Heading 5',
+        level: 1,
+        headerRouteLevels: '5',
         content: sampleTexts.byCharCount[700].text,
         tables: new Map(),
         subsections: [],
       },
       {
         type: 'section',
-        level: 1,
         title: 'Heading 6',
+        level: 1,
+        headerRouteLevels: '6',
         content: sampleTexts.byCharCount[1000].text,
         tables: new Map(),
         subsections: [],

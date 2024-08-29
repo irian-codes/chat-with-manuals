@@ -1,7 +1,8 @@
 export type SectionNode = {
   type: 'section';
-  level: number;
   title: string;
+  level: number;
+  headerRouteLevels: string;
   content: string;
   tables: Map<number, string>;
   subsections: SectionNode[];

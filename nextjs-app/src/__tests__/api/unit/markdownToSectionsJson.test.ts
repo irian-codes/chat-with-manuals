@@ -1,7 +1,5 @@
-import {
-  markdownToSectionsJson,
-  SectionNode,
-} from '@/app/api/parse-pdf/chunking';
+import {markdownToSectionsJson} from '@/app/api/parse-pdf/chunking';
+import {SectionNode} from '@/app/common/types/SectionNode';
 import {describe, expect, it} from 'vitest';
 
 describe('markdownToSectionsJson', () => {
@@ -22,23 +20,26 @@ Text under heading 2.`;
     const expectedJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: 'Some text under heading 1.',
         tables: new Map(),
         subsections: [
           {
             type: 'section',
-            level: 2,
             title: 'Heading 1.1',
+            level: 2,
+            headerRouteLevels: '1>1',
             content: 'Text under heading 1.1.',
             tables: new Map(),
             subsections: [],
           },
           {
             type: 'section',
-            level: 2,
             title: 'Heading 1.2',
+            level: 2,
+            headerRouteLevels: '1>2',
             content: 'Text under heading 1.2.',
             tables: new Map(),
             subsections: [],
@@ -47,8 +48,9 @@ Text under heading 2.`;
       },
       {
         type: 'section',
-        level: 1,
         title: 'Heading 2',
+        level: 1,
+        headerRouteLevels: '2',
         content: 'Text under heading 2.',
         tables: new Map(),
         subsections: [],
@@ -83,8 +85,9 @@ End tables.
     const expectedJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content:
           'Some text under heading 1.\n\n<<<TABLE:0>>>\n\nSecond table.\n\n<<<TABLE:1>>>\n\nEnd tables.',
         tables: new Map([
@@ -121,22 +124,25 @@ Text under heading 1.1.1.
     const expectedJson: SectionNode[] = [
       {
         type: 'section',
-        level: 1,
         title: 'Heading 1',
+        level: 1,
+        headerRouteLevels: '1',
         content: 'Some text under heading 1.',
         tables: new Map(),
         subsections: [
           {
             type: 'section',
-            level: 2,
             title: 'Heading 1.1',
+            level: 2,
+            headerRouteLevels: '1>1',
             content: 'Text under heading 1.1.',
             tables: new Map(),
             subsections: [
               {
                 type: 'section',
-                level: 3,
                 title: 'Heading 1.1.1',
+                level: 3,
+                headerRouteLevels: '1>1>1',
                 content: 'Text under heading 1.1.1.',
                 tables: new Map(),
                 subsections: [],

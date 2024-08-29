@@ -45,12 +45,93 @@ export async function markdownToSectionsJson(
     text: '',
     tables: new Map<number, string>(),
     lastTableIndex: -1,
+    lastHeaderRoutes: new Array<string>(),
   };
 
+  // HELPER FUNCTIONS
+
+  /**
+   * Updates the lastHeaderRoutes array of the currentContent object to
+   * have the correct length of depth. If the last entry is null, it will
+   * fill it with ones until depth (f.e. [1, 1>1, 1>1>1]). If the last
+   * entry is not null, it will check if the last entry has the same depth
+   * as the given depth and if so, it will increment the last level by one
+   * (f.e. from [1, 1>1] to [1, 1>2]). If not, it will fill the missing
+   * levels with ones (f.e. [3, missing, missing] to [3, 3>1, 3>1>1]).
+   *
+   * @param {number} depth - The depth to update to.
+   * @return {string} The updated last header route.
+   */
+  function updateLastHeaderRoutes(depth: number): string {
+    // Delete from lastHeaderRoutes until correct level
+    while (currentContent.lastHeaderRoutes.length > depth) {
+      currentContent.lastHeaderRoutes.pop();
+    }
+
+    const headerRoutesLen = currentContent.lastHeaderRoutes.length;
+    const lastEntry = currentContent.lastHeaderRoutes[headerRoutesLen - 1];
+
+    // Fill it with ones until depth, just in case the first header is
+    // lower than depth one for whatever reason (malformed Markdown, empty
+    // section, etc.).
+    if (lastEntry == null) {
+      const levels = Array.from({length: depth}, () => '1');
+      currentContent.lastHeaderRoutes = [];
+
+      levels.reduce((acc, level) => {
+        const newEntry = [acc, level].filter(Boolean).join('>');
+        currentContent.lastHeaderRoutes.push(newEntry);
+
+        return newEntry;
+      }, '');
+
+      return currentContent.lastHeaderRoutes[
+        currentContent.lastHeaderRoutes.length - 1
+      ];
+    }
+
+    // Check depth of the last entry (e.g. x>y>z). If it's the same as
+    // depth (contains depth - 1 > symbols) then grab last number,
+    // otherwise just start at 1 and fill the missing levels
+    const lastEntryLevels = lastEntry.split('>');
+
+    if (lastEntryLevels.length === depth) {
+      const lastEntryLevel = lastEntryLevels[lastEntryLevels.length - 1];
+
+      currentContent.lastHeaderRoutes[headerRoutesLen - 1] = lastEntryLevels
+        .toSpliced(
+          lastEntryLevels.length - 1,
+          1,
+          String(Number(lastEntryLevel) + 1)
+        )
+        .join('>');
+
+      return currentContent.lastHeaderRoutes[headerRoutesLen - 1];
+    } else {
+      const missingLevels = Array.from(
+        {length: depth - currentContent.lastHeaderRoutes.length},
+        () => '1'
+      );
+
+      missingLevels.reduce((acc, level) => {
+        const newEntry = [acc, level].filter(Boolean).join('>');
+        currentContent.lastHeaderRoutes.push(newEntry);
+
+        return newEntry;
+      }, lastEntry);
+
+      return currentContent.lastHeaderRoutes[
+        currentContent.lastHeaderRoutes.length - 1
+      ];
+    }
+  }
+
   function pushContent() {
+    const lastSection = stack[stack.length - 1];
+
     if (currentContent.text.length > 0) {
       if (stack.length > 0) {
-        stack[stack.length - 1].content = currentContent.text.trim();
+        lastSection.content = currentContent.text.trim();
       }
 
       currentContent.text = '';
@@ -58,13 +139,19 @@ export async function markdownToSectionsJson(
 
     if (currentContent.tables.size > 0) {
       if (stack.length > 0) {
-        stack[stack.length - 1].tables = currentContent.tables;
+        lastSection.tables = currentContent.tables;
       }
 
       currentContent.tables = new Map();
       currentContent.lastTableIndex = -1;
     }
+
+    if (stack.length > 0) {
+      lastSection.headerRouteLevels = updateLastHeaderRoutes(lastSection.level);
+    }
   }
+
+  // START OF THE ACTUAL CODE
 
   for (const token of tokens) {
     if (token.type === 'heading') {
@@ -73,8 +160,9 @@ export async function markdownToSectionsJson(
 
       const node: SectionNode = {
         type: 'section',
-        level: token.depth,
         title: token.text,
+        level: token.depth,
+        headerRouteLevels: '',
         content: '',
         tables: new Map(),
         subsections: [],
@@ -135,7 +223,6 @@ export async function chunkSectionNodes(
       ...(await chunkSectionNode({
         section,
         headerRoute: section.title,
-        headerRouteLevels: `${i + 1}`,
         startTotalOrder: totalOrder,
         splitter,
       }))
@@ -150,13 +237,11 @@ export async function chunkSectionNodes(
 async function chunkSectionNode({
   section,
   headerRoute,
-  headerRouteLevels,
   startTotalOrder,
   splitter,
 }: {
   section: SectionNode;
   headerRoute: string;
-  headerRouteLevels: string;
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
@@ -191,7 +276,6 @@ async function chunkSectionNode({
       section,
       startOrder: currentOrder,
       headerRoute,
-      headerRouteLevels,
       startTotalOrder: totalOrder,
       splitter,
     });
@@ -208,7 +292,6 @@ async function chunkSectionNode({
       ...(await chunkSectionNode({
         section: subsection,
         headerRoute: `${headerRoute}>${subsection.title}`,
-        headerRouteLevels: `${headerRouteLevels}>${i + 1}`,
         startTotalOrder: totalOrder,
         splitter,
       }))
@@ -248,7 +331,6 @@ async function chunkSingleSplit({
   section,
   startOrder = 1,
   headerRoute,
-  headerRouteLevels,
   startTotalOrder,
   splitter,
 }: {
@@ -256,7 +338,6 @@ async function chunkSingleSplit({
   startOrder?: number;
   section: SectionNode;
   headerRoute: string;
-  headerRouteLevels: string;
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
@@ -320,7 +401,7 @@ async function chunkSingleSplit({
         pageContent: text,
         metadata: {
           headerRoute,
-          headerRouteLevels,
+          headerRouteLevels: section.headerRouteLevels,
           order: currentOrder++,
           totalOrder: totalOrder++,
           tokens,
