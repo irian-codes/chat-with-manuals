@@ -1,8 +1,5 @@
 import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
-import {isBlankString} from '@/app/common/utils/stringUtils';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {NextRequest, NextResponse} from 'next/server';
-import util from 'node:util';
 import {z} from 'zod';
 import {
   deleteFileByHash,
@@ -12,12 +9,12 @@ import {
 } from '../db/uploaded-files-db/files';
 import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
+import {chunkSectionNodes, markdownToSectionsJson} from './chunking';
 import {
-  chunkSectionNodes,
-  chunkString,
-  markdownToSectionsJson,
-} from './chunking';
-import {lintAndFixMarkdown, parsePdf, pdfParseWithPdfreader} from './functions';
+  fixHallucinationsOnSections,
+  lintAndFixMarkdown,
+  parsePdf,
+} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -106,93 +103,13 @@ export async function POST(request: NextRequest) {
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
 
-        const sentenceSplitter = new RecursiveCharacterTextSplitter({
-          // This chunk size may seem small, but it's so we ensure we split
-          // headers (in the text parsed document) that appear alongside
-          // sentences. Because they are very small and we need to ensure
-          // we split by all the indicated separators without leaving any.
-          chunkSize: 1,
-          chunkOverlap: 0,
-          separators: ['\n\n', '. ', '? ', '! ', '.\n', '?\n', '!\n', ':\n'],
-          keepSeparator: false,
-        });
-
-        const sectionChunks = await chunkSectionNodes(
-          mdToJson,
-          sentenceSplitter
-        );
-        // TODO:
-        // - Parse with pdfreader.
-        //
-        // - Chunk pdfreader output and sections by sentences
-        //
-        // - Match section text chunk to pdfreader chunk (or maybe chunks
-        //   if they aren't the same).
-        //    -- Skip table chunks
-        //    -- Tools:
-        //      totalOrder prop segmentation, Levenhstein Distance, Cosine
-        //      similarity, Approximate String Matching (natural package)
-        //
-        // - Reconcile LLM chunk with pdfreader chunk(s) to fix
-        //   hallucinations with some difference tolerance.
-
-        const layoutExtractedText = await pdfParseWithPdfreader({
+        const fixedChunks = await fixHallucinationsOnSections({
           file,
           columnsNumber,
+          sections: mdToJson,
         });
 
-        if (isBlankString(layoutExtractedText)) {
-          throw new Error('Layout parser produced an empty file');
-        }
-
-        const layoutChunks = await chunkString({
-          text: layoutExtractedText,
-          splitter: sentenceSplitter,
-        });
-
-        const sortedSectionChunks = sectionChunks
-          .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
-          .slice(0, 15);
-
-        const layoutSortedChunks = layoutChunks
-          .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
-          .slice(0, 15);
-
-        console.log(
-          'heeey 6.7',
-          util.inspect(
-            {
-              sectionChunks: sortedSectionChunks,
-              layoutChunks: layoutSortedChunks,
-            },
-            {
-              showHidden: false,
-              colors: true,
-              depth: null,
-            }
-          )
-        );
-
-        console.log(
-          'heeey 6.8',
-          util.inspect(
-            {
-              sectionChunks: sortedSectionChunks.map((c) => ({
-                text: c.pageContent,
-                totalOrder: c.metadata.totalOrder,
-              })),
-              layoutChunks: layoutSortedChunks.map((c) => ({
-                text: c.pageContent,
-                totalOrder: c.metadata.totalOrder,
-              })),
-            },
-            {
-              showHidden: false,
-              colors: true,
-              depth: null,
-            }
-          )
-        );
+        const sectionChunks = await chunkSectionNodes(fixedChunks);
 
         throw new Error('TEMPORARY DEBUG ERROR');
 
