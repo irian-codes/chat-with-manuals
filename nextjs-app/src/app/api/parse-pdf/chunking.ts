@@ -2,6 +2,7 @@ import {
   SectionChunkDoc,
   SectionChunkMetadata,
 } from '@/app/common/types/SectionChunkDoc';
+import {SectionNode} from '@/app/common/types/SectionNode';
 import {TextChunkDoc, TextChunkMetadata} from '@/app/common/types/TextChunkDoc';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {decodeHTML} from 'entities';
@@ -18,15 +19,6 @@ import {z} from 'zod';
 
 const metaContentDelimiter = '<<<%s>>>';
 const tableDelimiter = metaContentDelimiter.replace('%s', 'TABLE:%d');
-
-export type SectionNode = {
-  type: 'section';
-  level: number;
-  title: string;
-  content: string;
-  tables: Map<number, string>;
-  subsections: SectionNode[];
-};
 
 /**
  * Parses a markdown string into a JSON structure representing the sections
