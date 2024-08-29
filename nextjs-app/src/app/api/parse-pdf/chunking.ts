@@ -280,6 +280,7 @@ async function chunkSingleSplit({
 
   const text = (isTable ? (section.tables.get(tableIndex) ?? '') : part).trim();
 
+  // TODO: Refactor this as the variable is not used but the validation it is
   const tokens = (function () {
     const tokenNum: number | boolean = isWithinTokenLimit(
       text,
