@@ -10,11 +10,8 @@ import {
 import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
 import {chunkSectionNodes, markdownToSectionsJson} from './chunking';
-import {
-  fixHallucinationsOnSections,
-  lintAndFixMarkdown,
-  parsePdf,
-} from './functions';
+import {fixHallucinationsOnSections} from './fixHallucinations';
+import {lintAndFixMarkdown, parsePdf} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();

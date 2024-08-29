@@ -3,7 +3,6 @@ import {
   writeToTimestampedFile,
 } from '@/app/api/utils/fileUtils';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
-import {SectionNode} from '@/app/common/types/SectionNode';
 import {
   isBlankString,
   matchCaseBySurroundingWords,
@@ -17,7 +16,6 @@ import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import pdf2md from '@opendocsg/pdf2md';
 import {diffWords} from 'diff';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import markdownlint from 'markdownlint';
@@ -34,7 +32,6 @@ import {
   Strategy,
 } from 'unstructured-client/sdk/models/shared';
 import {z} from 'zod';
-import {chunkSectionNodes, chunkString} from './chunking';
 
 export async function parsePdf({
   file,
@@ -750,88 +747,4 @@ export function reconcileTexts(firstText: string, secondText: string): string {
   }, '');
 
   return finalStr;
-}
-
-export async function fixHallucinationsOnSections({
-  sections,
-  file,
-  columnsNumber,
-}: {
-  sections: SectionNode[];
-  file: File;
-  columnsNumber: number;
-}): Promise<SectionNode[]> {
-  // TODO:
-  // - Parse with pdfreader.
-  //
-  // - Chunk pdfreader output and sections by sentences
-  //
-  // - Match section text chunk to pdfreader chunk (or maybe chunks
-  //   if they aren't the same).
-  //    -- Skip table chunks
-  //    -- Tools:
-  //      totalOrder prop segmentation, Levenhstein Distance, Cosine
-  //      similarity, Approximate String Matching (natural package)
-  //
-  // - Reconcile LLM chunk with pdfreader chunk(s) to fix
-  //   hallucinations with some difference tolerance.
-  //    -- Either ChatGPT4o mini or some way with 'natural' of detecting garbage and strip it
-  //
-  // - Using 'headerRoutesLevels' on the chunks, group them
-  //   and merge them and substitute the Section content.
-  //
-  // return the fixed sections
-
-  // Chunking sections with a sentence splitter
-  const sentenceSplitter = new RecursiveCharacterTextSplitter({
-    // This chunk size may seem small, but it's so we ensure we split
-    // headers (in the text parsed document) that appear alongside
-    // sentences. Because they are very small and we need to ensure
-    // we split by all the indicated separators without leaving any.
-    chunkSize: 1,
-    chunkOverlap: 0,
-    separators: ['\n\n', '. ', '? ', '! ', '.\n', '?\n', '!\n', ':\n'],
-    keepSeparator: false,
-  });
-
-  const sectionChunks = await chunkSectionNodes(sections, sentenceSplitter);
-
-  // Chunking layout parsed text (traditionally parsed)
-  const layoutExtractedText = await pdfParseWithPdfReader({
-    file,
-    columnsNumber,
-  });
-
-  if (isBlankString(layoutExtractedText)) {
-    throw new Error('Layout parser produced an empty file');
-  }
-
-  const layoutChunks = await chunkString({
-    text: layoutExtractedText,
-    splitter: sentenceSplitter,
-  });
-
-  // Match section chunk with most probable layoutChunks candidates
-  const matchedChunks = sectionChunks.map((sectionChunk) => {
-    return matchSectionChunk({
-      sectionChunk,
-      layoutChunks,
-    });
-  });
-
-  const fixedChunks = matchedChunks.map((matchedChunk) => {
-    return reconcileChunk({
-      sectionChunk,
-      candidates,
-    });
-  });
-
-  // Reconcile texts of the section chunks and merge back into sections
-  const fixedSections = mergeChunksIntoSections({
-    originalSections: sections,
-    newChunks: fixedChunks,
-  });
-
-  // Return the new fixed SectionNodes
-  return fixedSections;
 }
