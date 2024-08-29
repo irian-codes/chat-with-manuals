@@ -45,7 +45,7 @@ export async function markdownToSectionsJson(
     text: '',
     tables: new Map<number, string>(),
     lastTableIndex: -1,
-    lastHeaderRoutes: new Array<string>(),
+    lastHeaderRouteLevels: new Array<string>(),
   };
 
   // HELPER FUNCTIONS
@@ -64,29 +64,29 @@ export async function markdownToSectionsJson(
    */
   function updateLastHeaderRoutes(depth: number): string {
     // Delete from lastHeaderRoutes until correct level
-    while (currentContent.lastHeaderRoutes.length > depth) {
-      currentContent.lastHeaderRoutes.pop();
+    while (currentContent.lastHeaderRouteLevels.length > depth) {
+      currentContent.lastHeaderRouteLevels.pop();
     }
 
-    const headerRoutesLen = currentContent.lastHeaderRoutes.length;
-    const lastEntry = currentContent.lastHeaderRoutes[headerRoutesLen - 1];
+    const headerRoutesLen = currentContent.lastHeaderRouteLevels.length;
+    const lastEntry = currentContent.lastHeaderRouteLevels[headerRoutesLen - 1];
 
     // Fill it with ones until depth, just in case the first header is
     // lower than depth one for whatever reason (malformed Markdown, empty
     // section, etc.).
     if (lastEntry == null) {
       const levels = Array.from({length: depth}, () => '1');
-      currentContent.lastHeaderRoutes = [];
+      currentContent.lastHeaderRouteLevels = [];
 
       levels.reduce((acc, level) => {
         const newEntry = [acc, level].filter(Boolean).join('>');
-        currentContent.lastHeaderRoutes.push(newEntry);
+        currentContent.lastHeaderRouteLevels.push(newEntry);
 
         return newEntry;
       }, '');
 
-      return currentContent.lastHeaderRoutes[
-        currentContent.lastHeaderRoutes.length - 1
+      return currentContent.lastHeaderRouteLevels[
+        currentContent.lastHeaderRouteLevels.length - 1
       ];
     }
 
@@ -98,30 +98,31 @@ export async function markdownToSectionsJson(
     if (lastEntryLevels.length === depth) {
       const lastEntryLevel = lastEntryLevels[lastEntryLevels.length - 1];
 
-      currentContent.lastHeaderRoutes[headerRoutesLen - 1] = lastEntryLevels
-        .toSpliced(
-          lastEntryLevels.length - 1,
-          1,
-          String(Number(lastEntryLevel) + 1)
-        )
-        .join('>');
+      currentContent.lastHeaderRouteLevels[headerRoutesLen - 1] =
+        lastEntryLevels
+          .toSpliced(
+            lastEntryLevels.length - 1,
+            1,
+            String(Number(lastEntryLevel) + 1)
+          )
+          .join('>');
 
-      return currentContent.lastHeaderRoutes[headerRoutesLen - 1];
+      return currentContent.lastHeaderRouteLevels[headerRoutesLen - 1];
     } else {
       const missingLevels = Array.from(
-        {length: depth - currentContent.lastHeaderRoutes.length},
+        {length: depth - currentContent.lastHeaderRouteLevels.length},
         () => '1'
       );
 
       missingLevels.reduce((acc, level) => {
         const newEntry = [acc, level].filter(Boolean).join('>');
-        currentContent.lastHeaderRoutes.push(newEntry);
+        currentContent.lastHeaderRouteLevels.push(newEntry);
 
         return newEntry;
       }, lastEntry);
 
-      return currentContent.lastHeaderRoutes[
-        currentContent.lastHeaderRoutes.length - 1
+      return currentContent.lastHeaderRouteLevels[
+        currentContent.lastHeaderRouteLevels.length - 1
       ];
     }
   }
