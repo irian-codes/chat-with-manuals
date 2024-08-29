@@ -8,7 +8,6 @@ import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
 import {
-  CharacterTextSplitter,
   RecursiveCharacterTextSplitter,
   TextSplitter,
 } from 'langchain/text_splitter';
@@ -131,17 +130,7 @@ export async function chunkSectionNodes(
     splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 150,
       chunkOverlap: 0,
-      separators: [
-        metaContentDelimiter.substring(0, 3),
-        metaContentDelimiter.substring(metaContentDelimiter.length - 3),
-        '\n\n',
-        '\n',
-        '.',
-        '?',
-        '!',
-        ' ',
-        '',
-      ],
+      keepSeparator: false,
     });
   }
 
@@ -233,7 +222,7 @@ async function chunkSectionNode({
       }))
     );
 
-// TODO: For some reason sometimes here it adds one more than what it
+    // TODO: For some reason sometimes here it adds one more than what it
     // should add. I.e. it goes from 9 to 11. It's not important for now,
     // but we should be aware of it.
     totalOrder += chunks.length;
@@ -360,11 +349,10 @@ export async function chunkString({
   splitter?: TextSplitter;
 }): Promise<TextChunkDoc[]> {
   if (splitter == null) {
-    splitter = new CharacterTextSplitter({
+    splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 20,
       chunkOverlap: 0,
       keepSeparator: false,
-      separator: '. ',
     });
   }
 

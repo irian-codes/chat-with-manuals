@@ -1,6 +1,6 @@
 import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
-import {CharacterTextSplitter} from 'langchain/text_splitter';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {NextRequest, NextResponse} from 'next/server';
 import util from 'node:util';
 import {z} from 'zod';
@@ -106,11 +106,15 @@ export async function POST(request: NextRequest) {
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
 
-        const sentenceSplitter = new CharacterTextSplitter({
-          chunkSize: 20,
+        const sentenceSplitter = new RecursiveCharacterTextSplitter({
+          // This chunk size may seem small, but it's so we ensure we split
+          // headers (in the text parsed document) that appear alongside
+          // sentences. Because they are very small and we need to ensure
+          // we split by all the indicated separators without leaving any.
+          chunkSize: 1,
           chunkOverlap: 0,
+          separators: ['\n\n', '. ', '? ', '! ', '.\n', '?\n', '!\n', ':\n'],
           keepSeparator: false,
-          separator: '. ',
         });
 
         const sectionChunks = await chunkSectionNodes(
@@ -129,17 +133,17 @@ export async function POST(request: NextRequest) {
         // - Reconcile LLM chunk with pdfreader chunk(s) to fix
         //   hallucinations with some difference tolerance.
 
-        const traditionalParsedText = await pdfParseWithPdfreader({
+        const layoutExtractedText = await pdfParseWithPdfreader({
           file,
           columnsNumber,
         });
 
-        if (isBlankString(traditionalParsedText)) {
-          throw new Error("Parser 'pdfreader' produced an empty file");
+        if (isBlankString(layoutExtractedText)) {
+          throw new Error('Layout parser produced an empty file');
         }
 
-        const traditionalChunks = await chunkString({
-          text: traditionalParsedText,
+        const layoutChunks = await chunkString({
+          text: layoutExtractedText,
           splitter: sentenceSplitter,
         });
 
@@ -147,7 +151,7 @@ export async function POST(request: NextRequest) {
           .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
           .slice(0, 15);
 
-        const traditionalSortedChunks = traditionalChunks
+        const layoutSortedChunks = layoutChunks
           .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
           .slice(0, 15);
 
@@ -156,7 +160,7 @@ export async function POST(request: NextRequest) {
           util.inspect(
             {
               sectionChunks: sortedSectionChunks,
-              traditionalChunks: traditionalSortedChunks,
+              layoutChunks: layoutSortedChunks,
             },
             {
               showHidden: false,
@@ -174,7 +178,7 @@ export async function POST(request: NextRequest) {
                 text: c.pageContent,
                 totalOrder: c.metadata.totalOrder,
               })),
-              traditionalChunks: traditionalSortedChunks.map((c) => ({
+              layoutChunks: layoutSortedChunks.map((c) => ({
                 text: c.pageContent,
                 totalOrder: c.metadata.totalOrder,
               })),
