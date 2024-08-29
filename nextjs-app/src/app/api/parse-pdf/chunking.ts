@@ -95,7 +95,7 @@ export async function markdownToSectionsJson(
     } else if (token.type === 'table') {
       currentContent.tables.set(
         ++currentContent.lastTableIndex,
-        (await plainMarked.parse(token.raw)).trim()
+        decodeHTML(await plainMarked.parse(token.raw)).trim()
       );
 
       // Add a table placeholder to restore this table later
