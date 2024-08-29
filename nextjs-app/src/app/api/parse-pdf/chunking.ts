@@ -45,38 +45,53 @@ export async function markdownToSectionsJson(
     text: '',
     tables: new Map<number, string>(),
     lastTableIndex: -1,
+    lastHeaderRoute: new Array<string>(),
     lastHeaderRouteLevels: new Array<string>(),
   };
 
   // HELPER FUNCTIONS
 
   /**
-   * Updates the lastHeaderRoutes array of the currentContent object to
-   * have the correct length of depth. If the last entry is null, it will
-   * fill it with ones until depth (f.e. [1, 1>1, 1>1>1]). If the last
-   * entry is not null, it will check if the last entry has the same depth
-   * as the given depth and if so, it will increment the last level by one
-   * (f.e. from [1, 1>1] to [1, 1>2]). If not, it will fill the missing
-   * levels with ones (f.e. [3, missing, missing] to [3, 3>1, 3>1>1]).
+   * Updates the lastHeaderRoute and lastHeaderRouteLevels arrays of the
+   * currentContent object to have the correct length of depth and header
+   * route (e.g. Heading 3>Heading 3.2>Heading 3.2.1). If the last entry is
+   * null, it will fill it with ones until depth (f.e. [1, 1>1, 1>1>1] and
+   * [N/A, N/A>N/A, N/A>N/A>Heading 1.1.1]). If the last entry is not null,
+   * it will check if the last entry has the same depth as the given depth
+   * and if so, it will increment the last level by one (f.e. from [1, 1>1]
+   * to [1, 1>2]). If not, it will fill the missing levels with ones (f.e.
+   * [3, missing, missing] to [3, 3>1, 3>1>1]).
    *
-   * @param {number} depth - The depth to update to.
-   * @return {string} The updated last header route.
+   * @param {SectionNode} section - The section we're dealing with.
+   * @return The updated last header route and level
+   * (e.g. `{route: 'Heading 3>Heading 3.2>Heading 3.2.1', level: '3>2>1'}`).
    */
-  function updateLastHeaderRoutes(depth: number): string {
+  function updateLastHeaderRoutes(section: SectionNode): {
+    route: string;
+    level: string;
+  } {
+    const depth = section.level;
+    const title = section.title;
+
     // Delete from lastHeaderRoutes until correct level
     while (currentContent.lastHeaderRouteLevels.length > depth) {
       currentContent.lastHeaderRouteLevels.pop();
+      currentContent.lastHeaderRoute.pop();
     }
 
-    const headerRoutesLen = currentContent.lastHeaderRouteLevels.length;
-    const lastEntry = currentContent.lastHeaderRouteLevels[headerRoutesLen - 1];
+    const headerRouteLevelsLen = currentContent.lastHeaderRouteLevels.length;
+    const lastHeaderLevelsEntry =
+      currentContent.lastHeaderRouteLevels[headerRouteLevelsLen - 1];
+    const lastHeaderRouteEntry =
+      currentContent.lastHeaderRoute[headerRouteLevelsLen - 1];
 
     // Fill it with ones until depth, just in case the first header is
     // lower than depth one for whatever reason (malformed Markdown, empty
     // section, etc.).
-    if (lastEntry == null) {
+    if (lastHeaderLevelsEntry == null) {
       const levels = Array.from({length: depth}, () => '1');
       currentContent.lastHeaderRouteLevels = [];
+      currentContent.lastHeaderRoute = [];
 
       levels.reduce((acc, level) => {
         const newEntry = [acc, level].filter(Boolean).join('>');
@@ -85,20 +100,39 @@ export async function markdownToSectionsJson(
         return newEntry;
       }, '');
 
-      return currentContent.lastHeaderRouteLevels[
-        currentContent.lastHeaderRouteLevels.length - 1
-      ];
+      levels.reduce((acc, level, i) => {
+        const isLastElement = i === levels.length - 1;
+        const newEntry = [acc, isLastElement ? title : 'N/A']
+          .filter(Boolean)
+          .join('>');
+
+        currentContent.lastHeaderRoute.push(newEntry);
+
+        return newEntry;
+      }, '');
+
+      return {
+        route:
+          currentContent.lastHeaderRoute[
+            currentContent.lastHeaderRoute.length - 1
+          ],
+        level:
+          currentContent.lastHeaderRouteLevels[
+            currentContent.lastHeaderRouteLevels.length - 1
+          ],
+      };
     }
 
     // Check depth of the last entry (e.g. x>y>z). If it's the same as
     // depth (contains depth - 1 > symbols) then grab last number,
     // otherwise just start at 1 and fill the missing levels
-    const lastEntryLevels = lastEntry.split('>');
+    const lastEntryLevels = lastHeaderLevelsEntry.split('>');
+    const lastEntryHeaders = lastHeaderRouteEntry.split('>');
 
     if (lastEntryLevels.length === depth) {
       const lastEntryLevel = lastEntryLevels[lastEntryLevels.length - 1];
 
-      currentContent.lastHeaderRouteLevels[headerRoutesLen - 1] =
+      currentContent.lastHeaderRouteLevels[headerRouteLevelsLen - 1] =
         lastEntryLevels
           .toSpliced(
             lastEntryLevels.length - 1,
@@ -107,7 +141,15 @@ export async function markdownToSectionsJson(
           )
           .join('>');
 
-      return currentContent.lastHeaderRouteLevels[headerRoutesLen - 1];
+      currentContent.lastHeaderRoute[headerRouteLevelsLen - 1] =
+        lastEntryHeaders
+          .toSpliced(lastEntryHeaders.length - 1, 1, title)
+          .join('>');
+
+      return {
+        route: currentContent.lastHeaderRoute[headerRouteLevelsLen - 1],
+        level: currentContent.lastHeaderRouteLevels[headerRouteLevelsLen - 1],
+      };
     } else {
       const missingLevels = Array.from(
         {length: depth - currentContent.lastHeaderRouteLevels.length},
@@ -119,11 +161,29 @@ export async function markdownToSectionsJson(
         currentContent.lastHeaderRouteLevels.push(newEntry);
 
         return newEntry;
-      }, lastEntry);
+      }, lastHeaderLevelsEntry);
 
-      return currentContent.lastHeaderRouteLevels[
-        currentContent.lastHeaderRouteLevels.length - 1
-      ];
+      missingLevels.reduce((acc, level, i) => {
+        const isLastElement = i === missingLevels.length - 1;
+        const newEntry = [acc, isLastElement ? title : 'N/A']
+          .filter(Boolean)
+          .join('>');
+
+        currentContent.lastHeaderRoute.push(newEntry);
+
+        return newEntry;
+      }, lastHeaderRouteEntry);
+
+      return {
+        route:
+          currentContent.lastHeaderRoute[
+            currentContent.lastHeaderRoute.length - 1
+          ],
+        level:
+          currentContent.lastHeaderRouteLevels[
+            currentContent.lastHeaderRouteLevels.length - 1
+          ],
+      };
     }
   }
 
@@ -148,7 +208,9 @@ export async function markdownToSectionsJson(
     }
 
     if (stack.length > 0) {
-      lastSection.headerRouteLevels = updateLastHeaderRoutes(lastSection.level);
+      const {route, level} = updateLastHeaderRoutes(lastSection);
+      lastSection.headerRoute = route;
+      lastSection.headerRouteLevels = level;
     }
   }
 
@@ -163,6 +225,7 @@ export async function markdownToSectionsJson(
         type: 'section',
         title: token.text,
         level: token.depth,
+        headerRoute: '',
         headerRouteLevels: '',
         content: '',
         tables: new Map(),
@@ -223,7 +286,6 @@ export async function chunkSectionNodes(
     chunks.push(
       ...(await chunkSectionNode({
         section,
-        headerRoute: section.title,
         startTotalOrder: totalOrder,
         splitter,
       }))
@@ -237,12 +299,10 @@ export async function chunkSectionNodes(
 
 async function chunkSectionNode({
   section,
-  headerRoute,
   startTotalOrder,
   splitter,
 }: {
   section: SectionNode;
-  headerRoute: string;
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
@@ -276,7 +336,6 @@ async function chunkSectionNode({
       part,
       section,
       startOrder: currentOrder,
-      headerRoute,
       startTotalOrder: totalOrder,
       splitter,
     });
@@ -292,7 +351,6 @@ async function chunkSectionNode({
     chunks.push(
       ...(await chunkSectionNode({
         section: subsection,
-        headerRoute: `${headerRoute}>${subsection.title}`,
         startTotalOrder: totalOrder,
         splitter,
       }))
@@ -319,9 +377,6 @@ async function chunkSectionNode({
  * Defaults to 1.
  * @param {number} startTotalOrder - The starting totalOrder num of the
  * whole document.
- * @param {string} headerRoute - The route of the current section.
- * @param {string} headerRouteLevels - The route of the current section
- * with levels.
  * @param {TextSplitter} splitter - The splitter instance to use.
  *
  * @return {Promise<SectionChunkDoc[]>} A Promise that resolves to an array
@@ -331,14 +386,12 @@ async function chunkSingleSplit({
   part,
   section,
   startOrder = 1,
-  headerRoute,
   startTotalOrder,
   splitter,
 }: {
   part: string;
   startOrder?: number;
   section: SectionNode;
-  headerRoute: string;
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
@@ -401,7 +454,7 @@ async function chunkSingleSplit({
         id: uuidv4(),
         pageContent: text,
         metadata: {
-          headerRoute,
+          headerRoute: section.headerRoute,
           headerRouteLevels: section.headerRouteLevels,
           order: currentOrder++,
           totalOrder: totalOrder++,
