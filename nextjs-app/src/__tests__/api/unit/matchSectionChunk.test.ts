@@ -191,6 +191,74 @@ describe('matchSectionChunk', () => {
     expect(orderedCandidates[2].chunk.metadata.totalOrder).toBe(1);
   });
 
+  it.only('should filter correctly the chunks that are too far away.', async () => {
+    const sectionChunk: SectionChunkDoc = new Document({
+      id: 'S1',
+      pageContent: 'The quick brown fox',
+      metadata: {
+        headerRoute: '1>1',
+        headerRouteLevels: '1',
+        order: 1,
+        totalOrder: 50,
+        tokens: 4,
+        charCount: 18,
+        table: false,
+      },
+    });
+
+    const layoutChunks: TextChunkDoc[] = [
+      new Document({
+        id: 'L1',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 1, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L2',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 20, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L3',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 39, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L4',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 50, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L5',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 60, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L6',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 100, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L7',
+        pageContent: 'The quick brown dog',
+        metadata: {totalOrder: 41, tokens: 4, charCount: 19},
+      }),
+    ];
+
+    const orderedCandidates = await matchSectionChunk({
+      sectionChunk,
+      layoutChunks,
+    });
+
+    expect(orderedCandidates).toHaveLength(4);
+    expect(orderedCandidates.map((c) => c.chunk.pageContent)).toEqual(
+      new Array(4).fill('The quick brown fox')
+    );
+
+    expect(orderedCandidates.map((c) => c.chunk.metadata.totalOrder)).toEqual([
+      50, 60, 39, 20,
+    ]);
+  });
+
   it('should find the closest match when no clear match is found.', async () => {
     const sectionChunk: SectionChunkDoc = new Document({
       id: 'S1',
