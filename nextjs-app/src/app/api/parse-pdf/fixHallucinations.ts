@@ -103,26 +103,28 @@ export async function fixHallucinationsOnSections({
 }
 
 /**
- * Given a section chunk and an array of layout chunks, find the most
- * probable matches of the section chunk in the layout chunks. It does
+ * Given a section chunk and an array of layout parsed chunks, find the
+ * most probable matches of the section chunk in the layout chunks. It does
  * this by filtering the layout chunks by choosing the closest ones in
  * document order to the section chunk, and then computing the Cosine
  * similarity and Levenshtein distance between the section chunk and the
  * filtered layout chunks. The results are then sorted by the weighted
- * score of both metrics.
+ * score of both metrics in a scale of 0 to 1 where 1 means total match and
+ * 0 means is the theoretically most different string in the world (so
+ * totally not a match).
  *
  * @param {SectionChunkDoc} sectionChunk - The section chunk to find a
  *   match for in the layout chunks.
  * @param {TextChunkDoc[]} layoutChunks - The array of layout chunks to
  *   search for a match in.
- * @param {number} [maxCandidates=10] - The maximum number of candidates
- *   to return in the sorted list.
+ * @param {number} [maxCandidates=10] - The maximum number of candidates to
+ *   return in the sorted list.
  *
  * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
  *   that resolves to an ordered by score array of objects with keys
- *   `chunk` and `score`. The `chunk` property is the layout chunk that
- *   was matched, and the `score` property is the weighted score of the
- *   match.
+ *   `chunk` and `score`. The `chunk` property is the layout chunk that was
+ *   matched, and the `score` property is the weighted score of the match
+ *   where 1 means a total match and 0 means is not a match at all.
  */
 export async function matchSectionChunk({
   sectionChunk,
