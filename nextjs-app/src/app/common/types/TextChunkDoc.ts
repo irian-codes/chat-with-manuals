@@ -9,5 +9,7 @@ export const textChunkMetadataSchema = z
   })
   .strict();
 
+export const textChunkDocSchema = z.instanceof(Document<TextChunkMetadata>);
+
 export type TextChunkMetadata = z.infer<typeof textChunkMetadataSchema>;
-export type TextChunkDoc = Document<TextChunkMetadata>;
+export type TextChunkDoc = z.infer<typeof textChunkDocSchema>;

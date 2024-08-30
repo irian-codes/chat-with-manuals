@@ -1,12 +1,16 @@
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {SectionNode} from '@/app/common/types/SectionNode';
-import {TextChunkDoc} from '@/app/common/types/TextChunkDoc';
+import {
+  TextChunkDoc,
+  textChunkDocSchema,
+} from '@/app/common/types/TextChunkDoc';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {OpenAIEmbeddings} from '@langchain/openai';
 import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {MemoryVectorStore} from 'langchain/vectorstores/memory';
 import {LevenshteinDistance} from 'natural';
+import {z} from 'zod';
 import {chunkSectionNodes, chunkString} from './chunking';
 import {pdfParseWithPdfReader} from './functions';
 
@@ -98,7 +102,29 @@ export async function fixHallucinationsOnSections({
   return fixedSections;
 }
 
-async function matchSectionChunk({
+/**
+ * Given a section chunk and an array of layout chunks, find the most
+ * probable matches of the section chunk in the layout chunks. It does
+ * this by filtering the layout chunks by choosing the closest ones in
+ * document order to the section chunk, and then computing the Cosine
+ * similarity and Levenshtein distance between the section chunk and the
+ * filtered layout chunks. The results are then sorted by the weighted
+ * score of both metrics.
+ *
+ * @param {SectionChunkDoc} sectionChunk - The section chunk to find a
+ *   match for in the layout chunks.
+ * @param {TextChunkDoc[]} layoutChunks - The array of layout chunks to
+ *   search for a match in.
+ * @param {number} [maxCandidates=10] - The maximum number of candidates
+ *   to return in the sorted list.
+ *
+ * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
+ *   that resolves to an ordered by score array of objects with keys
+ *   `chunk` and `score`. The `chunk` property is the layout chunk that
+ *   was matched, and the `score` property is the weighted score of the
+ *   match.
+ */
+export async function matchSectionChunk({
   sectionChunk,
   layoutChunks,
   maxCandidates = 10,
@@ -107,6 +133,11 @@ async function matchSectionChunk({
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
 }): Promise<{chunk: TextChunkDoc; score: number}[]> {
+  z.array(textChunkDocSchema)
+    .nonempty({message: 'Layout chunks must not be empty'})
+    .parse(layoutChunks);
+  z.number().min(1).parse(maxCandidates);
+
   // Filter by proximity to the document ordering. We know that what we
   // want mustn't be very far away. This way we save a ton of computations.
   const nearbyChunks: TextChunkDoc[] = layoutChunks
@@ -161,14 +192,14 @@ async function matchSectionChunk({
 
     // We need to invert so both metrics are equally oriented, the lower
     // the worse (more different the string).
-    const invertedDistance = 1 - matchedLevenshteinChunk.score;
+    const invertedLDistance = 1 - matchedLevenshteinChunk.score;
     const similarityScore = s.score;
 
     // TODO: Evaluate the weights, since now we're evaluating 50/50 between
     // character dissimilarity and semantics.
     return {
       ...s,
-      score: invertedDistance * similarityScore,
+      score: invertedLDistance * similarityScore,
     };
   });
 
