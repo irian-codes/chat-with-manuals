@@ -191,7 +191,7 @@ describe('matchSectionChunk', () => {
     expect(orderedCandidates[2].chunk.metadata.totalOrder).toBe(1);
   });
 
-  it.only('should filter correctly the chunks that are too far away.', async () => {
+  it('should filter correctly the chunks that are too far away and order them by totalOrder when there are exact candidates.', async () => {
     const sectionChunk: SectionChunkDoc = new Document({
       id: 'S1',
       pageContent: 'The quick brown fox',
@@ -299,5 +299,61 @@ describe('matchSectionChunk', () => {
 
     expect(orderedCandidates).toHaveLength(3);
     expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown dog');
+  });
+
+  it('should order the chunks by totalOrder that share the same score.', async () => {
+    const sectionChunk: SectionChunkDoc = new Document({
+      id: 'S1',
+      pageContent: 'The quick brown fox',
+      metadata: {
+        headerRoute: '1>1',
+        headerRouteLevels: '1',
+        order: 1,
+        totalOrder: 10,
+        tokens: 4,
+        charCount: 18,
+        table: false,
+      },
+    });
+
+    const layoutChunks: TextChunkDoc[] = [
+      new Document({
+        id: 'L1',
+        pageContent: 'The quick brown fo',
+        metadata: {totalOrder: 16, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L2',
+        pageContent: 'The quick brown dog',
+        metadata: {totalOrder: 1, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L3',
+        pageContent: 'The quick brown dog',
+        metadata: {totalOrder: 8, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L4',
+        pageContent: 'The car is going fast.',
+        metadata: {totalOrder: 11, tokens: 4, charCount: 19},
+      }),
+    ];
+
+    const orderedCandidates = await matchSectionChunk({
+      sectionChunk,
+      layoutChunks,
+    });
+
+    expect(orderedCandidates).toHaveLength(4);
+    expect(orderedCandidates.map((c) => c.chunk.pageContent)).toEqual([
+      'The quick brown fo',
+      'The quick brown dog',
+      'The quick brown dog',
+      'The car is going fast.',
+    ]);
+
+    expect(orderedCandidates.map((c) => c.chunk.metadata.totalOrder)).toEqual([
+      16, 8, 1, 11,
+    ]);
   });
 });

@@ -113,6 +113,9 @@ export async function fixHallucinationsOnSections({
  * 0 means is the theoretically most different string in the world (so
  * totally not a match).
  *
+ * NOTE: If there are exact matches by the Levenshtein Distance metric,
+ * it'll only return those, ordered by totalOrder.
+ *
  * @param {SectionChunkDoc} sectionChunk - The section chunk to find a
  *   match for in the layout chunks.
  * @param {TextChunkDoc[]} layoutChunks - The array of layout chunks to
@@ -124,7 +127,9 @@ export async function fixHallucinationsOnSections({
  *   that resolves to an ordered by score array of objects with keys
  *   `chunk` and `score`. The `chunk` property is the layout chunk that was
  *   matched, and the `score` property is the weighted score of the match
- *   where 1 means a total match and 0 means is not a match at all.
+ *   where 1 means a total match and 0 means is not a match at all. The
+ *   results are ordered first by score and then by totalOrder since in
+ *   case of a tie we sort by document proximity to the section chunk.
  */
 export async function matchSectionChunk({
   sectionChunk,
@@ -148,53 +153,32 @@ export async function matchSectionChunk({
       c.metadata.totalOrder <= sectionChunk.metadata.totalOrder + 30
   );
 
-  const normalizedNearbyChunks = nearbyChunks.map(
-    (c) =>
-      new Document({
-        ...c,
-        pageContent: c.pageContent
-          .split(/[\s\n]+/)
-          .map((s) => s.trim())
-          .join(' '),
-      })
-  );
+  const normalizedNearbyChunks = nearbyChunks.map((c) => ({
+    ...c,
+    pageContent: c.pageContent
+      .split(/[\s\n]+/)
+      .map((s) => s.trim())
+      .join(' '),
+  }));
 
-  const normalizedSectionChunk = new Document({
+  const normalizedSectionChunk = {
     ...sectionChunk,
     pageContent: sectionChunk.pageContent
       .split(/[\s\n]+/)
       .map((s) => s.trim())
       .join(' '),
-  });
+  };
 
-  const levenshteinResults = await getNormalizedLevenshteinDistance(
+  const levenshteinResults = await getNormalizedInvertedLevenshteinDistance(
     normalizedSectionChunk,
     normalizedNearbyChunks
   );
 
-  // Pre-filter out chunks where Levenshtein Distance is 0, as we found the exact matches
-  const exactMatches = levenshteinResults.filter((r) => r.score === 0);
+  // Pre-filter out chunks where Inverted Normalized Levenshtein Distance is 1, as we found the exact matches
+  const exactMatches = levenshteinResults.filter((r) => r.score === 1);
 
   if (exactMatches.length > 0) {
-    const matchesIds = exactMatches.map((r) => r.chunk.id);
-
-    const filteredChunks = nearbyChunks.filter((c) =>
-      matchesIds.includes(c.id)
-    );
-
-    // Return the ones ordered by totalOrder difference, as in case of
-    // doubt, we just return the most proximal one in the document.
-    return filteredChunks
-      .sort(
-        (a, b) =>
-          Math.abs(a.metadata.totalOrder - sectionChunk.metadata.totalOrder) -
-          Math.abs(b.metadata.totalOrder - sectionChunk.metadata.totalOrder)
-      )
-      .slice(0, maxCandidates)
-      .map((c) => ({
-        chunk: c,
-        score: 1,
-      }));
+    return orderChunksByScoreAndTotalOrder(exactMatches);
   }
 
   const similarityResults = await getSimilarityScores(
@@ -217,9 +201,7 @@ export async function matchSectionChunk({
       );
     }
 
-    // We need to invert so both metrics are equally oriented, the lower
-    // the worse (more different the string).
-    const invertedLDistance = 1 - matchedLevenshteinChunk.score;
+    const invertedLDistance = matchedLevenshteinChunk.score;
     const similarityScore = s.score;
 
     // TODO: Evaluate the weights, since now we're evaluating 50/50 between
@@ -231,9 +213,33 @@ export async function matchSectionChunk({
   });
 
   // Sort candidates by score in descending order (higher score is better)
-  return weightedResults
-    .sort((a, b) => b.score - a.score)
-    .slice(0, maxCandidates);
+  return orderChunksByScoreAndTotalOrder(weightedResults);
+
+  function orderChunksByScoreAndTotalOrder(
+    matches: {chunk: TextChunkDoc; score: number}[]
+  ) {
+    const groups = Map.groupBy(matches, (m) => m.score);
+
+    const orderedGroups = Array.from(groups.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([score, chunks]) => {
+        const sectionTotalOrder = sectionChunk.metadata.totalOrder;
+
+        return chunks.sort((a, b) => {
+          const aDistance = Math.abs(
+            a.chunk.metadata.totalOrder - sectionTotalOrder
+          );
+
+          const bDistance = Math.abs(
+            b.chunk.metadata.totalOrder - sectionTotalOrder
+          );
+
+          return aDistance - bDistance;
+        });
+      });
+
+    return orderedGroups.flat().slice(0, maxCandidates);
+  }
 }
 
 async function getSimilarityScores<T extends Document, K extends Document>(
@@ -264,7 +270,22 @@ async function getSimilarityScores<T extends Document, K extends Document>(
   }));
 }
 
-async function getNormalizedLevenshteinDistance<
+/**
+ * Computes the normalized inverted Levenshtein distance between each
+ * candidate and the query document. The normalized distance is the
+ * Levenshtein distance divided by the maximum length of the two strings.
+ * The inverted distance is 1 - normalized distance, so that the closest
+ * match has a score of 1. We need to invert it since we are using this
+ * metric to compare it to other ones and all metrics must be equally
+ * oriented, the lower the worse (more different the string).
+ *
+ * @param queryDoc The document to query.
+ * @param candidates The list of candidates to compare against.
+ * @returns A list of objects with keys `chunk` and `score`, where
+ *   `chunk` is the candidate and `score` is the normalized inverted
+ *   Levenshtein distance.
+ */
+async function getNormalizedInvertedLevenshteinDistance<
   T extends Document,
   K extends Document,
 >(queryDoc: T, candidates: K[]): Promise<{chunk: K; score: number}[]> {
@@ -287,7 +308,7 @@ async function getNormalizedLevenshteinDistance<
 
       const normalizedDistance = lDistance / maxLength;
 
-      return {chunk: candidate, score: normalizedDistance};
+      return {chunk: candidate, score: 1 - normalizedDistance};
     })
   );
 }
