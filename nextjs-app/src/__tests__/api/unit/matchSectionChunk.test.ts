@@ -82,12 +82,12 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const result = await matchSectionChunk({
+    const orderedCandidates = await matchSectionChunk({
       sectionChunk: mediumMatchSectionChunk,
       layoutChunks: mediumMatchLayoutChunks,
     });
 
-    expect(result[0].chunk.pageContent).toBe('The quick brown fox.');
+    expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox.');
   });
 
   it('should find the correct clear match. High difficulty.', async () => {
@@ -123,12 +123,12 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const result = await matchSectionChunk({
+    const orderedCandidates = await matchSectionChunk({
       sectionChunk: hardMatchSectionChunk,
       layoutChunks: hardMatchLayoutChunks,
     });
 
-    expect(result[0].chunk.pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox');
   });
 
   it('should find the closest match when no clear match is found.', async () => {
@@ -164,11 +164,11 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const result = await matchSectionChunk({
+    const orderedCandidates = await matchSectionChunk({
       sectionChunk,
       layoutChunks: inexactLayoutChunks,
     });
 
-    expect(result[0].chunk.pageContent).toBe('The quick brown dog');
+    expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown dog');
   });
 });
