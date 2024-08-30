@@ -215,6 +215,10 @@ async function getSimilarityScores<T extends Document, K extends Document>(
 ): Promise<{chunk: K; score: number}[]> {
   const vectorStore = new MemoryVectorStore(
     new OpenAIEmbeddings({
+      apiKey:
+        process.env.NODE_ENV === 'test'
+          ? process.env.VITE_OPENAI_API_KEY
+          : process.env.OPENAI_API_KEY,
       model: 'text-embedding-3-small',
       dimensions: 1536,
     })
