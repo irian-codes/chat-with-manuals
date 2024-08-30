@@ -177,19 +177,24 @@ export async function matchSectionChunk({
 
   if (exactMatches.length > 0) {
     const matchesIds = exactMatches.map((r) => r.chunk.id);
+
     const filteredChunks = nearbyChunks.filter((c) =>
       matchesIds.includes(c.id)
     );
 
-    // Return the ones ordered by totalOrder, as in case of doubt, we just
-    // return the most proximal one in the document.
+    // Return the ones ordered by totalOrder difference, as in case of
+    // doubt, we just return the most proximal one in the document.
     return filteredChunks
-      .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
+      .sort(
+        (a, b) =>
+          Math.abs(a.metadata.totalOrder - sectionChunk.metadata.totalOrder) -
+          Math.abs(b.metadata.totalOrder - sectionChunk.metadata.totalOrder)
+      )
+      .slice(0, maxCandidates)
       .map((c) => ({
         chunk: c,
         score: 1,
-      }))
-      .slice(0, maxCandidates);
+      }));
   }
 
   const similarityResults = await getSimilarityScores(

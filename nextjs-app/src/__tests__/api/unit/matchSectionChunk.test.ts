@@ -134,6 +134,63 @@ describe('matchSectionChunk', () => {
     expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox');
   });
 
+  it('should return candidates ordered by totalOrder difference if there are candidates with the same score', async () => {
+    const sectionChunk: SectionChunkDoc = new Document({
+      id: 'S1',
+      pageContent: 'The quick brown fox',
+      metadata: {
+        headerRoute: '1>1',
+        headerRouteLevels: '1',
+        order: 1,
+        totalOrder: 10,
+        tokens: 4,
+        charCount: 18,
+        table: false,
+      },
+    });
+
+    const layoutChunks: TextChunkDoc[] = [
+      new Document({
+        id: 'L1',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 16, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L2',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 5, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L3',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 1, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L4',
+        pageContent: 'The quick brown fox',
+        metadata: {totalOrder: 100, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L5',
+        pageContent: 'The quick brown dog',
+        metadata: {totalOrder: 12, tokens: 4, charCount: 19},
+      }),
+    ];
+
+    const orderedCandidates = await matchSectionChunk({
+      sectionChunk,
+      layoutChunks,
+    });
+
+    expect(orderedCandidates).toHaveLength(3);
+    expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[0].chunk.metadata.totalOrder).toBe(5);
+    expect(orderedCandidates[1].chunk.pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[1].chunk.metadata.totalOrder).toBe(16);
+    expect(orderedCandidates[2].chunk.pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[2].chunk.metadata.totalOrder).toBe(1);
+  });
+
   it('should find the closest match when no clear match is found.', async () => {
     const sectionChunk: SectionChunkDoc = new Document({
       id: 'S1',
