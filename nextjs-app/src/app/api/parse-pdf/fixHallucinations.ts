@@ -140,22 +140,22 @@ export async function matchSectionChunk({
 
   // Filter by proximity to the document ordering. We know that what we
   // want mustn't be very far away. This way we save a ton of computations.
-  const nearbyChunks: TextChunkDoc[] = layoutChunks
-    .filter(
-      (c) =>
-        c.metadata.totalOrder >= sectionChunk.metadata.totalOrder - 30 &&
-        c.metadata.totalOrder <= sectionChunk.metadata.totalOrder + 30
-    )
-    .map(
-      (c) =>
-        new Document({
-          ...c,
-          pageContent: c.pageContent
-            .split(/[\s\n]+/)
-            .map((s) => s.trim())
-            .join(' '),
-        })
-    );
+  const nearbyChunks: TextChunkDoc[] = layoutChunks.filter(
+    (c) =>
+      c.metadata.totalOrder >= sectionChunk.metadata.totalOrder - 30 &&
+      c.metadata.totalOrder <= sectionChunk.metadata.totalOrder + 30
+  );
+
+  const normalizedNearbyChunks = nearbyChunks.map(
+    (c) =>
+      new Document({
+        ...c,
+        pageContent: c.pageContent
+          .split(/[\s\n]+/)
+          .map((s) => s.trim())
+          .join(' '),
+      })
+  );
 
   const normalizedSectionChunk = new Document({
     ...sectionChunk,
@@ -165,14 +165,34 @@ export async function matchSectionChunk({
       .join(' '),
   });
 
-  const similarityResults = await getSimilarityScores(
-    normalizedSectionChunk,
-    nearbyChunks
-  );
-
   const levenshteinResults = await getNormalizedLevenshteinDistance(
     normalizedSectionChunk,
-    nearbyChunks
+    normalizedNearbyChunks
+  );
+
+  // Pre-filter out chunks where Levenshtein Distance is 0, as we found the exact matches
+  const exactMatches = levenshteinResults.filter((r) => r.score === 0);
+
+  if (exactMatches.length > 0) {
+    const matchesIds = exactMatches.map((r) => r.chunk.id);
+    const filteredChunks = nearbyChunks.filter((c) =>
+      matchesIds.includes(c.id)
+    );
+
+    // Return the ones ordered by totalOrder, as in case of doubt, we just
+    // return the most proximal one in the document.
+    return filteredChunks
+      .sort((a, b) => a.metadata.totalOrder - b.metadata.totalOrder)
+      .map((c) => ({
+        chunk: c,
+        score: 1,
+      }))
+      .slice(0, maxCandidates);
+  }
+
+  const similarityResults = await getSimilarityScores(
+    normalizedSectionChunk,
+    normalizedNearbyChunks
   );
 
   const weightedResults = similarityResults.map((s) => {
