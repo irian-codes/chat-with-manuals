@@ -44,6 +44,7 @@ describe('matchSectionChunk', () => {
       layoutChunks: easyMatchLayoutChunks,
     });
 
+    expect(orderedCandidates).toHaveLength(1);
     expect(orderedCandidates[0].chunk.pageContent).toBe(
       'The quick brown fox jumps over the lazy dog.'
     );
@@ -87,6 +88,7 @@ describe('matchSectionChunk', () => {
       layoutChunks: mediumMatchLayoutChunks,
     });
 
+    expect(orderedCandidates).toHaveLength(1);
     expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox.');
   });
 
@@ -128,6 +130,7 @@ describe('matchSectionChunk', () => {
       layoutChunks: hardMatchLayoutChunks,
     });
 
+    expect(orderedCandidates).toHaveLength(1);
     expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox');
   });
 
@@ -169,6 +172,7 @@ describe('matchSectionChunk', () => {
       layoutChunks: inexactLayoutChunks,
     });
 
+    expect(orderedCandidates).toHaveLength(3);
     expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown dog');
   });
 });
