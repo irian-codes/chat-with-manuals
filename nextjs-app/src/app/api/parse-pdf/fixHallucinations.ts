@@ -159,7 +159,7 @@ export async function matchSectionChunk({
       c.metadata.totalOrder <= sectionChunk.metadata.totalOrder + 30
   );
 
-  let normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({
+  const normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({
     ...c,
     pageContent: c.pageContent
       .split(/[\s\n]+/)
@@ -192,21 +192,20 @@ export async function matchSectionChunk({
   // too many character differences. This may happen when two chunks talk
   // about the same thing but using different words. We assume the LLM will
   // hallucinate but not this much, that's why we filter.
-  normalizedNearbyChunks = levenshteinResults
-    .filter((r) => r.score >= levenshteinThreshold)
-    .map((r) => r.chunk);
+  const filteredChunks = levenshteinResults.filter(
+    (r) => r.score >= levenshteinThreshold
+  );
 
   // If we have one candidate we shouldn't waste time trying to compute cosine similarity score
-  if (normalizedNearbyChunks.length === 1) {
-    return normalizedNearbyChunks;
+  if (filteredChunks.length === 1) {
+    return orderChunksByScoreAndTotalOrder(filteredChunks);
   }
 
   const similarityResults = await getSimilarityScores(
     normalizedSectionChunk,
-    normalizedNearbyChunks
+    filteredChunks.map((r) => r.chunk)
   );
 
-  // TODO: Return the original chunks, not the normalized ones.
   // Sort candidates by score in descending order (higher score is better)
   return orderChunksByScoreAndTotalOrder(similarityResults);
 
@@ -235,10 +234,21 @@ export async function matchSectionChunk({
         });
       });
 
-    return orderedGroups
-      .flat()
-      .slice(0, maxCandidates)
-      .map((r) => r.chunk);
+    return getOriginalChunks(orderedGroups.flat().slice(0, maxCandidates));
+  }
+
+  function getOriginalChunks(matches: {chunk: TextChunkDoc}[]): TextChunkDoc[] {
+    return matches.map((match) => {
+      const originalChunk = nearbyChunks.find((n) => n.id === match.chunk.id);
+
+      if (originalChunk == null) {
+        throw new Error(
+          `Chunk with ID '${match.chunk.id}' not found in 'nearbyChunks' array`
+        );
+      }
+
+      return originalChunk;
+    });
   }
 }
 

@@ -413,4 +413,47 @@ describe('matchSectionChunk', () => {
       8, 1, 16, 11,
     ]);
   });
+
+  it('should return the original chunk objects', async () => {
+    const sectionChunk: SectionChunkDoc = new Document({
+      id: 'S1',
+      pageContent: 'The quick brown fox',
+      metadata: {
+        headerRoute: '1>1',
+        headerRouteLevels: '1',
+        order: 1,
+        totalOrder: 10,
+        tokens: 4,
+        charCount: 18,
+        table: false,
+      },
+    });
+
+    const layoutChunks: TextChunkDoc[] = [
+      new Document({
+        id: 'L1',
+        pageContent: 'The quick brown fo',
+        metadata: {totalOrder: 16, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L2',
+        pageContent: 'The quick brown dog',
+        metadata: {totalOrder: 8, tokens: 4, charCount: 19},
+      }),
+      new Document({
+        id: 'L4',
+        pageContent: 'The car is going fast.',
+        metadata: {totalOrder: 11, tokens: 4, charCount: 19},
+      }),
+    ];
+
+    const orderedCandidates = await matchSectionChunk({
+      sectionChunk,
+      layoutChunks,
+      levenshteinThreshold: 0,
+    });
+
+    expect(orderedCandidates.length).toBe(3);
+    orderedCandidates.forEach((c) => layoutChunks.includes(c));
+  });
 });
