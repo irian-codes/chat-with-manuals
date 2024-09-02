@@ -84,6 +84,7 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk: easyMatchSectionChunk,
       layoutChunks: easyMatchLayoutChunks,
+      scoresRatio: 0.5,
     });
 
     expect(orderedCandidates).toHaveLength(3);
@@ -128,6 +129,7 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk: mediumMatchSectionChunk,
       layoutChunks: mediumMatchLayoutChunks,
+      scoresRatio: 0.5,
     });
 
     expect(orderedCandidates).toHaveLength(3);
@@ -159,7 +161,7 @@ describe('matchSectionChunk', () => {
       }),
       new Document({
         id: 'L2',
-        pageContent: 'The quick brown fo',
+        pageContent: 'The quick brown fog',
         metadata: {totalOrder: 52, tokens: 4, charCount: 18},
       }),
       new Document({
@@ -172,6 +174,7 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk: hardMatchSectionChunk,
       layoutChunks: hardMatchLayoutChunks,
+      scoresRatio: 0.5,
     });
 
     expect(orderedCandidates).toHaveLength(3);

@@ -122,6 +122,13 @@ export async function fixHallucinationsOnSections({
  *   search for a match in.
  * @param {number} [maxCandidates=10] - The maximum number of candidates to
  *   return in the sorted list.
+ * @param {number} [scoresRatio=0.5] - The ratio of the Cosine Similarity
+ *   score to the Levenshtein distance score. The final score for each
+ *   chunk is the weighted sum of both metrics. The default is 0.5, which
+ *   means both metrics have equal weight. The higher the number the more
+ *   weight the Levenshtein Distance has, and viceversa. NOTE: This ratio
+ *   only enters into effect if there are no exact matches in the
+ *   candidates pool (by Levenshtein Distance metric).
  *
  * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
  *   that resolves to an ordered by score array of objects with keys
@@ -135,10 +142,12 @@ export async function matchSectionChunk({
   sectionChunk,
   layoutChunks,
   maxCandidates = 10,
+  scoresRatio = 0.5,
 }: {
   sectionChunk: SectionChunkDoc;
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
+  scoresRatio?: number;
 }): Promise<{chunk: TextChunkDoc; score: number}[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
@@ -208,7 +217,8 @@ export async function matchSectionChunk({
     // character dissimilarity and semantics.
     return {
       ...s,
-      score: invertedLDistance * similarityScore,
+      score:
+        similarityScore * (1 - scoresRatio) + invertedLDistance * scoresRatio,
     };
   });
 
