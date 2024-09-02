@@ -187,11 +187,6 @@ export async function matchSectionChunk({
     return orderChunksByScoreAndTotalOrder(exactMatches);
   }
 
-  // If we hve one candidate we shouldn't waste time trying to compute cosine similarity score
-  if (levenshteinResults.length === 1) {
-    return orderChunksByScoreAndTotalOrder(levenshteinResults);
-  }
-
   // If no exact matches found, filter those that deviate too much. As we
   // determine these are not the chunks we're looking for because they have
   // too many character differences. This may happen when two chunks talk
@@ -200,6 +195,11 @@ export async function matchSectionChunk({
   normalizedNearbyChunks = levenshteinResults
     .filter((r) => r.score >= levenshteinThreshold)
     .map((r) => r.chunk);
+
+  // If we have one candidate we shouldn't waste time trying to compute cosine similarity score
+  if (normalizedNearbyChunks.length === 1) {
+    return normalizedNearbyChunks;
+  }
 
   const similarityResults = await getSimilarityScores(
     normalizedSectionChunk,
