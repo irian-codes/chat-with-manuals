@@ -131,13 +131,9 @@ export async function fixHallucinationsOnSections({
  *   60% of the characters shared with the section chunk.
  *
  * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
- *   that resolves to an ordered by score array of objects with keys
- *   `chunk` and `score`. The `chunk` property is the layout chunk that was
- *   matched, and the `score` property is the Cosine Similarity score of
- *   the match where 1 means a total match and 0 means is not a match at
- *   all. The results are ordered first by score and then by totalOrder
- *   since in case of a tie we sort by document proximity to the section
- *   chunk.
+ *   that resolves to an ordered by score array of layout chunks. The
+ *   results are ordered first by score and then by totalOrder since in
+ *   case of a tie we sort by document proximity to the section chunk.
  */
 export async function matchSectionChunk({
   sectionChunk,
@@ -149,7 +145,7 @@ export async function matchSectionChunk({
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
   levenshteinThreshold?: number;
-}): Promise<{chunk: TextChunkDoc; score: number}[]> {
+}): Promise<TextChunkDoc[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
     .parse(layoutChunks);
@@ -189,6 +185,11 @@ export async function matchSectionChunk({
 
   if (exactMatches.length > 0) {
     return orderChunksByScoreAndTotalOrder(exactMatches);
+  }
+
+  // If we hve one candidate we shouldn't waste time trying to compute cosine similarity score
+  if (levenshteinResults.length === 1) {
+    return orderChunksByScoreAndTotalOrder(levenshteinResults);
   }
 
   // If no exact matches found, filter those that deviate too much. As we
@@ -234,7 +235,10 @@ export async function matchSectionChunk({
         });
       });
 
-    return orderedGroups.flat().slice(0, maxCandidates);
+    return orderedGroups
+      .flat()
+      .slice(0, maxCandidates)
+      .map((r) => r.chunk);
   }
 }
 

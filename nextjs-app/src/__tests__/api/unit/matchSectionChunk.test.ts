@@ -44,7 +44,7 @@ describe('matchSectionChunk', () => {
     });
 
     expect(orderedCandidates).toHaveLength(1);
-    expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[0].pageContent).toBe('The quick brown fox');
   });
 
   it('should find the closest match. Easy difficulty.', async () => {
@@ -87,7 +87,7 @@ describe('matchSectionChunk', () => {
       levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates[0].chunk.pageContent).toBe(
+    expect(orderedCandidates[0].pageContent).toBe(
       'The quick brown fox jumps over the dog.'
     );
   });
@@ -131,9 +131,7 @@ describe('matchSectionChunk', () => {
       levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates[0].chunk.pageContent).toBe(
-      'The quick brown foxy.'
-    );
+    expect(orderedCandidates[0].pageContent).toBe('The quick brown foxy.');
   });
 
   it('should find the closest match. High difficulty.', async () => {
@@ -180,7 +178,7 @@ describe('matchSectionChunk', () => {
       levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates[0].chunk.pageContent).toBe(
+    expect(orderedCandidates[0].pageContent).toBe(
       'The quick brown colored fox'
     );
   });
@@ -227,7 +225,7 @@ describe('matchSectionChunk', () => {
       levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates[0].chunk.pageContent).toBe(
+    expect(orderedCandidates[0].pageContent).toBe(
       'The man was thinking aloud if his business idea could be ever made.'
     );
   });
@@ -282,12 +280,12 @@ describe('matchSectionChunk', () => {
     });
 
     expect(orderedCandidates).toHaveLength(3);
-    expect(orderedCandidates[0].chunk.pageContent).toBe('The quick brown fox');
-    expect(orderedCandidates[0].chunk.metadata.totalOrder).toBe(5);
-    expect(orderedCandidates[1].chunk.pageContent).toBe('The quick brown fox');
-    expect(orderedCandidates[1].chunk.metadata.totalOrder).toBe(16);
-    expect(orderedCandidates[2].chunk.pageContent).toBe('The quick brown fox');
-    expect(orderedCandidates[2].chunk.metadata.totalOrder).toBe(1);
+    expect(orderedCandidates[0].pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[0].metadata.totalOrder).toBe(5);
+    expect(orderedCandidates[1].pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[1].metadata.totalOrder).toBe(16);
+    expect(orderedCandidates[2].pageContent).toBe('The quick brown fox');
+    expect(orderedCandidates[2].metadata.totalOrder).toBe(1);
   });
 
   it('should filter correctly the chunks that are too far away and order them by totalOrder when there are exact candidates.', async () => {
@@ -350,11 +348,11 @@ describe('matchSectionChunk', () => {
     });
 
     expect(orderedCandidates).toHaveLength(4);
-    expect(orderedCandidates.map((c) => c.chunk.pageContent)).toEqual(
+    expect(orderedCandidates.map((c) => c.pageContent)).toEqual(
       new Array(4).fill('The quick brown fox')
     );
 
-    expect(orderedCandidates.map((c) => c.chunk.metadata.totalOrder)).toEqual([
+    expect(orderedCandidates.map((c) => c.metadata.totalOrder)).toEqual([
       50, 60, 39, 20,
     ]);
   });
@@ -404,14 +402,14 @@ describe('matchSectionChunk', () => {
     });
 
     expect(orderedCandidates).toHaveLength(4);
-    expect(orderedCandidates.map((c) => c.chunk.pageContent)).toEqual([
+    expect(orderedCandidates.map((c) => c.pageContent)).toEqual([
       'The quick brown dog',
       'The quick brown dog',
       'The quick brown fo',
       'The car is going fast.',
     ]);
 
-    expect(orderedCandidates.map((c) => c.chunk.metadata.totalOrder)).toEqual([
+    expect(orderedCandidates.map((c) => c.metadata.totalOrder)).toEqual([
       8, 1, 16, 11,
     ]);
   });
