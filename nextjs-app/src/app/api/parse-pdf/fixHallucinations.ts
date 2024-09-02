@@ -107,8 +107,8 @@ export async function fixHallucinationsOnSections({
  * most probable matches of the section chunk in the layout chunks. It does
  * this by filtering the layout chunks by choosing the closest ones in
  * document order to the section chunk, and then computing the Levenshtein
- * distance between the section chunk and the filtered layout chunks. Then
- * the parameter `levenshteinThreshold` filters the results even more, by
+ * Distance between the section chunk and the close layout chunks. Then the
+ * parameter `levenshteinThreshold` filters the results even more, by
  * discarding the ones that have very different wording. Finally, a Cosine
  * Similarity check is performed and the results are then sorted by the
  * similarity score in a scale of 0 to 1 where 1 means total match and 0
@@ -125,15 +125,16 @@ export async function fixHallucinationsOnSections({
  * @param {number} [maxCandidates=10] - The maximum number of candidates to
  *   return in the sorted list.
  * @param {number} [levenshteinThreshold=0.6] - The inverted normalized
- *   Levenshtein distance threshold. Chunks with an inverted normalized
- *   Levenshtein distance lower than this will not be returned as
+ *   Levenshtein Distance threshold. Chunks with an inverted normalized
+ *   Levenshtein Distance lower than this will not be returned as
  *   candidates. I.e. 0.6 means only keeping the chunks that have at least
  *   60% of the characters shared with the section chunk.
  *
  * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
- *   that resolves to an ordered by score array of layout chunks. The
- *   results are ordered first by score and then by totalOrder since in
- *   case of a tie we sort by document proximity to the section chunk.
+ *   that resolves to the input layoutChunks parameter array ordered and
+ *   filtered by score array of layout chunks. The results are ordered
+ *   first by score and then by totalOrder since in case of a tie we sort
+ *   by document proximity to the section chunk.
  */
 export async function matchSectionChunk({
   sectionChunk,
