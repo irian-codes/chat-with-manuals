@@ -75,15 +75,17 @@ export async function fixHallucinationsOnSections({
   });
 
   // Match section chunk with most probable layoutChunks candidates
-  const matchedChunks = sectionChunks.map((sectionChunk) => {
+  const matchedChunks = await Promise.all(
+    sectionChunks.map(async (sectionChunk) => {
     return {
       sectionChunk,
-      candidates: matchSectionChunk({
+        candidates: await matchSectionChunk({
         sectionChunk,
         layoutChunks,
       }),
     };
-  });
+    })
+  );
 
   const fixedChunks = matchedChunks.map((matchedChunk) => {
     return reconcileChunk({
