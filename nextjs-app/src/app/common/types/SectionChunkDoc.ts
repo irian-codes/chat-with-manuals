@@ -13,5 +13,9 @@ export const sectionChunkMetadataSchema = z
   })
   .strict();
 
+export const sectionChunkDocSchema = z.instanceof(
+  Document<SectionChunkMetadata>
+);
+
 export type SectionChunkMetadata = z.infer<typeof sectionChunkMetadataSchema>;
-export type SectionChunkDoc = Document<SectionChunkMetadata>;
+export type SectionChunkDoc = z.infer<typeof sectionChunkDocSchema>;
