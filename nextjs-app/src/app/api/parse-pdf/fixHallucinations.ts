@@ -106,11 +106,13 @@ export async function fixHallucinationsOnSections({
  * Given a section chunk and an array of layout parsed chunks, find the
  * most probable matches of the section chunk in the layout chunks. It does
  * this by filtering the layout chunks by choosing the closest ones in
- * document order to the section chunk, and then computing the Cosine
- * similarity and Levenshtein distance between the section chunk and the
- * filtered layout chunks. The results are then sorted by the weighted
- * score of both metrics in a scale of 0 to 1 where 1 means total match and
- * 0 means is the theoretically most different string in the world (so
+ * document order to the section chunk, and then computing the Levenshtein
+ * distance between the section chunk and the filtered layout chunks. Then
+ * the parameter `levenshteinThreshold` filters the results even more, by
+ * discarding the ones that have very different wording. Finally, a Cosine
+ * Similarity check is performed and the results are then sorted by the
+ * similarity score in a scale of 0 to 1 where 1 means total match and 0
+ * means is the theoretically most different string in the world (so
  * totally not a match).
  *
  * NOTE: If there are exact matches by the Levenshtein Distance metric,
@@ -122,32 +124,31 @@ export async function fixHallucinationsOnSections({
  *   search for a match in.
  * @param {number} [maxCandidates=10] - The maximum number of candidates to
  *   return in the sorted list.
- * @param {number} [scoresRatio=0.5] - The ratio of the Cosine Similarity
- *   score to the Levenshtein distance score. The final score for each
- *   chunk is the weighted sum of both metrics. The default is 0.5, which
- *   means both metrics have equal weight. The higher the number the more
- *   weight the Levenshtein Distance has, and viceversa. NOTE: This ratio
- *   only enters into effect if there are no exact matches in the
- *   candidates pool (by Levenshtein Distance metric).
+ * @param {number} [levenshteinThreshold=0.6] - The inverted normalized
+ *   Levenshtein distance threshold. Chunks with an inverted normalized
+ *   Levenshtein distance lower than this will not be returned as
+ *   candidates. I.e. 0.6 means only keeping the chunks that have at least
+ *   60% of the characters shared with the section chunk.
  *
  * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
  *   that resolves to an ordered by score array of objects with keys
  *   `chunk` and `score`. The `chunk` property is the layout chunk that was
- *   matched, and the `score` property is the weighted score of the match
- *   where 1 means a total match and 0 means is not a match at all. The
- *   results are ordered first by score and then by totalOrder since in
- *   case of a tie we sort by document proximity to the section chunk.
+ *   matched, and the `score` property is the Cosine Similarity score of
+ *   the match where 1 means a total match and 0 means is not a match at
+ *   all. The results are ordered first by score and then by totalOrder
+ *   since in case of a tie we sort by document proximity to the section
+ *   chunk.
  */
 export async function matchSectionChunk({
   sectionChunk,
   layoutChunks,
   maxCandidates = 10,
-  scoresRatio = 0.5,
+  levenshteinThreshold = 0.6,
 }: {
   sectionChunk: SectionChunkDoc;
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
-  scoresRatio?: number;
+  levenshteinThreshold?: number;
 }): Promise<{chunk: TextChunkDoc; score: number}[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
@@ -162,7 +163,7 @@ export async function matchSectionChunk({
       c.metadata.totalOrder <= sectionChunk.metadata.totalOrder + 30
   );
 
-  const normalizedNearbyChunks = nearbyChunks.map((c) => ({
+  let normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({
     ...c,
     pageContent: c.pageContent
       .split(/[\s\n]+/)
@@ -170,7 +171,7 @@ export async function matchSectionChunk({
       .join(' '),
   }));
 
-  const normalizedSectionChunk = {
+  const normalizedSectionChunk: SectionChunkDoc = {
     ...sectionChunk,
     pageContent: sectionChunk.pageContent
       .split(/[\s\n]+/)
@@ -190,40 +191,25 @@ export async function matchSectionChunk({
     return orderChunksByScoreAndTotalOrder(exactMatches);
   }
 
+  // If no exact matches found, filter those that deviate too much. As we
+  // determine these are not the chunks we're looking for because they have
+  // too many character differences. This may happen when two chunks talk
+  // about the same thing but using different words. We assume the LLM will
+  // hallucinate but not this much, that's why we filter.
+  normalizedNearbyChunks = levenshteinResults
+    .filter((r) => r.score >= levenshteinThreshold)
+    .map((r) => r.chunk);
+
   const similarityResults = await getSimilarityScores(
     normalizedSectionChunk,
     normalizedNearbyChunks
   );
 
-  const weightedResults = similarityResults.map((s) => {
-    const matchedLevenshteinChunk = levenshteinResults.find(
-      (l) => l.chunk.id === s.chunk.id
-    );
-
-    if (
-      !matchedLevenshteinChunk ||
-      matchedLevenshteinChunk.chunk.id == null ||
-      isBlankString(matchedLevenshteinChunk.chunk.id)
-    ) {
-      throw new Error(
-        'No matched similarity chunk found. This should not happen.'
-      );
-    }
-
-    const invertedLDistance = matchedLevenshteinChunk.score;
-    const similarityScore = s.score;
-
-    // TODO: Evaluate the weights, since now we're evaluating 50/50 between
-    // character dissimilarity and semantics.
-    return {
-      ...s,
-      score:
-        similarityScore * (1 - scoresRatio) + invertedLDistance * scoresRatio,
-    };
-  });
-
+  // TODO: Return the original chunks, not the normalized ones.
   // Sort candidates by score in descending order (higher score is better)
-  return orderChunksByScoreAndTotalOrder(weightedResults);
+  return orderChunksByScoreAndTotalOrder(similarityResults);
+
+  // HELPER FUNCTIONS
 
   function orderChunksByScoreAndTotalOrder(
     matches: {chunk: TextChunkDoc; score: number}[]
@@ -254,7 +240,8 @@ export async function matchSectionChunk({
 
 async function getSimilarityScores<T extends Document, K extends Document>(
   queryDoc: T,
-  candidates: K[]
+  candidates: K[],
+  decimalPlaces = 4
 ): Promise<{chunk: K; score: number}[]> {
   const vectorStore = new MemoryVectorStore(
     new OpenAIEmbeddings({
@@ -276,7 +263,7 @@ async function getSimilarityScores<T extends Document, K extends Document>(
 
   return similarityResults.map(([chunk, score]) => ({
     chunk: chunk as K,
-    score,
+    score: Number(score.toFixed(decimalPlaces)),
   }));
 }
 
@@ -298,7 +285,11 @@ async function getSimilarityScores<T extends Document, K extends Document>(
 async function getNormalizedInvertedLevenshteinDistance<
   T extends Document,
   K extends Document,
->(queryDoc: T, candidates: K[]): Promise<{chunk: K; score: number}[]> {
+>(
+  queryDoc: T,
+  candidates: K[],
+  decimalPlaces = 4
+): Promise<{chunk: K; score: number}[]> {
   return Promise.all(
     candidates.map(async (candidate) => {
       const lDistance = LevenshteinDistance(
@@ -318,7 +309,10 @@ async function getNormalizedInvertedLevenshteinDistance<
 
       const normalizedDistance = lDistance / maxLength;
 
-      return {chunk: candidate, score: 1 - normalizedDistance};
+      return {
+        chunk: candidate,
+        score: Number((1 - normalizedDistance).toFixed(decimalPlaces)),
+      };
     })
   );
 }

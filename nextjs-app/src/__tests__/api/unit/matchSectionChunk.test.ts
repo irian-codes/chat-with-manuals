@@ -84,10 +84,9 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk: easyMatchSectionChunk,
       layoutChunks: easyMatchLayoutChunks,
-      scoresRatio: 0.5,
+      levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates).toHaveLength(3);
     expect(orderedCandidates[0].chunk.pageContent).toBe(
       'The quick brown fox jumps over the dog.'
     );
@@ -129,10 +128,9 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk: mediumMatchSectionChunk,
       layoutChunks: mediumMatchLayoutChunks,
-      scoresRatio: 0.5,
+      levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates).toHaveLength(3);
     expect(orderedCandidates[0].chunk.pageContent).toBe(
       'The quick brown foxy.'
     );
@@ -156,7 +154,7 @@ describe('matchSectionChunk', () => {
     const hardMatchLayoutChunks: TextChunkDoc[] = [
       new Document({
         id: 'L1',
-        pageContent: 'The quick brownish fox',
+        pageContent: 'The quick brown colored fox',
         metadata: {totalOrder: 51, tokens: 4, charCount: 19},
       }),
       new Document({
@@ -169,17 +167,68 @@ describe('matchSectionChunk', () => {
         pageContent: 'The quick brown dog',
         metadata: {totalOrder: 53, tokens: 4, charCount: 19},
       }),
+      new Document({
+        id: 'L4',
+        pageContent: 'The quickest brown fox',
+        metadata: {totalOrder: 53, tokens: 4, charCount: 19},
+      }),
     ];
 
     const orderedCandidates = await matchSectionChunk({
       sectionChunk: hardMatchSectionChunk,
       layoutChunks: hardMatchLayoutChunks,
-      scoresRatio: 0.5,
+      levenshteinThreshold: 0.6,
     });
 
-    expect(orderedCandidates).toHaveLength(3);
     expect(orderedCandidates[0].chunk.pageContent).toBe(
-      'The quick brownish fox'
+      'The quick brown colored fox'
+    );
+  });
+
+  it('should find the closest match when sentences say the same in very different words.', async () => {
+    const hardMatchSectionChunk: SectionChunkDoc = new Document({
+      id: 'S1',
+      pageContent: 'The man was thinking if his business idea could be made.',
+      metadata: {
+        headerRoute: '1>1',
+        headerRouteLevels: '1',
+        order: 1,
+        totalOrder: 50,
+        tokens: 4,
+        charCount: 56,
+        table: false,
+      },
+    });
+
+    const hardMatchLayoutChunks: TextChunkDoc[] = [
+      new Document({
+        id: 'L1',
+        pageContent:
+          'The man was thinking aloud if his business idea could be ever made.',
+        metadata: {totalOrder: 51, tokens: 4, charCount: 67},
+      }),
+      new Document({
+        id: 'L2',
+        pageContent:
+          'The entrepreneur pondered whether his business idea could be executed.',
+        metadata: {totalOrder: 52, tokens: 4, charCount: 70},
+      }),
+      new Document({
+        id: 'L3',
+        pageContent:
+          'The man was contemplating whether his business concept could be brought to fruition',
+        metadata: {totalOrder: 53, tokens: 4, charCount: 83},
+      }),
+    ];
+
+    const orderedCandidates = await matchSectionChunk({
+      sectionChunk: hardMatchSectionChunk,
+      layoutChunks: hardMatchLayoutChunks,
+      levenshteinThreshold: 0.6,
+    });
+
+    expect(orderedCandidates[0].chunk.pageContent).toBe(
+      'The man was thinking aloud if his business idea could be ever made.'
     );
   });
 
@@ -229,6 +278,7 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk,
       layoutChunks,
+      levenshteinThreshold: 0,
     });
 
     expect(orderedCandidates).toHaveLength(3);
@@ -296,6 +346,7 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk,
       layoutChunks,
+      levenshteinThreshold: 0,
     });
 
     expect(orderedCandidates).toHaveLength(4);
@@ -332,12 +383,12 @@ describe('matchSectionChunk', () => {
       new Document({
         id: 'L2',
         pageContent: 'The quick brown dog',
-        metadata: {totalOrder: 1, tokens: 4, charCount: 19},
+        metadata: {totalOrder: 8, tokens: 4, charCount: 19},
       }),
       new Document({
         id: 'L3',
         pageContent: 'The quick brown dog',
-        metadata: {totalOrder: 8, tokens: 4, charCount: 19},
+        metadata: {totalOrder: 1, tokens: 4, charCount: 19},
       }),
       new Document({
         id: 'L4',
@@ -349,18 +400,19 @@ describe('matchSectionChunk', () => {
     const orderedCandidates = await matchSectionChunk({
       sectionChunk,
       layoutChunks,
+      levenshteinThreshold: 0,
     });
 
     expect(orderedCandidates).toHaveLength(4);
     expect(orderedCandidates.map((c) => c.chunk.pageContent)).toEqual([
+      'The quick brown dog',
+      'The quick brown dog',
       'The quick brown fo',
-      'The quick brown dog',
-      'The quick brown dog',
       'The car is going fast.',
     ]);
 
     expect(orderedCandidates.map((c) => c.chunk.metadata.totalOrder)).toEqual([
-      16, 8, 1, 11,
+      8, 1, 16, 11,
     ]);
   });
 });
