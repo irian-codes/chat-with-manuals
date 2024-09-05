@@ -108,6 +108,12 @@ export async function fixHallucinationsOnSections({
 
   throw new Error('NOT IMPLEMENTED YET');
 
+  // TODO: The reconciliation function fixes LLM's hallucinations, but
+  // there's another issue as well: the missing sentences.
+  // Sometimes the LLM skips chunks of texts, and those should be added
+  // back as well. For now we're only fixing what the LLM outputted,
+  // though, creating an incomplete text but hopefully useful enough for
+  // now.
   const fixedChunks = matchedChunks.map((matchedChunk) => {
     return reconcileChunk({
       sectionChunk,
