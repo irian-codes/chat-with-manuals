@@ -501,4 +501,105 @@ describe('chunkSectionNodes', () => {
     const chunks1000 = groupedTokensByHeaderLevel.get('6') ?? [];
     expect(chunks1000.length).toBe(getTargetChunkAmount(1000));
   });
+
+  it('should correctly assign totalOrder to section chunks', async () => {
+    const sectionsJson: SectionNode[] = [
+      {
+        type: 'section',
+        title: 'Heading 1',
+        level: 1,
+        headerRoute: 'Heading 1',
+        headerRouteLevels: '1',
+        content: 'Text under heading 1.',
+        tables: new Map(),
+        subsections: [
+          {
+            type: 'section',
+            title: 'Heading 1.1',
+            level: 2,
+            headerRoute: 'Heading 1>Heading 1.1',
+            headerRouteLevels: '1>1',
+            content: 'Text under heading 1.1.',
+            tables: new Map(),
+            subsections: [],
+          },
+        ],
+      },
+      {
+        type: 'section',
+        title: 'Heading 2',
+        level: 1,
+        headerRoute: 'Heading 2',
+        headerRouteLevels: '2',
+        content: 'Text under heading 2.',
+        tables: new Map(),
+        subsections: [
+          {
+            type: 'section',
+            title: 'Heading 2.1',
+            level: 2,
+            headerRoute: 'Heading 2>Heading 2.1',
+            headerRouteLevels: '2>1',
+            content: 'Text under heading 2.1.',
+            tables: new Map(),
+            subsections: [],
+          },
+          {
+            type: 'section',
+            title: 'Heading 2.2',
+            level: 2,
+            headerRoute: 'Heading 2>Heading 2.2',
+            headerRouteLevels: '2>2',
+            content: 'Text under heading 2.2.',
+            tables: new Map(),
+            subsections: [],
+          },
+        ],
+      },
+      {
+        type: 'section',
+        title: 'Heading 3',
+        level: 1,
+        headerRoute: 'Heading 3',
+        headerRouteLevels: '3',
+        content: 'Text under heading 3.',
+        tables: new Map(),
+        subsections: [],
+      },
+      {
+        type: 'section',
+        title: 'Heading 4',
+        level: 1,
+        headerRoute: 'Heading 4',
+        headerRouteLevels: '4',
+        content: 'Text under heading 4.',
+        tables: new Map(),
+        subsections: [
+          {
+            type: 'section',
+            title: 'Heading 4.1',
+            level: 2,
+            headerRoute: 'Heading 4>Heading 4.1',
+            headerRouteLevels: '4>1',
+            content: 'Text under heading 4.1.',
+            tables: new Map(),
+            subsections: [],
+          },
+        ],
+      },
+    ];
+
+    const chunks: SectionChunkDoc[] = await chunkSectionNodes(
+      sectionsJson,
+      globalSplitter
+    );
+
+    expect(chunks).toHaveLength(8);
+
+    for (let i = 0; i < chunks.length; i++) {
+      expect(chunks[i].metadata.totalOrder).toBe(i + 1);
+    }
+
+    expect(chunks[chunks.length - 1].metadata.totalOrder).toBe(chunks.length);
+  });
 });

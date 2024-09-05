@@ -283,15 +283,15 @@ export async function chunkSectionNodes(
 
   for (let i = 0; i < sectionsJson.length; i++) {
     const section = sectionsJson[i];
-    chunks.push(
-      ...(await chunkSectionNode({
-        section,
-        startTotalOrder: totalOrder,
-        splitter,
-      }))
-    );
 
-    totalOrder += chunks.length;
+    const newChunks = await chunkSectionNode({
+      section,
+      startTotalOrder: totalOrder,
+      splitter,
+    });
+
+    chunks.push(...newChunks);
+    totalOrder += newChunks.length;
   }
 
   return chunks;
@@ -348,18 +348,14 @@ async function chunkSectionNode({
   for (let i = 0; i < section.subsections.length; i++) {
     const subsection = section.subsections[i];
 
-    chunks.push(
-      ...(await chunkSectionNode({
-        section: subsection,
-        startTotalOrder: totalOrder,
-        splitter,
-      }))
-    );
+    const newChunks = await chunkSectionNode({
+      section: subsection,
+      startTotalOrder: totalOrder,
+      splitter,
+    });
 
-    // TODO: For some reason sometimes here it adds one more than what it
-    // should add. I.e. it goes from 9 to 11. It's not important for now,
-    // but we should be aware of it.
-    totalOrder += chunks.length;
+    chunks.push(...newChunks);
+    totalOrder += newChunks.length;
   }
 
   return chunks;
