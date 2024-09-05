@@ -75,17 +75,38 @@ export async function fixHallucinationsOnSections({
   });
 
   // Match section chunk with most probable layoutChunks candidates
-  const matchedChunks = await Promise.all(
-    sectionChunks.map(async (sectionChunk) => {
-    return {
-      sectionChunk,
-        candidates: await matchSectionChunk({
+  // Updating the reference from when to search from each time, since there
+  // may be shifts in the number of lines between the LLM text and the
+  // traditionally parsed text.
+  const matchedChunks = await (async function () {
+    const result = [];
+
+    for (const sectionChunk of sectionChunks) {
+      // TODO: The best candidate is temporarily determined just by taking
+      // the first prior candidate. However this may not be the case when
+      // in the chunk reconciliation function decides which candidate was
+      // the chosen one to reconciliate the LLM chunk. Therefore, the
+      // referenceTotalOrder value should come from the reconciliation function.
+      const lastBestCandidate = result[result.length - 1]?.candidates[0];
+
+      const candidates = await matchSectionChunk({
         sectionChunk,
         layoutChunks,
-      }),
-    };
-    })
-  );
+        referenceTotalOrder:
+          lastBestCandidate?.metadata.totalOrder ??
+          sectionChunk.metadata.totalOrder,
+      });
+
+      result.push({
+        sectionChunk,
+        candidates,
+      });
+    }
+
+    return result;
+  })();
+
+  throw new Error('NOT IMPLEMENTED YET');
 
   const fixedChunks = matchedChunks.map((matchedChunk) => {
     return reconcileChunk({
@@ -131,7 +152,13 @@ export async function fixHallucinationsOnSections({
  *   Levenshtein Distance lower than this will not be returned as
  *   candidates. I.e. 0.6 means only keeping the chunks that have at least
  *   60% of the characters shared with the section chunk.
- *
+ * @param {number} [referenceTotalOrder=sectionChunk.metadata.totalOrder] -
+ *   The reference totalOrder that serves as an anchor to filter the
+ *   results by document proximity to the section chunk. It starts at the
+ *   totalOrder number of the section chunk we're matching against and then
+ *   it should be passed as parameter with the value of the totalOrder
+ *   value of the chunk that was determined to be the best candidate (with
+ *   whatever criteria that doesn't concern to this function).
  * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
  *   that resolves to the input layoutChunks parameter array ordered and
  *   filtered by score array of layout chunks. The results are ordered
@@ -143,11 +170,13 @@ export async function matchSectionChunk({
   layoutChunks,
   maxCandidates = 10,
   levenshteinThreshold = 0.6,
+  referenceTotalOrder = sectionChunk.metadata.totalOrder,
 }: {
   sectionChunk: SectionChunkDoc;
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
   levenshteinThreshold?: number;
+  referenceTotalOrder?: number;
 }): Promise<TextChunkDoc[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
@@ -158,8 +187,8 @@ export async function matchSectionChunk({
   // want mustn't be very far away. This way we save a ton of computations.
   const nearbyChunks: TextChunkDoc[] = layoutChunks.filter(
     (c) =>
-      c.metadata.totalOrder >= sectionChunk.metadata.totalOrder - 30 &&
-      c.metadata.totalOrder <= sectionChunk.metadata.totalOrder + 30
+      c.metadata.totalOrder >= referenceTotalOrder - 30 &&
+      c.metadata.totalOrder <= referenceTotalOrder + 30
   );
 
   const normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({

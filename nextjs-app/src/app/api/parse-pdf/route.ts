@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
           sections: mdToJson,
         });
 
-        const sectionChunks = await chunkSectionNodes(fixedChunks);
-
         throw new Error('TEMPORARY DEBUG ERROR');
+
+        const sectionChunks = await chunkSectionNodes(fixedChunks);
 
         const store = await embedPDF(fileHash, sectionChunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});
