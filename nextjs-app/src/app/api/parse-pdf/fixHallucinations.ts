@@ -4,8 +4,12 @@ import {
   TextChunkDoc,
   textChunkDocSchema,
 } from '@/app/common/types/TextChunkDoc';
-import {isBlankString} from '@/app/common/utils/stringUtils';
+import {
+  isBlankString,
+  matchCaseBySurroundingWords,
+} from '@/app/common/utils/stringUtils';
 import {OpenAIEmbeddings} from '@langchain/openai';
+import {diffWords} from 'diff';
 import {Document} from 'langchain/document';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {MemoryVectorStore} from 'langchain/vectorstores/memory';
@@ -106,20 +110,20 @@ export async function fixHallucinationsOnSections({
     return result;
   })();
 
-  throw new Error('NOT IMPLEMENTED YET');
-
   // TODO: The reconciliation function fixes LLM's hallucinations, but
   // there's another issue as well: the missing sentences.
   // Sometimes the LLM skips chunks of texts, and those should be added
   // back as well. For now we're only fixing what the LLM outputted,
   // though, creating an incomplete text but hopefully useful enough for
   // now.
-  const fixedChunks = matchedChunks.map((matchedChunk) => {
+  const fixedChunks = matchedChunks.map((match) => {
     return reconcileChunk({
       sectionChunk,
       candidates,
     });
   });
+
+  throw new Error('NOT IMPLEMENTED YET');
 
   // Reconcile texts of the section chunks and merge back into sections
   const fixedSections = mergeChunksIntoSections({
@@ -367,4 +371,105 @@ async function getNormalizedInvertedLevenshteinDistance<
       };
     })
   );
+}
+
+/**
+ * Reconciles two texts by comparing and merging their differences.
+ *
+ * This function takes two texts as input, normalizes the first text, generates a diff JSON using jsdiff,
+ * and then iterates over the diff to merge the differences between the two texts.
+ * It handles cases where the second text has extra words, missing words, or equal words.
+ * It tries to preserve the structure and case of the second text with the words of the first text.
+ *
+ * @param {string} firstText - The original text to be reconciled.
+ * @param {string} secondText - The LLM text to be reconciled with the original text.
+ * @return {string} The reconciled text.
+ */
+export function reconcileTexts(firstText: string, secondText: string): string {
+  // Normalize the first text for easier diffing
+  const normalizedFirstText = firstText
+    .split(/[\s\n]+/)
+    .map((s) => s.trim())
+    .join(' ');
+
+  // Generate the diff JSON using jsdiff
+  const diff = diffWords(normalizedFirstText, secondText, {
+    ignoreCase: true,
+  });
+
+  const chunks: string[] = [];
+  let firstTextIndex = 0;
+
+  diff.forEach((part) => {
+    if (part.added) {
+      // LLM has an extra piece of text, we need to remove it. Don't add
+      // this text to the result array, as we need to remove them
+    } else if (part.removed) {
+      // Traditional text has a piece of text that LLM is missing.
+      // Insert the missing words but handle the case based on the context
+      const missingWords = part.value
+        .split(/\s+/)
+        .filter((w) => !isBlankString(w));
+
+      missingWords.forEach((word) => {
+        let newWord: string = '';
+
+        if (chunks.length > 0) {
+          const lastChunkSplit = chunks[chunks.length - 1]
+            .split(/[\s\n]+/)
+            .filter((w) => !isBlankString(w));
+          const lastWord = lastChunkSplit[lastChunkSplit.length - 1];
+          const nextWord = secondText
+            .slice(firstTextIndex)
+            .split(/\s+/)
+            .filter((w) => !isBlankString(w))[0];
+
+          newWord = matchCaseBySurroundingWords(word, lastWord, nextWord);
+        } else {
+          newWord = word;
+        }
+
+        chunks.push(newWord);
+      });
+    } else {
+      // Words are equal
+      chunks.push(part.value); // Directly use the part value from the LLM text
+    }
+
+    firstTextIndex += part.value.length;
+  });
+
+  // The final step is to join the words together with a space and remove
+  // any double spaces. We only add a space between words, not other
+  // characters.
+  const finalStr = chunks.reduce((prev, curr) => {
+    const shouldAddSpace = (() => {
+      // Combine the strings with a special delimiter to aid in regex
+      const combined = `${prev.trim()}#--#${curr.trim()}`;
+
+      const noSpacePatterns = [
+        /[(\[{`‘“"'«‹]#--#/, // no space when a parenthesis or quote opens (eg. '["a')
+        /\d#--#\d/, // no space between digits (eg. 06)
+        /\w#--#\W/i, // no space between a word char and a non word char (eg. 'a.')
+        /#--#[)\]}`’”"'»›]/, // curr starts with a closing parenthesis or quote (eg. '[a"'),
+        /#--#…/, // No space before an ellipsis (e.g., 'word…'),
+      ];
+
+      // Check if any pattern matches the combined string
+      for (const pattern of noSpacePatterns) {
+        if (pattern.test(combined)) {
+          return false; // No space should be added
+        }
+      }
+
+      // Otherwise, return true (space needed)
+      return true;
+    })();
+
+    const newString = prev + (shouldAddSpace ? ' ' : '') + curr;
+
+    return newString.replaceAll(/\s{2,}/g, ' ').trim();
+  }, '');
+
+  return finalStr;
 }

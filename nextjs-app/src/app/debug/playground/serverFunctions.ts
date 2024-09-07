@@ -6,7 +6,7 @@ import {
   chunkSectionNodes,
   markdownToSectionsJson,
 } from '@/app/api/parse-pdf/chunking';
-import {reconcileTexts} from '@/app/api/parse-pdf/functions';
+import {reconcileTexts} from '@/app/api/parse-pdf/fixHallucinations';
 import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';

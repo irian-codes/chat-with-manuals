@@ -1,4 +1,4 @@
-import {reconcileTexts} from '@/app/api/parse-pdf/functions';
+import {reconcileTexts} from '@/app/api/parse-pdf/fixHallucinations';
 import {diffWords} from 'diff';
 import {describe, expect, it, TestFunction} from 'vitest';
 
