@@ -91,18 +91,19 @@ DOCUMENT FRAGMENTS:
 
   const finalHtml = sanitizeHtml(await marked.parse(responseContent));
 
-  const answerFilePath = writeToTimestampedFile(
-    `[PROMPT]: ${systemMessage.content}\n` +
+  const answerFilePath = writeToTimestampedFile({
+    content:
+      `[PROMPT]: ${systemMessage.content}\n` +
       chatTemplate
         .toChatMessages()
         .map((m) => m.content)
         .join('\n\n') +
       '\n\n' +
       `[RESPONSE]: ${responseContent}\n`,
-    'tmp',
-    'llmAnswer',
-    'txt'
-  );
+    destinationFolderPath: 'tmp',
+    fileName: 'llmAnswer',
+    fileExtension: 'txt',
+  });
 
   console.log('Saved answer to file:', answerFilePath);
 

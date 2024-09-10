@@ -87,13 +87,13 @@ export async function parsePdf({
   switch (output) {
     case 'json': {
       const res = await pdfParseToJson(file);
-      writeToTimestampedFile(
-        res,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'json',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: res,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'json',
+        prefix: 'parsedPdf',
+      });
 
       return {text: res, contentType: 'json', cachedTime: null};
     }
@@ -107,13 +107,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -121,13 +121,13 @@ export async function parsePdf({
     case 'unstructured': {
       const unstructuredRes = await pdfParseWithUnstructured(file);
 
-      writeToTimestampedFile(
-        JSON.stringify(unstructuredRes, null, 2),
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'json',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: JSON.stringify(unstructuredRes, null, 2),
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'json',
+        prefix: 'parsedPdf',
+      });
 
       return {
         text: JSON.stringify(unstructuredRes, null, 2),
@@ -144,13 +144,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -163,13 +163,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'md',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'md',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'markdown', cachedTime: null};
     }
@@ -182,13 +182,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -203,13 +203,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'md',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'md',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'markdown', cachedTime: null};
     }
@@ -221,13 +221,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'md',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'md',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'markdown', cachedTime: null};
     }
@@ -239,13 +239,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }

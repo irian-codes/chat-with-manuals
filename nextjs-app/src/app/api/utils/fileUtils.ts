@@ -35,19 +35,28 @@ export function validatePathExists(
   return true;
 }
 
-export function writeToTimestampedFile(
-  content: string,
-  destinationFolderPath: string,
-  fileName: string,
-  fileExtension: string,
-  prefix: string = ''
-): string {
+export function writeToTimestampedFile({
+  content,
+  destinationFolderPath,
+  fileName,
+  fileExtension,
+  prefix = '',
+}: {
+  content: string;
+  destinationFolderPath: string;
+  fileName: string;
+  fileExtension: string;
+  prefix?: string;
+}): string {
   const _prefix = isBlankString(prefix) ? '' : prefix + '_';
+  const date: string =
+    new Date().toISOString().slice(0, 10).replace(/-/g, '') +
+    new Date().toTimeString().slice(0, 5).replace(/:/g, '');
 
   const fullPath = path.join(
     process.cwd(),
     destinationFolderPath,
-    `${_prefix}${fileName}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${new Date().toTimeString().slice(0, 5).replace(/:/g, '')}.${fileExtension}`
+    `${_prefix}${fileName}_${date}.${fileExtension}`
   );
 
   const folderPath = path.dirname(fullPath);
