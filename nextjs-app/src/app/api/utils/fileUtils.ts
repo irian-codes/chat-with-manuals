@@ -22,17 +22,7 @@ export function validatePathExists(
     throw new TypeError('Path must be a string');
   }
 
-  try {
-    if (!fs.existsSync(path.join(pathToCheck))) {
-      throw new Error(`Path ${pathToCheck} does not exist`);
-    }
-  } catch (error) {
-    throw new Error(`Error checking path: ${error?.message ?? 'unknown'}`, {
-      cause: error,
-    });
-  }
-
-  return true;
+  return fs.existsSync(path.join(pathToCheck));
 }
 
 export function writeToTimestampedFile({
@@ -41,12 +31,14 @@ export function writeToTimestampedFile({
   fileName,
   fileExtension,
   prefix = '',
+  createFolderIfNotExists = false,
 }: {
   content: string;
   destinationFolderPath: string;
   fileName: string;
   fileExtension: string;
   prefix?: string;
+  createFolderIfNotExists?: boolean;
 }): string {
   const _prefix = isBlankString(prefix) ? '' : prefix + '_';
   const date: string =
@@ -62,9 +54,11 @@ export function writeToTimestampedFile({
   const folderPath = path.dirname(fullPath);
 
   if (!validatePathExists(folderPath)) {
-    throw new Error(
-      `Folder '${folderPath}' does not exist or is an invalid path`
-    );
+    if (createFolderIfNotExists) {
+      fs.mkdirSync(folderPath, {recursive: true});
+    } else {
+      throw new Error(`Folder '${folderPath}' does not exist.`);
+    }
   }
 
   try {
