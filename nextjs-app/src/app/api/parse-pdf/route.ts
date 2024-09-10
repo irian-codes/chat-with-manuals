@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('Parsing main PDF...', `File hash: ${fileHash}`);
+
     const parseResult = await parsePdf({file, output, force, columnsNumber});
 
     switch (parseResult.contentType) {
@@ -98,7 +100,15 @@ export async function POST(request: NextRequest) {
 
       case 'markdown':
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
+
+        console.log(
+          'Sectioning parsed Markdwon file...',
+          `File hash: ${fileHash}`
+        );
+
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
+
+        console.log('Fixing LLM hallucinations...', `File hash: ${fileHash}`);
 
         const fixedChunks = await fixHallucinationsOnSections({
           file,
