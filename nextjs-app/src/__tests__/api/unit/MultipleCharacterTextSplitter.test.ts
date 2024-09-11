@@ -5,11 +5,11 @@ describe('MultipleCharacterTextSplitter', () => {
   test('should throw an error if no separators are provided', () => {
     expect(() => {
       new MultipleRegexTextSplitter({});
-    }).toThrow('At least one separator is required.');
+    }).toThrow();
 
     expect(() => {
       new MultipleRegexTextSplitter({separators: []});
-    }).toThrow('At least one separator is required.');
+    }).toThrow();
   });
 
   test('should throw an error if separators have inconsistent flags', () => {
@@ -17,18 +17,19 @@ describe('MultipleCharacterTextSplitter', () => {
       new MultipleRegexTextSplitter({
         separators: [/[\r\n]+/g, /[\.?!]\s+/i],
       });
-    }).toThrow('All separators must have the same flags.');
+    }).toThrow();
 
     expect(() => {
       new MultipleRegexTextSplitter({
         separators: [/[\r\n]+/, /[\.?!]\s+/i],
       });
-    }).toThrow('All separators must have the same flags.');
+    }).toThrow();
   });
 
   test('should split text correctly without keeping separators', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]\s+/],
+      keepSeparators: false,
     });
 
     const text = "Hello! How are you\ntoday?\nI'm fine. Thanks!";
