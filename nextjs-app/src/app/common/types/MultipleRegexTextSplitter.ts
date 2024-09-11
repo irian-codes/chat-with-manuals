@@ -60,7 +60,7 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     })();
 
     // Split the text using the combined regex
-    let segments = text.split(joinedSeparator).filter(Boolean);
+    const segments = text.split(joinedSeparator).filter(Boolean);
 
     if (!this.keepSeparators || segments.length === 0) {
       return segments;
