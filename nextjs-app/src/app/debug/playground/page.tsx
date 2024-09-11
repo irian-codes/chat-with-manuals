@@ -5,7 +5,7 @@ import {
   clearNodePersistStorage,
   clearVectorDB,
   diffTexts,
-  getLevenhsteinDistance,
+  function1,
   getMarkdownLexer,
   parseMarkdownToJson,
   parseMarkdownToPlainText,
@@ -57,8 +57,8 @@ export default function Page({}: Props) {
   }
 
   function handleButtonClick8() {
-    getLevenhsteinDistance().then((res) => {
-      console.log('Levenstein result: ', res);
+    function1().then((res) => {
+      console.log(res);
     });
   }
 
@@ -102,7 +102,7 @@ export default function Page({}: Props) {
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
           onClick={handleButtonClick8}
         >
-          Levenshtein Distance
+          Function 1 (generic)
         </button>
         <button
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"

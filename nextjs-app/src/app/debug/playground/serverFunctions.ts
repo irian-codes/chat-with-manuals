@@ -11,7 +11,6 @@ import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
-import {LevenshteinDistance} from 'natural';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -92,15 +91,52 @@ wins the game, the Vagabond also wins.`;
   };
 }
 
-export async function getLevenhsteinDistance() {
-  const str1 = 'hello';
-  const str2 = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+export async function function1() {
+  const str = `To take various actions,
+the Alliance spends supporters, which are cards
+on their Supporters stack. Supporters can only be
+spent for their suit and do not count against the
+Alliance's hand size. Hello?! Supporters are face down,
+but the Alliance may inspect them at any time.
+Supporters are i.e. a Rabbit suited card.`;
 
-  return LevenshteinDistance(str1, str2, {
-    insertion_cost: 1,
-    deletion_cost: 1,
-    substitution_cost: 1,
-  });
+  const regexp =
+    /(?<noMatches>i\.e\.|e\.g\.)|(?<separators>[.?!]\s+|[\r\n]+)/gi;
+
+  const splitIndexes: number[] = [];
+  let lastMatch;
+  let counter = 0;
+  while ((lastMatch = regexp.exec(str)) !== null) {
+    console.dir(
+      {
+        logId: 'heeey 4.5',
+        i: counter,
+        lastMatch,
+      },
+      {
+        colors: true,
+        depth: null,
+      }
+    );
+
+    counter++;
+
+    if (lastMatch.groups?.noMatches == null) {
+      splitIndexes.push(lastMatch.index + lastMatch[0].length);
+    }
+  }
+
+  let result: string[] = [];
+
+  for (let i = 0; i < splitIndexes.length; i++) {
+    const index = splitIndexes[i];
+    const lastIndex = splitIndexes[i - 1] || 0;
+    const split = str.slice(lastIndex, index);
+
+    result.push(split);
+  }
+
+  return result;
 }
 
 export async function clearNodePersistStorage() {
