@@ -44,37 +44,41 @@ export class MultipleRegexTextSplitter implements TextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
-    // Combine all separators into one regex using the OR operator |
-    const joinedSeparator = (() => {
-      if (this.keepSeparators) {
-        return new RegExp(
-          this.separators.map((separator) => `(${separator.source})`).join('|'),
-          this.separators[0].flags
-        );
-      } else {
-        return new RegExp(
-          this.separators.map((separator) => separator.source).join('|'),
-          this.separators[0].flags
-        );
-      }
-    })();
+    return this.keepSeparators
+      ? this.splitKeepSeparators(text)
+      : this.splitDroppingSeparators(text);
+  }
+  private splitDroppingSeparators(text: string) {
+    const joinedSeparator = new RegExp(
+      this.separators.map((separator) => separator.source).join('|'),
+      this.separators[0].flags
+    );
 
     // Split the text using the combined regex
     const segments = text.split(joinedSeparator).filter(Boolean);
 
-    if (!this.keepSeparators || segments.length === 0) {
+    return segments;
+  }
+  private splitKeepSeparators(text: string) {
+    const joinedSeparator = new RegExp(
+      this.separators.map((separator) => `(${separator.source})`).join('|'),
+      this.separators[0].flags
+    );
+    const segments = text.split(joinedSeparator).filter(Boolean);
+
+    if (segments.length === 0) {
       return segments;
     }
 
-    const startsWithSeparator = text.match(joinedSeparator)?.index === 0;
-
     // If keeping separators, rejoin the separators to their preceding segments
+    const startsWithSeparator = text.match(joinedSeparator)?.index === 0;
     let firstSeparator = null;
     const result: string[] = [];
 
     for (let i = 0; i < segments.length; i++) {
       const segment = segments[i];
 
+      // Removing first separator so the even element indexes are the separators
       if (i === 0 && firstSeparator == null) {
         if (startsWithSeparator) {
           firstSeparator = segments.shift()!;
