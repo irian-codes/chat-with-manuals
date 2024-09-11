@@ -2,40 +2,58 @@ import {TextSplitter} from './TextSplitter';
 
 type MultipleRegexTextSplitterParams = {
   separators: RegExp[];
+  noMatchSequences?: RegExp[];
   keepSeparators?: boolean;
 };
 
 export class MultipleRegexTextSplitter implements TextSplitter {
   separators: RegExp[] = [/[\r\n]+/, /[\.?!]\s+/];
+  /**
+   * Sequences to not split even if they match with the separators.
+   * @default
+   * Defaults to 'e.g.', 'i.e.', 'f.e.' and common list item headers (a.
+   * blah blah, 2. blah blah)
+   */
+  noMatchSequences: RegExp[] = [
+    /e\.g\./,
+    /i\.e\./,
+    /f\.e\./,
+    /^\s*\w{1,2}[.:]\s/,
+  ];
   keepSeparators: boolean = false;
 
-  constructor({separators, keepSeparators}: MultipleRegexTextSplitterParams) {
+  constructor({
+    separators,
+    keepSeparators,
+    noMatchSequences,
+  }: MultipleRegexTextSplitterParams) {
     if (!separators || separators.length === 0) {
       throw new Error('At least one separator is required.');
     }
 
     this.separators = separators;
+    this.noMatchSequences = noMatchSequences ?? this.noMatchSequences;
 
-    if (!this.doesEachSeparatorContainsSameSeparators()) {
+    if (!this.doesEachRegExpContainsSameSeparators()) {
       throw new Error(
-        'Different flags in separators is unsupported. All separators must have the same flags.'
+        'Different flags in RegExp is unsupported. All separators and noMatchSequences must have the same flags.'
       );
     }
 
     this.keepSeparators = keepSeparators ?? this.keepSeparators;
   }
 
-  private doesEachSeparatorContainsSameSeparators() {
-    const referenceSeparators = this.separators[0].flags.split('');
+  private doesEachRegExpContainsSameSeparators() {
+    const referenceFlags = this.separators[0].flags.split('');
 
-    for (const separator of this.separators) {
-      const flags = separator.flags.split('');
+    for (const regexp of this.separators.concat(this.noMatchSequences)) {
+      const flags = regexp.flags.split('');
 
-      if (flags.length !== referenceSeparators.length) {
+      if (flags.length !== referenceFlags.length) {
         return false;
       }
 
-      if (flags.some((f) => !referenceSeparators.includes(f))) {
+      if (flags.some((f) => !referenceFlags.includes(f))) {
         return false;
       }
     }
@@ -44,66 +62,90 @@ export class MultipleRegexTextSplitter implements TextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
-    return this.keepSeparators
-      ? this.splitKeepSeparators(text)
-      : this.splitDroppingSeparators(text);
-  }
-  private splitDroppingSeparators(text: string) {
-    const joinedSeparator = new RegExp(
-      this.separators.map((separator) => separator.source).join('|'),
-      this.separators[0].flags
-    );
+    const {joinedRegex, noMatchGroup, separatorsGroup, flags} =
+      this.buildJoinedSeparator();
+    const splitIndexes: number[] = [];
+    let lastMatch = joinedRegex.exec(text);
 
-    // Split the text using the combined regex
-    const segments = text.split(joinedSeparator).filter(Boolean);
+    while (lastMatch !== null) {
+      // console.dir(
+      //   {
+      //     logId: 'heeey 4.5',
+      //     lastMatch,
+      //   },
+      //   {
+      //     colors: true,
+      //     depth: null,
+      //   }
+      // );
 
-    return segments;
-  }
-  private splitKeepSeparators(text: string) {
-    const joinedSeparator = new RegExp(
-      this.separators.map((separator) => `(${separator.source})`).join('|'),
-      this.separators[0].flags
-    );
-    const segments = text.split(joinedSeparator).filter(Boolean);
-
-    if (segments.length === 0) {
-      return segments;
-    }
-
-    // If keeping separators, rejoin the separators to their preceding segments
-    const startsWithSeparator = text.match(joinedSeparator)?.index === 0;
-    let firstSeparator = null;
-    const result: string[] = [];
-
-    for (let i = 0; i < segments.length; i++) {
-      const segment = segments[i];
-
-      // Removing first separator so the even element indexes are the separators
-      if (i === 0 && firstSeparator == null) {
-        if (startsWithSeparator) {
-          firstSeparator = segments.shift()!;
-          i--;
-          continue;
+      if (lastMatch.groups?.noMatches == null) {
+        if (!this.keepSeparators) {
+          splitIndexes.push(lastMatch.index);
         }
+
+        splitIndexes.push(lastMatch.index + lastMatch[0].length);
       }
 
-      if (i % 2 === 1 && result.length > 0) {
-        // Append the separator to the preceding segment
-        result[result.length - 1] += segment;
-      } else {
-        result.push(segment);
+      lastMatch = joinedRegex.exec(text);
+    }
+
+    // console.log('heeey 4.6', splitIndexes);
+
+    let result: string[] = [];
+
+    for (let i = 0; i < splitIndexes.length; i++) {
+      const index = splitIndexes[i];
+      const lastIndex = splitIndexes[i - 1] || 0;
+      const split = text.slice(lastIndex, index);
+
+      // If this is a separator and we want to drop it we won't push it
+      if (
+        !this.keepSeparators &&
+        this.doesContainSeparator(split, this.separators)
+      ) {
+        console.log('heeey 4.72', {
+          split,
+          match: Array.from(split.matchAll(joinedRegex)),
+        });
+        continue;
       }
+
+      result.push(split);
     }
 
-    if (startsWithSeparator) {
-      result.unshift(firstSeparator!);
-    }
-
-    return result;
+    return result.filter(Boolean);
   }
+
+  private buildJoinedSeparator() {
+    const separatorsGroup = this.separators.map((s) => s.source).join('|');
+    const noMatchGroup = this.noMatchSequences.map((s) => s.source).join('|');
+    const flags = this.separators[0].flags.includes('g')
+      ? this.separators[0].flags
+      : this.separators[0].flags + 'g';
+
+    const regexpStr =
+      this.noMatchSequences.length > 0
+        ? `(?<noMatches>${noMatchGroup})|(?<separators>${separatorsGroup})`
+        : `(?<separators>${separatorsGroup})`;
+
+    return {
+      joinedRegex: new RegExp(regexpStr, flags),
+      noMatchGroup,
+      separatorsGroup,
+      flags,
+    };
+  }
+
   private doesContainSeparator(text: string, separators: RegExp[]) {
     if (separators.length === 0) {
       return false;
+    }
+
+    for (const noMatches of this.noMatchSequences) {
+      if (text.match(noMatches) != null && text.match(noMatches)!.length > 0) {
+        return false;
+      }
     }
 
     for (const separator of separators) {
