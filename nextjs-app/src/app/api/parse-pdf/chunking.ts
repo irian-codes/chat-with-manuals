@@ -49,6 +49,55 @@ export async function markdownToSectionsJson(
     lastHeaderRouteLevels: new Array<string>(),
   };
 
+  for (const token of tokens) {
+    if (token.type === 'heading') {
+      // When we encounter a new heading, we should finalize the previous section content
+      pushContent();
+
+      const node: SectionNode = {
+        type: 'section',
+        title: token.text,
+        level: token.depth,
+        headerRoute: '',
+        headerRouteLevels: '',
+        content: '',
+        tables: new Map(),
+        subsections: [],
+      };
+
+      // Find the right place to insert the node based on its level
+      while (stack.length > 0 && stack[stack.length - 1].level >= token.depth) {
+        stack.pop();
+      }
+
+      if (stack.length === 0) {
+        jsonStructure.push(node);
+      } else {
+        stack[stack.length - 1].subsections.push(node);
+      }
+
+      stack.push(node);
+    } else if (token.type === 'table') {
+      currentContent.tables.set(
+        ++currentContent.lastTableIndex,
+        decodeHTML(await plainMarked.parse(token.raw)).trim()
+      );
+
+      // Add a table placeholder to restore this table later
+      currentContent.text +=
+        tableDelimiter.replace('%d', String(currentContent.lastTableIndex)) +
+        '\n\n';
+    } else {
+      // Append the current token to the content string
+      currentContent.text += decodeHTML(await plainMarked.parse(token.raw));
+    }
+  }
+
+  // Finalize the last section content
+  pushContent();
+
+  return jsonStructure;
+
   // HELPER FUNCTIONS
 
   /**
@@ -213,57 +262,6 @@ export async function markdownToSectionsJson(
       lastSection.headerRouteLevels = level;
     }
   }
-
-  // START OF THE ACTUAL CODE
-
-  for (const token of tokens) {
-    if (token.type === 'heading') {
-      // When we encounter a new heading, we should finalize the previous section content
-      pushContent();
-
-      const node: SectionNode = {
-        type: 'section',
-        title: token.text,
-        level: token.depth,
-        headerRoute: '',
-        headerRouteLevels: '',
-        content: '',
-        tables: new Map(),
-        subsections: [],
-      };
-
-      // Find the right place to insert the node based on its level
-      while (stack.length > 0 && stack[stack.length - 1].level >= token.depth) {
-        stack.pop();
-      }
-
-      if (stack.length === 0) {
-        jsonStructure.push(node);
-      } else {
-        stack[stack.length - 1].subsections.push(node);
-      }
-
-      stack.push(node);
-    } else if (token.type === 'table') {
-      currentContent.tables.set(
-        ++currentContent.lastTableIndex,
-        decodeHTML(await plainMarked.parse(token.raw)).trim()
-      );
-
-      // Add a table placeholder to restore this table later
-      currentContent.text +=
-        tableDelimiter.replace('%d', String(currentContent.lastTableIndex)) +
-        '\n\n';
-    } else {
-      // Append the current token to the content string
-      currentContent.text += decodeHTML(await plainMarked.parse(token.raw));
-    }
-  }
-
-  // Finalize the last section content
-  pushContent();
-
-  return jsonStructure;
 }
 
 export async function chunkSectionNodes(
