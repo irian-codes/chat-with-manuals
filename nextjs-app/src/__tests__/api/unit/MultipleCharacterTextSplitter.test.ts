@@ -12,7 +12,7 @@ describe('MultipleCharacterTextSplitter', () => {
     }).toThrow();
   });
 
-  it('should throw an error if separators have inconsistent flags', () => {
+  it('should throw an error if separators have flags', () => {
     expect(() => {
       new MultipleRegexTextSplitter({
         separators: [/[\r\n]+/g, /[\.?!]\s+/i],
@@ -21,7 +21,16 @@ describe('MultipleCharacterTextSplitter', () => {
 
     expect(() => {
       new MultipleRegexTextSplitter({
-        separators: [/[\r\n]+/, /[\.?!]\s+/i],
+        separators: [/[\r\n]+/, /[\.?!]\s+/],
+        noMatchSequences: [/[\r\n]+/, /[\.?!]\s+/i],
+      });
+    }).toThrow();
+  });
+
+  it('should throw an error if we pass invalid regex flags', () => {
+    expect(() => {
+      new MultipleRegexTextSplitter({
+        separators: [new RegExp('/.*/', 'q')],
       });
     }).toThrow();
   });
@@ -219,6 +228,43 @@ describe('MultipleCharacterTextSplitter', () => {
       'Split this text',
       'That contains some abbreviations like i.e. or etc. ',
       'Text i.e.',
+    ]);
+  });
+
+  it("should split lists correctly with the 'm' flag", async () => {
+    const splitter = new MultipleRegexTextSplitter({
+      separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
+      noMatchSequences: [/^\s*\w{1,2}[.:]\s+/],
+      keepSeparators: true,
+      flags: 'm',
+    });
+
+    // Test without exceptions
+    const text = `This is not a list.
+This list begins now:
+    a. Item1
+    b. Item2
+
+End of the list.`;
+    let result = await splitter.splitText(text);
+
+    expect(result).toEqual([
+      'This is not a list.\n',
+      'This list begins now:\n',
+      '    a. Item1\n',
+      '    b. Item2\n\n',
+      'End of the list.',
+    ]);
+
+    // Test without keeping separators
+    splitter.keepSeparators = false;
+    result = await splitter.splitText(text);
+    expect(result).toEqual([
+      'This is not a list',
+      'This list begins now:',
+      '    a. Item1',
+      '    b. Item2',
+      'End of the list.',
     ]);
   });
 });

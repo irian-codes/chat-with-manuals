@@ -1,8 +1,10 @@
+import {isBlankString} from '../utils/stringUtils';
 import {TextSplitter} from './TextSplitter';
 
 type MultipleRegexTextSplitterParams = {
   separators: RegExp[];
   noMatchSequences?: RegExp[];
+  flags?: string;
   keepSeparators?: boolean;
 };
 
@@ -18,15 +20,40 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     /e\.g\./,
     /i\.e\./,
     /f\.e\./,
-    /^\s*\w{1,2}[.:]\s/,
+    /^\s*\w{1,2}[.:]\s+/,
   ];
+  flags: string = 'gm';
   keepSeparators: boolean = false;
 
   constructor({
     separators,
     keepSeparators,
     noMatchSequences,
+    flags,
   }: MultipleRegexTextSplitterParams) {
+    if (flags != null && !isBlankString(flags)) {
+      try {
+        new RegExp('/.*/', flags);
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          throw new Error(
+            `Wrong RegExp flags. Flags must be a combination of the following ECMAScript valid regex flags characters.
+Consult here the valid ones: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#advanced_searching_with_flags`
+          );
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    this.flags = (() => {
+      if (flags == null || isBlankString(flags)) {
+        return this.flags;
+      } else {
+        return flags.includes('g') ? flags : 'g' + flags;
+      }
+    })();
+
     if (!separators || separators.length === 0) {
       throw new Error('At least one separator is required.');
     }
@@ -35,34 +62,19 @@ export class MultipleRegexTextSplitter implements TextSplitter {
       throw new Error('All separators must be RegExp instances.');
     }
 
-    this.separators = separators;
-    this.noMatchSequences = noMatchSequences ?? this.noMatchSequences;
-
-    if (!this.doesEachRegExpContainsSameSeparators()) {
+    if (separators.concat(noMatchSequences ?? []).some((r) => r.flags !== '')) {
       throw new Error(
-        'Different flags in RegExp is unsupported. All separators and noMatchSequences must have the same flags.'
+        "Please don't pass flags directly in RegExp instances in this constructor. Use the flags parameter."
       );
     }
 
+    this.separators = separators.map((s) => new RegExp(s, this.flags));
+    this.noMatchSequences =
+      noMatchSequences != null
+        ? noMatchSequences.map((s) => new RegExp(s, this.flags))
+        : this.noMatchSequences;
+
     this.keepSeparators = keepSeparators ?? this.keepSeparators;
-  }
-
-  private doesEachRegExpContainsSameSeparators() {
-    const referenceFlags = this.separators[0].flags.split('');
-
-    for (const regexp of this.separators.concat(this.noMatchSequences)) {
-      const flags = regexp.flags.split('');
-
-      if (flags.length !== referenceFlags.length) {
-        return false;
-      }
-
-      if (flags.some((f) => !referenceFlags.includes(f))) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   async splitText(text: string): Promise<string[]> {
@@ -95,10 +107,7 @@ export class MultipleRegexTextSplitter implements TextSplitter {
       const split = text.slice(lastIndex, index ?? text.length);
 
       // If this is a separator and we want to drop it we won't push it
-      if (
-        !this.keepSeparators &&
-        this.doesContainSeparator(split, this.separators)
-      ) {
+      if (!this.keepSeparators && this.doesContainSeparator(split)) {
         continue;
       }
 
@@ -111,9 +120,6 @@ export class MultipleRegexTextSplitter implements TextSplitter {
   private buildJoinedSeparator() {
     const separatorsGroup = this.separators.map((s) => s.source).join('|');
     const noMatchGroup = this.noMatchSequences.map((s) => s.source).join('|');
-    const flags = this.separators[0].flags.includes('g')
-      ? this.separators[0].flags
-      : this.separators[0].flags + 'g';
 
     const regexpStr =
       this.noMatchSequences.length > 0
@@ -121,15 +127,15 @@ export class MultipleRegexTextSplitter implements TextSplitter {
         : `(?<separators>${separatorsGroup})`;
 
     return {
-      joinedRegex: new RegExp(regexpStr, flags),
+      joinedRegex: new RegExp(regexpStr, this.flags),
       noMatchGroup,
       separatorsGroup,
-      flags,
+      flags: this.flags,
     };
   }
 
-  private doesContainSeparator(text: string, separators: RegExp[]) {
-    if (separators.length === 0) {
+  private doesContainSeparator(text: string) {
+    if (this.separators.length === 0) {
       return false;
     }
 
@@ -139,7 +145,7 @@ export class MultipleRegexTextSplitter implements TextSplitter {
       }
     }
 
-    for (const separator of separators) {
+    for (const separator of this.separators) {
       if (text.match(separator) != null && text.match(separator)!.length > 0) {
         return true;
       }
