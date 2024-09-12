@@ -31,6 +31,10 @@ export class MultipleRegexTextSplitter implements TextSplitter {
       throw new Error('At least one separator is required.');
     }
 
+    if (separators.some((s) => s instanceof RegExp === false)) {
+      throw new Error('All separators must be RegExp instances.');
+    }
+
     this.separators = separators;
     this.noMatchSequences = noMatchSequences ?? this.noMatchSequences;
 
