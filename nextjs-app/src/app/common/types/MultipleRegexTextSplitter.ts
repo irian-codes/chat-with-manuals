@@ -68,17 +68,6 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     let lastMatch = joinedRegex.exec(text);
 
     while (lastMatch !== null) {
-      // console.dir(
-      //   {
-      //     logId: 'heeey 4.5',
-      //     lastMatch,
-      //   },
-      //   {
-      //     colors: true,
-      //     depth: null,
-      //   }
-      // );
-
       if (lastMatch.groups?.noMatches == null) {
         if (!this.keepSeparators) {
           splitIndexes.push(lastMatch.index);
@@ -90,24 +79,18 @@ export class MultipleRegexTextSplitter implements TextSplitter {
       lastMatch = joinedRegex.exec(text);
     }
 
-    // console.log('heeey 4.6', splitIndexes);
-
     let result: string[] = [];
 
-    for (let i = 0; i < splitIndexes.length; i++) {
+    for (let i = 0; i < splitIndexes.length + 1; i++) {
       const index = splitIndexes[i];
       const lastIndex = splitIndexes[i - 1] || 0;
-      const split = text.slice(lastIndex, index);
+      const split = text.slice(lastIndex, index ?? text.length);
 
       // If this is a separator and we want to drop it we won't push it
       if (
         !this.keepSeparators &&
         this.doesContainSeparator(split, this.separators)
       ) {
-        console.log('heeey 4.72', {
-          split,
-          match: Array.from(split.matchAll(joinedRegex)),
-        });
         continue;
       }
 
