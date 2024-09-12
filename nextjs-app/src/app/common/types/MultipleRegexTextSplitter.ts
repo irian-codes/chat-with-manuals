@@ -62,6 +62,10 @@ export class MultipleRegexTextSplitter implements TextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
+    if (this.separators.length === 0) {
+      return [text];
+    }
+
     const {joinedRegex, noMatchGroup, separatorsGroup, flags} =
       this.buildJoinedSeparator();
     const splitIndexes: number[] = [];
