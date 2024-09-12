@@ -7,7 +7,7 @@ type MultipleRegexTextSplitterParams = {
 };
 
 export class MultipleRegexTextSplitter implements TextSplitter {
-  separators: RegExp[] = [/[\r\n]+/, /[\.?!]\s+/];
+  separators: RegExp[];
   /**
    * Sequences to not split even if they match with the separators.
    * @default
