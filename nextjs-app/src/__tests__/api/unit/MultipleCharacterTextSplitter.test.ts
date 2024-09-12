@@ -1,8 +1,8 @@
 import {MultipleRegexTextSplitter} from '@/app/common/types/MultipleRegexTextSplitter';
-import {describe, expect, test} from 'vitest';
+import {describe, expect, it} from 'vitest';
 
 describe('MultipleCharacterTextSplitter', () => {
-  test('should throw an error if no separators are provided', () => {
+  it('should throw an error if no separators are provided', () => {
     expect(() => {
       new MultipleRegexTextSplitter({});
     }).toThrow();
@@ -12,7 +12,7 @@ describe('MultipleCharacterTextSplitter', () => {
     }).toThrow();
   });
 
-  test('should throw an error if separators have inconsistent flags', () => {
+  it('should throw an error if separators have inconsistent flags', () => {
     expect(() => {
       new MultipleRegexTextSplitter({
         separators: [/[\r\n]+/g, /[\.?!]\s+/i],
@@ -26,7 +26,7 @@ describe('MultipleCharacterTextSplitter', () => {
     }).toThrow();
   });
 
-  test('should split text correctly without keeping separators', async () => {
+  it('should split text correctly without keeping separators', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       keepSeparators: false,
@@ -44,7 +44,7 @@ describe('MultipleCharacterTextSplitter', () => {
     ]);
   });
 
-  test('should split text correctly while keeping separators', async () => {
+  it('should split text correctly while keeping separators', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       keepSeparators: true,
@@ -62,7 +62,7 @@ describe('MultipleCharacterTextSplitter', () => {
     ]);
   });
 
-  test('should handle multiple occurrences of separators correctly', async () => {
+  it('should handle multiple occurrences of separators correctly', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       keepSeparators: true,
@@ -79,7 +79,7 @@ describe('MultipleCharacterTextSplitter', () => {
     expect(result).toEqual(['Hello..', 'How are you?', "I'm fine."]);
   });
 
-  test('should handle separators at the beginning of the text correctly', async () => {
+  it('should handle separators at the beginning of the text correctly', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       keepSeparators: true,
@@ -102,7 +102,7 @@ describe('MultipleCharacterTextSplitter', () => {
     expect(result).toEqual(['Hello..', 'How are you?', "I'm fine."]);
   });
 
-  test('should handle separators at the end of the text correctly', async () => {
+  it('should handle separators at the end of the text correctly', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       keepSeparators: true,
@@ -119,7 +119,7 @@ describe('MultipleCharacterTextSplitter', () => {
     expect(result).toEqual(['Hello..', 'How are you?', "I'm fine"]);
   });
 
-  test('should handle multiple separators concatenated correctly', async () => {
+  it('should handle multiple separators concatenated correctly', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       keepSeparators: true,
@@ -150,7 +150,7 @@ describe('MultipleCharacterTextSplitter', () => {
     ]);
   });
 
-  test('should handle text without any separators correctly', async () => {
+  it('should handle text without any separators correctly', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/null/],
       keepSeparators: true,
@@ -167,7 +167,7 @@ describe('MultipleCharacterTextSplitter', () => {
     expect(result).toEqual(['This is a plain text without separators']);
   });
 
-  test('should split text with only one separator', async () => {
+  it('should split text with only one separator', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/\s/],
       keepSeparators: true,
@@ -184,7 +184,7 @@ describe('MultipleCharacterTextSplitter', () => {
     expect(result).toEqual(['Split', 'this.']);
   });
 
-  test('should handle abbreviations well by not splitting them', async () => {
+  it('should handle abbreviations well by not splitting them', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
       noMatchSequences: [],
