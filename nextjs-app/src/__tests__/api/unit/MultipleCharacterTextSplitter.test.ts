@@ -12,29 +12,6 @@ describe('MultipleCharacterTextSplitter', () => {
     }).toThrow();
   });
 
-  it('should throw an error if separators have flags', () => {
-    expect(() => {
-      new MultipleRegexTextSplitter({
-        separators: [/[\r\n]+/g, /[\.?!]\s+/i],
-      });
-    }).toThrow();
-
-    expect(() => {
-      new MultipleRegexTextSplitter({
-        separators: [/[\r\n]+/, /[\.?!]\s+/],
-        noMatchSequences: [/[\r\n]+/, /[\.?!]\s+/i],
-      });
-    }).toThrow();
-  });
-
-  it('should throw an error if we pass invalid regex flags', () => {
-    expect(() => {
-      new MultipleRegexTextSplitter({
-        separators: [new RegExp('/.*/', 'q')],
-      });
-    }).toThrow();
-  });
-
   it('should split text correctly without keeping separators', async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
@@ -213,7 +190,7 @@ describe('MultipleCharacterTextSplitter', () => {
     ]);
 
     // Test with abbreviations skipped
-    (splitter.noMatchSequences = [/etc\./, /i\.e\./, /f\.e\./]),
+    (splitter.noMatchSequences = [/etc\./, /i\.e\./, /f\.e\./i]),
       (result = await splitter.splitText(text));
     expect(result).toEqual([
       'Split this text. ',
@@ -234,9 +211,8 @@ describe('MultipleCharacterTextSplitter', () => {
   it("should split lists correctly with the 'm' flag", async () => {
     const splitter = new MultipleRegexTextSplitter({
       separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
-      noMatchSequences: [/^\s*\w{1,2}[.:]\s+/],
+      noMatchSequences: [/^\s*\w{1,2}[.:]\s+/m],
       keepSeparators: true,
-      flags: 'm',
     });
 
     // Test without exceptions
@@ -265,6 +241,43 @@ End of the list.`;
       '    a. Item1',
       '    b. Item2',
       'End of the list.',
+    ]);
+  });
+
+  it('should handle overlapping separators well', async () => {
+    const splitter = new MultipleRegexTextSplitter({
+      separators: [/(\.\$)+/, /[\r\n]+/],
+      noMatchSequences: [],
+      keepSeparators: true,
+    });
+
+    // Test keeping separators
+    const text =
+      'Text with overlapping separators.\nCase 1: .$ T\nCase 2: .$.$ T\nCase 3: .$.$.$ T';
+    let result = await splitter.splitText(text);
+
+    expect(result).toEqual([
+      'Text with overlapping separators.\n',
+      'Case 1: .$',
+      ' T\n',
+      'Case 2: .$.$',
+      ' T\n',
+      'Case 3: .$.$.$',
+      ' T',
+    ]);
+
+    // Test without keeping separators
+    splitter.keepSeparators = false;
+    result = await splitter.splitText(text);
+
+    expect(result).toEqual([
+      'Text with overlapping separators.',
+      'Case 1: ',
+      ' T',
+      'Case 2: ',
+      ' T',
+      'Case 3: ',
+      ' T',
     ]);
   });
 });

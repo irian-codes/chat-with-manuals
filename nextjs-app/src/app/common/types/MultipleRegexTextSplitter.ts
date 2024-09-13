@@ -1,10 +1,8 @@
-import {isBlankString} from '../utils/stringUtils';
 import {TextSplitter} from './TextSplitter';
 
 type MultipleRegexTextSplitterParams = {
   separators: RegExp[];
   noMatchSequences?: RegExp[];
-  flags?: string;
   keepSeparators?: boolean;
 };
 
@@ -22,57 +20,24 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     /f\.e\./,
     /^\s*\w{1,2}[.:]\s+/,
   ];
-  flags: string = 'gm';
   keepSeparators: boolean = false;
 
   constructor({
     separators,
     keepSeparators,
     noMatchSequences,
-    flags,
   }: MultipleRegexTextSplitterParams) {
-    if (flags != null && !isBlankString(flags)) {
-      try {
-        new RegExp('/.*/', flags);
-      } catch (error) {
-        if (error instanceof SyntaxError) {
-          throw new Error(
-            `Wrong RegExp flags. Flags must be a combination of the following ECMAScript valid regex flags characters.
-Consult here the valid ones: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#advanced_searching_with_flags`
-          );
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    this.flags = (() => {
-      if (flags == null || isBlankString(flags)) {
-        return this.flags;
-      } else {
-        return flags.includes('g') ? flags : 'g' + flags;
-      }
-    })();
-
     if (!separators || separators.length === 0) {
       throw new Error('At least one separator is required.');
     }
 
-    if (separators.some((s) => s instanceof RegExp === false)) {
+    if (separators.some((s) => !(s instanceof RegExp))) {
       throw new Error('All separators must be RegExp instances.');
     }
 
-    if (separators.concat(noMatchSequences ?? []).some((r) => r.flags !== '')) {
-      throw new Error(
-        "Please don't pass flags directly in RegExp instances in this constructor. Use the flags parameter."
-      );
-    }
-
-    this.separators = separators.map((s) => new RegExp(s, this.flags));
+    this.separators = separators;
     this.noMatchSequences =
-      noMatchSequences != null
-        ? noMatchSequences.map((s) => new RegExp(s, this.flags))
-        : this.noMatchSequences;
+      noMatchSequences != null ? noMatchSequences : this.noMatchSequences;
 
     this.keepSeparators = keepSeparators ?? this.keepSeparators;
   }
@@ -82,75 +47,112 @@ Consult here the valid ones: https://developer.mozilla.org/en-US/docs/Web/JavaSc
       return [text];
     }
 
-    const {joinedRegex, noMatchGroup, separatorsGroup, flags} =
-      this.buildJoinedSeparator();
-    const splitIndexes: number[] = [];
-    let lastMatch = joinedRegex.exec(text);
+    const noMatchIntervals = this.collectIntervals(text, this.noMatchSequences);
+    const separatorIntervals = this.collectIntervals(text, this.separators);
 
-    while (lastMatch !== null) {
-      if (lastMatch.groups?.noMatches == null) {
-        if (!this.keepSeparators) {
-          splitIndexes.push(lastMatch.index);
-        }
+    // Filter out separator intervals that are within noMatch intervals
+    const validSeparatorIntervals = this.filterSeparatorIntervals(
+      separatorIntervals,
+      noMatchIntervals
+    );
 
-        splitIndexes.push(lastMatch.index + lastMatch[0].length);
-      }
-
-      lastMatch = joinedRegex.exec(text);
-    }
-
-    let result: string[] = [];
-
-    for (let i = 0; i < splitIndexes.length + 1; i++) {
-      const index = splitIndexes[i];
-      const lastIndex = splitIndexes[i - 1] || 0;
-      const split = text.slice(lastIndex, index ?? text.length);
-
-      // If this is a separator and we want to drop it we won't push it
-      if (!this.keepSeparators && this.doesContainSeparator(split)) {
-        continue;
-      }
-
-      result.push(split);
-    }
+    // Split the text based on the valid separator intervals
+    const result = this.splitByIntervals(text, validSeparatorIntervals);
 
     return result.filter(Boolean);
   }
 
-  private buildJoinedSeparator() {
-    const separatorsGroup = this.separators.map((s) => s.source).join('|');
-    const noMatchGroup = this.noMatchSequences.map((s) => s.source).join('|');
+  private collectIntervals(
+    text: string,
+    regexes: RegExp[]
+  ): {start: number; end: number}[] {
+    const intervals: {start: number; end: number}[] = [];
 
-    const regexpStr =
-      this.noMatchSequences.length > 0
-        ? `(?<noMatches>${noMatchGroup})|(?<separators>${separatorsGroup})`
-        : `(?<separators>${separatorsGroup})`;
+    for (const regex of regexes) {
+      const globalRegex = new RegExp(
+        regex.source,
+        regex.flags.includes('g') ? regex.flags : regex.flags + 'g'
+      );
+      globalRegex.lastIndex = 0;
+      let match: RegExpExecArray | null;
 
-    return {
-      joinedRegex: new RegExp(regexpStr, this.flags),
-      noMatchGroup,
-      separatorsGroup,
-      flags: this.flags,
-    };
+      while ((match = globalRegex.exec(text)) !== null) {
+        intervals.push({start: match.index, end: globalRegex.lastIndex});
+
+        if (globalRegex.lastIndex === match.index) {
+          // Avoid infinite loops with zero-length matches
+          globalRegex.lastIndex++;
+        }
+      }
+    }
+
+    return intervals.sort((a, b) => a.start - b.start);
   }
 
-  private doesContainSeparator(text: string) {
-    if (this.separators.length === 0) {
-      return false;
+  private filterSeparatorIntervals(
+    separators: {start: number; end: number}[],
+    noMatches: {start: number; end: number}[]
+  ): {start: number; end: number}[] {
+    const validSeparators: {start: number; end: number}[] = [];
+    let noMatchIndex = 0;
+
+    for (const sep of separators) {
+      while (
+        noMatchIndex < noMatches.length &&
+        noMatches[noMatchIndex].end <= sep.start
+      ) {
+        noMatchIndex++;
+      }
+
+      if (
+        noMatchIndex < noMatches.length &&
+        noMatches[noMatchIndex].start <= sep.start &&
+        sep.start < noMatches[noMatchIndex].end
+      ) {
+        // Separator is within a noMatch interval; skip it
+        continue;
+      }
+
+      validSeparators.push(sep);
     }
 
-    for (const noMatches of this.noMatchSequences) {
-      if (text.match(noMatches) != null && text.match(noMatches)!.length > 0) {
-        return false;
+    return validSeparators;
+  }
+
+  private splitByIntervals(
+    text: string,
+    separators: {start: number; end: number}[]
+  ): string[] {
+    const result: string[] = [];
+    let currentPosition = 0;
+
+    for (const sep of separators) {
+      if (sep.start >= currentPosition) {
+        let segment = text.substring(currentPosition, sep.start);
+
+        if (this.keepSeparators) {
+          // Include separator in the segment
+          segment += text.substring(sep.start, sep.end);
+        }
+
+        if (segment) {
+          result.push(segment);
+        }
+
+        currentPosition = sep.end;
+      } else if (sep.end > currentPosition) {
+        // Overlapping separator, adjust currentPosition
+        currentPosition = sep.end;
       }
     }
 
-    for (const separator of this.separators) {
-      if (text.match(separator) != null && text.match(separator)!.length > 0) {
-        return true;
+    if (currentPosition < text.length) {
+      const segment = text.substring(currentPosition);
+      if (segment) {
+        result.push(segment);
       }
     }
 
-    return false;
+    return result;
   }
 }
