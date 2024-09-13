@@ -1,3 +1,4 @@
+import {isBlankString} from '../utils/stringUtils';
 import {TextSplitter} from './TextSplitter';
 
 type MultipleRegexTextSplitterParams = {
@@ -28,11 +29,17 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     noMatchSequences,
   }: MultipleRegexTextSplitterParams) {
     if (!separators || separators.length === 0) {
-      throw new Error('At least one separator is required.');
+      throw new Error('At least one separator RegExp is required.');
     }
 
-    if (separators.some((s) => !(s instanceof RegExp))) {
-      throw new Error('All separators must be RegExp instances.');
+    if (
+      separators
+        .concat(noMatchSequences ?? [])
+        .some((s) => !(s instanceof RegExp))
+    ) {
+      throw new Error(
+        "All 'separators' and 'noMatchSequences' must be RegExp instances."
+      );
     }
 
     this.separators = separators;
@@ -43,7 +50,7 @@ export class MultipleRegexTextSplitter implements TextSplitter {
   }
 
   async splitText(text: string): Promise<string[]> {
-    if (this.separators.length === 0) {
+    if (this.separators.length === 0 || isBlankString(text)) {
       return [text];
     }
 
