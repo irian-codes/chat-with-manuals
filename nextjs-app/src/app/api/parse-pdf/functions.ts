@@ -558,7 +558,7 @@ export async function pdfParseWithPdfReader({
   return (
     pages
       .join(' ')
-      // Replacing double spaces from single ones
+      // Replacing double spaces to single ones
       .replaceAll(/\s+/g, ' ')
       // Sometimes in some PDFs the words are split with hyphens when they
       // change lines or columns, we transform the sequence to a regular
