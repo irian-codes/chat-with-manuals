@@ -47,8 +47,8 @@ export class MultipleRegexTextSplitter implements TextSplitter {
       return [text];
     }
 
-    const noMatchIntervals = this.collectIntervals(text, this.noMatchSequences);
     const separatorIntervals = this.collectIntervals(text, this.separators);
+    const noMatchIntervals = this.collectIntervals(text, this.noMatchSequences);
 
     // Filter out separator intervals that are within noMatch intervals
     const validSeparatorIntervals = this.filterSeparatorIntervals(
@@ -64,15 +64,16 @@ export class MultipleRegexTextSplitter implements TextSplitter {
 
   private collectIntervals(
     text: string,
-    regexes: RegExp[]
+    regExps: RegExp[]
   ): {start: number; end: number}[] {
     const intervals: {start: number; end: number}[] = [];
 
-    for (const regex of regexes) {
+    for (const regex of regExps) {
       const globalRegex = new RegExp(
         regex.source,
         regex.flags.includes('g') ? regex.flags : regex.flags + 'g'
       );
+
       globalRegex.lastIndex = 0;
       let match: RegExpExecArray | null;
 
@@ -93,10 +94,16 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     separators: {start: number; end: number}[],
     noMatches: {start: number; end: number}[]
   ): {start: number; end: number}[] {
+    if (noMatches.length === 0) {
+      return separators;
+    }
+
     const validSeparators: {start: number; end: number}[] = [];
     let noMatchIndex = 0;
 
     for (const sep of separators) {
+      // Catch up with the current separator until we find one that ends
+      // after the start of the current separator
       while (
         noMatchIndex < noMatches.length &&
         noMatches[noMatchIndex].end <= sep.start
@@ -104,12 +111,12 @@ export class MultipleRegexTextSplitter implements TextSplitter {
         noMatchIndex++;
       }
 
+      // Separator is within a noMatch interval; skip it
       if (
         noMatchIndex < noMatches.length &&
         noMatches[noMatchIndex].start <= sep.start &&
         sep.start < noMatches[noMatchIndex].end
       ) {
-        // Separator is within a noMatch interval; skip it
         continue;
       }
 
@@ -127,6 +134,7 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     let currentPosition = 0;
 
     for (const sep of separators) {
+      // If overlapping separators are detected, skip them
       if (sep.start >= currentPosition) {
         let segment = text.substring(currentPosition, sep.start);
 
@@ -140,12 +148,10 @@ export class MultipleRegexTextSplitter implements TextSplitter {
         }
 
         currentPosition = sep.end;
-      } else if (sep.end > currentPosition) {
-        // Overlapping separator, adjust currentPosition
-        currentPosition = sep.end;
       }
     }
 
+    // Splitting last segment
     if (currentPosition < text.length) {
       const segment = text.substring(currentPosition);
       if (segment) {
