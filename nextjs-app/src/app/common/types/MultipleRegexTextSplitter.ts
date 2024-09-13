@@ -13,13 +13,13 @@ export class MultipleRegexTextSplitter implements TextSplitter {
    * Sequences to not split even if they match with the separators.
    * @default
    * Defaults to 'e.g.', 'i.e.', 'f.e.' and common list item headers (a.
-   * blah blah, 2. blah blah)
+   * blah blah, 2. blah blah) or abbreviations like 'Mr.' and 'Dr.',
    */
   noMatchSequences: RegExp[] = [
-    /e\.g\./,
-    /i\.e\./,
-    /f\.e\./,
-    /^\s*\w{1,2}[.:]\s+/,
+    /e\.g\./i,
+    /i\.e\./i,
+    /f\.e\./i,
+    /^\s*\w{1,2}[.:]\s+\w/m,
   ];
   keepSeparators: boolean = false;
 
