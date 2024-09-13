@@ -4,14 +4,12 @@ import {
 } from '@/app/common/types/SectionChunkDoc';
 import {SectionNode} from '@/app/common/types/SectionNode';
 import {TextChunkDoc, TextChunkMetadata} from '@/app/common/types/TextChunkDoc';
+import {TextSplitter} from '@/app/common/types/TextSplitter';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
-import {
-  RecursiveCharacterTextSplitter,
-  TextSplitter,
-} from 'langchain/text_splitter';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {Marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
 import {v4 as uuidv4} from 'uuid';
@@ -304,6 +302,10 @@ async function chunkSectionNode({
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
+  if (isBlankString(section.content)) {
+    return [];
+  }
+
   const chunks: SectionChunkDoc[] = [];
   // This keeps the delimiters because of the capturing group syntax, which
   // is what we want
