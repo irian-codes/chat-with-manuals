@@ -490,6 +490,7 @@ export async function pdfParseWithPdfReader({
 
   type PageData = {page: number; width: number; height: number};
   type ItemData = Item & {
+    column: 'left' | 'right';
     page: {num: number; width: number; height: number};
   };
   type FileData = {file: {path: string}};
@@ -502,6 +503,7 @@ export async function pdfParseWithPdfReader({
     let leftColumn: ItemData[] = [];
     let rightColumn: ItemData[] = [];
     let currentPage: PageData = {page: 0, width: 0, height: 0};
+    let lastHeight = 0;
 
     new PdfReader().parseBuffer(fileBuffer, (err, item: PdfItem | null) => {
       if (err) {
@@ -513,23 +515,24 @@ export async function pdfParseWithPdfReader({
       } else if ('text' in item) {
         // Determine which column the text belongs to based on the x-coordinate
         const columnBoundary = currentPage.width / columnsNumber;
-        const page = {
-          num: currentPage.page,
-          height: currentPage.height,
-          width: currentPage.width,
-        };
+        const column = item.x <= columnBoundary ? 'left' : 'right';
+        const newItem = {
+          ...item,
+          column,
+          page: {
+            num: currentPage.page,
+            height: currentPage.height,
+            width: currentPage.width,
+          },
+        } as const;
 
-        if (item.x <= columnBoundary) {
-          leftColumn.push({
-            ...item,
-            page,
-          });
+        if (column === 'left') {
+          leftColumn.push(newItem);
         } else {
-          rightColumn.push({
-            ...item,
-            page,
-          });
+          rightColumn.push(newItem);
         }
+
+        lastHeight = item.y;
       } else if ('page' in item) {
         // Processing previous page
         if (currentPage.page > 0) {
@@ -542,31 +545,38 @@ export async function pdfParseWithPdfReader({
       }
     });
 
+    /**
+     * Pushes the content of the current page to the pages array adding a
+     * newline character when the line changes in the original PDF.
+     */
     function pushPage() {
+      let previousI: {y: number} | null = null;
       pages.push(
-        leftColumn.map((i) => i.text).join(' ') +
-          ' ' +
-          rightColumn.map((i) => i.text).join(' ')
+        [...leftColumn, ...rightColumn].reduce((acc, i) => {
+          if (previousI?.y !== i.y) {
+            acc += '\n';
+          }
+
+          previousI = i;
+          return acc + i.text;
+        }, '')
       );
     }
   });
 
-  return (
-    pages
-      .join(' ')
-      // Replacing double spaces to single ones
-      .replaceAll(/\s+/g, ' ')
-      // Sometimes in some PDFs the words are split with hyphens when they
-      // change lines or columns, we transform the sequence to a regular
-      // hyphen. We cannot flat out remove the hyphens because if the PDF
-      // contains mathematical formulas or composite words we could remove
-      // those and confuse the LLM even more.
-      .replaceAll(/(\w)\s-\s(\w)/gi, '$1-$2')
-      // Replacing unwanted extra spaces before and after punctuation characters
-      .replaceAll(/([\w,:;!?\])’”"'»›])\s+([.,:;!?\])’”"'»›])/g, '$1$2')
-      .replaceAll(/([\(\[`‘“"'«‹])\s+(\w)/g, '$1$2')
-      .trim()
-  );
+  const parsedText = pages
+    .join(' ')
+    // Removing hyphens on newlines
+    .replaceAll(/([a-z]+)-[\r\n]+([a-z]+[ .,:;!?\])’”"'»›]{0,1})/g, '$1$2\n')
+    // Replacing double spaces and multiple newlines to single ones
+    .replaceAll(/[ ]+/g, ' ')
+    .replaceAll(/[\r\n]+/g, '\n')
+    // Replacing unwanted extra spaces before and after punctuation characters
+    .replaceAll(/([\w,:;!?\])’”"'»›])[ ]+([.,:;!?\])’”"'»›])/g, '$1$2')
+    .replaceAll(/([\(\[`‘“"'«‹])[ ]+(\w)/g, '$1$2')
+    .trim();
+
+  return parsedText;
 }
 
 export function lintAndFixMarkdown(markdown: string) {
