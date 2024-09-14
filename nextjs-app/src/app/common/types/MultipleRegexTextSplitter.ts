@@ -7,13 +7,51 @@ type MultipleRegexTextSplitterParams = {
   keepSeparators?: boolean;
 };
 
+/**
+ * Splits a given text by multiple regex patterns while also
+ * respecting abbreviations and other exceptions where it should
+ * not split.
+ * Each pattern can use its own independent flags and will be
+ * evaluated separately.
+ *
+ * @remarks
+ * Useful for splitting text by sentences, paragraphs or
+ * any regex delimitable sequence.
+ *
+ * @example
+ * Example: "Split on each paragraph and sentence but don't split on list delimiters."
+ * const splitter = new MultipleRegexTextSplitter({
+ *     separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
+ *     noMatchSequences: [/^\s*\w{1,2}[.:]\s+/m],
+ *     keepSeparators: true,
+ *   });
+ *
+ *   // Test without exceptions
+ *   const text = `This is not a list.
+ * This list begins now:
+ *   a. Item1
+ *   b. Item2
+ *
+ * End of the list.`;
+ *   let result = await splitter.splitText(text);
+ *
+ *   expect(result).toEqual([
+ *     'This is not a list.\n',
+ *     'This list begins now:\n',
+ *     '    a. Item1\n',
+ *     '    b. Item2\n\n',
+ *     'End of the list.',
+ *   ]);
+ *
+ * @export
+ */
 export class MultipleRegexTextSplitter implements TextSplitter {
   separators: RegExp[];
   /**
    * Sequences to not split even if they match with the separators.
    * @default
-   * Defaults to 'e.g.', 'i.e.', 'f.e.' and common list item headers (a.
-   * blah blah, 2. blah blah) or abbreviations like 'Mr.' and 'Dr.',
+   * `Defaults to 'e.g.', 'i.e.', 'f.e.' and common list item headers (a.
+   * blah blah, 2. blah blah) or abbreviations like 'Mr.' and 'Dr.'`
    */
   noMatchSequences: RegExp[] = [
     /e\.g\./i,
