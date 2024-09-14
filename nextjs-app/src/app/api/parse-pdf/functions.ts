@@ -508,44 +508,32 @@ export async function pdfParseWithPdfReader({
         reject(err);
       } else if (item == null) {
         // Processing last page
-        pages.push(
-          leftColumn.map((i) => i.text).join(' ') +
-            ' ' +
-            rightColumn.map((i) => i.text).join(' ')
-        );
-
+        pushPage();
         resolve([]);
       } else if ('text' in item) {
         // Determine which column the text belongs to based on the x-coordinate
         const columnBoundary = currentPage.width / columnsNumber;
+        const page = {
+          num: currentPage.page,
+          height: currentPage.height,
+          width: currentPage.width,
+        };
 
         if (item.x <= columnBoundary) {
           leftColumn.push({
             ...item,
-            page: {
-              num: currentPage.page,
-              height: currentPage.height,
-              width: currentPage.width,
-            },
+            page,
           });
         } else {
           rightColumn.push({
             ...item,
-            page: {
-              num: currentPage.page,
-              height: currentPage.height,
-              width: currentPage.width,
-            },
+            page,
           });
         }
       } else if ('page' in item) {
         // Processing previous page
         if (currentPage.page > 0) {
-          pages.push(
-            leftColumn.map((i) => i.text).join(' ') +
-              ' ' +
-              rightColumn.map((i) => i.text).join(' ')
-          );
+          pushPage();
         }
 
         leftColumn = [];
@@ -553,6 +541,14 @@ export async function pdfParseWithPdfReader({
         currentPage = item;
       }
     });
+
+    function pushPage() {
+      pages.push(
+        leftColumn.map((i) => i.text).join(' ') +
+          ' ' +
+          rightColumn.map((i) => i.text).join(' ')
+      );
+    }
   });
 
   return (
