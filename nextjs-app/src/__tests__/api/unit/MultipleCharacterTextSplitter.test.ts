@@ -190,8 +190,9 @@ describe('MultipleCharacterTextSplitter', () => {
     ]);
 
     // Test with abbreviations skipped
-    (splitter.noMatchSequences = [/etc\./, /i\.e\./, /f\.e\./i]),
-      (result = await splitter.splitText(text));
+    splitter.noMatchSequences = [/etc\./, /i\.e\./, /f\.e\./i];
+    result = await splitter.splitText(text);
+
     expect(result).toEqual([
       'Split this text. ',
       'That contains some abbreviations like i.e. or etc. \n',
