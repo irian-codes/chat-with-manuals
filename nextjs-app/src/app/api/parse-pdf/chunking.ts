@@ -302,10 +302,6 @@ async function chunkSectionNode({
   startTotalOrder: number;
   splitter: TextSplitter;
 }): Promise<SectionChunkDoc[]> {
-  if (isBlankString(section.content)) {
-    return [];
-  }
-
   const chunks: SectionChunkDoc[] = [];
   // This keeps the delimiters because of the capturing group syntax, which
   // is what we want
