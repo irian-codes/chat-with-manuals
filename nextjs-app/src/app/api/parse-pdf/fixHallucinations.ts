@@ -38,7 +38,7 @@ export async function fixHallucinationsOnSections({
 
   //    -- Skip table chunks
   //    -- Tools:
-  //      totalOrder prop segmentation, Levenhstein Distance, Cosine
+  //      `totalOrder` prop segmentation, Levenhstein Distance, Cosine
   //      similarity, Approximate String Matching (natural package)
   //
   // - Reconcile LLM chunk with pdfreader chunk(s) to fix
@@ -151,44 +151,61 @@ export async function fixHallucinationsOnSections({
 }
 
 /**
- * Given a section chunk and an array of layout parsed chunks, find the
- * most probable matches of the section chunk in the layout chunks. It does
- * this by filtering the layout chunks by choosing the closest ones in
- * document order to the section chunk, and then computing the Levenshtein
- * Distance between the section chunk and the close layout chunks. Then the
- * parameter `levenshteinThreshold` filters the results even more, by
- * discarding the ones that have very different wording. Finally, a Cosine
- * Similarity check is performed and the results are then sorted by the
- * similarity score in a scale of 0 to 1 where 1 means total match and 0
- * means is the theoretically most different string in the world (so
- * totally not a match).
+ * Finds the best matching layout chunks for a given section chunk.
  *
- * NOTE: If there are exact matches by the Levenshtein Distance metric,
- * it'll only return those, ordered by totalOrder.
+ * This function matches a `sectionChunk` to the most probable counterparts
+ * within an array of `layoutChunks`. It is useful for mapping sections of
+ * text between the same document but parsed differently.
  *
- * @param {SectionChunkDoc} sectionChunk - The section chunk to find a
- *   match for in the layout chunks.
- * @param {TextChunkDoc[]} layoutChunks - The array of layout chunks to
- *   search for a match in.
- * @param {number} [maxCandidates=10] - The maximum number of candidates to
- *   return in the sorted list.
- * @param {number} [levenshteinThreshold=0.6] - The inverted normalized
- *   Levenshtein Distance threshold. Chunks with an inverted normalized
- *   Levenshtein Distance lower than this will not be returned as
- *   candidates. I.e. 0.6 means only keeping the chunks that have at least
- *   60% of the characters shared with the section chunk.
- * @param {number} [referenceTotalOrder=sectionChunk.metadata.totalOrder] -
- *   The reference totalOrder that serves as an anchor to filter the
- *   results by document proximity to the section chunk. It starts at the
- *   totalOrder number of the section chunk we're matching against and then
- *   it should be passed as parameter with the value of the totalOrder
- *   value of the chunk that was determined to be the best candidate (with
- *   whatever criteria that doesn't concern to this function).
- * @returns {Promise<{chunk: TextChunkDoc; score: number}[]>} - A Promise
- *   that resolves to the input layoutChunks parameter array ordered and
- *   filtered by score array of layout chunks. The results are ordered
- *   first by score and then by totalOrder since in case of a tie we sort
- *   by document proximity to the section chunk.
+ * The matching process involves the following steps:
+ *
+ * 1. **Proximity Filtering**: Filters `layoutChunks` to include only those
+ *    within a specified range (`proximityThreshold`) of the
+ *    `referenceTotalOrder` in the document's sequence. This optimizes
+ *    performance by narrowing down the candidates by document proximity to
+ *    the section chunk.
+ *
+ * 2. **Levenshtein Distance Filtering**: Calculates the inverted
+ *    normalized Levenshtein Distance between the `sectionChunk` and each
+ *    nearby chunk. Chunks with a similarity score below the
+ *    `levenshteinThreshold` are discarded as too dissimilar.
+ *    - **Note**: If exact matches are found (score of 1), only those are
+ *      returned, ordered by `totalOrder`.
+ *
+ * 3. **Cosine Similarity Scoring**: For the remaining chunks, computes the
+ *    Cosine Similarity score (ranging from 0 to 1) to measure textual
+ *    similarity, where 1 indicates an exact match.
+ *
+ * 4. **Sorting and Selection**: Sorts the chunks by similarity score in
+ *    descending order. In case of tied scores, sorts by proximity
+ *    (`totalOrder`) to the `sectionChunk`. Returns up to `maxCandidates`
+ *    best matches.
+ *
+ * Finally returns an array the candidates, from most probable to least.
+ *
+ * @param {SectionChunkDoc} sectionChunk The section chunk to find matches
+ *   for within the layout chunks.
+ * @param {TextChunkDoc[]} layoutChunks An array of all layout chunks from
+ *   the document.
+ * @param {number} [maxCandidates=10] The maximum number of candidate
+ *   chunks to return.
+ * @param {number} [levenshteinThreshold=0.6] The minimum inverted
+ *   normalized Levenshtein Distance score required. Chunks with a lower
+ *   score are discarded. For example, 0.6 means keeping chunks that share
+ *   at least 60% of characters with the `sectionChunk`.
+ * @param {number} [referenceTotalOrder=sectionChunk.metadata.totalOrder]
+ *   The reference `totalOrder` position to filter chunks based on
+ *   proximity. Defaults to the `sectionChunk`'s `totalOrder`, but after
+ *   the first match the parameter value should be the `totalOrder` value
+ *   of the chunk that was determined to be the best candidate in the
+ *   previous pass (with whatever criteria that doesn't concern to this
+ *   function).
+ * @param {number} [proximityThreshold=30] The range of `totalOrder`
+ *   positions (both above and below `referenceTotalOrder`) to consider
+ *   when filtering chunks. I.e. a value of 30 means considering 30 chunks
+ *   upwards and downwards from `referenceTotalOrder`.
+ * @returns {Promise<TextChunkDoc[]>} A Promise that resolves to an array
+ *   of matching layout chunks, sorted by similarity score and proximity.
  */
 export async function matchSectionChunk({
   sectionChunk,
@@ -196,12 +213,14 @@ export async function matchSectionChunk({
   maxCandidates = 10,
   levenshteinThreshold = 0.6,
   referenceTotalOrder = sectionChunk.metadata.totalOrder,
+  proximityThreshold = 30,
 }: {
   sectionChunk: SectionChunkDoc;
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
   levenshteinThreshold?: number;
   referenceTotalOrder?: number;
+  proximityThreshold?: number;
 }): Promise<TextChunkDoc[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
@@ -219,8 +238,8 @@ export async function matchSectionChunk({
   // want mustn't be very far away. This way we save a ton of computations.
   const nearbyChunks: TextChunkDoc[] = layoutChunks.filter(
     (c) =>
-      c.metadata.totalOrder >= referenceTotalOrder - 30 &&
-      c.metadata.totalOrder <= referenceTotalOrder + 30
+      c.metadata.totalOrder >= referenceTotalOrder - proximityThreshold &&
+      c.metadata.totalOrder <= referenceTotalOrder + proximityThreshold
   );
 
   if (nearbyChunks.length === 0) {
