@@ -575,7 +575,7 @@ export async function pdfParseWithPdfReader({
     .replaceAll(/([\w,:;!?\])’”"'»›])[ ]+([.,:;!?\])’”"'»›])/g, '$1$2')
     .replaceAll(/([\(\[`‘“"'«‹])[ ]+(\w)/g, '$1$2')
     // Replacing list characters to '-'
-    .replaceAll(/^[•·o*—‒–][ ]+(\w)/gm, '- $1')
+    .replaceAll(/^[•·o*—‒–][ ]+([\w\r\n])/gm, '- $1')
     .trim();
 
   return parsedText;
