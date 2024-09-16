@@ -238,9 +238,11 @@ export async function matchSectionChunk({
   );
 
   if (nearbyChunks.length === 0) {
-    throw new Error(
-      'No nearby chunks found. This should not happen as always we should have close candidates.'
+    console.warn(
+      'matchSectionChunk: No nearby chunks detected, no candidates returned.'
     );
+
+    return [];
   }
 
   const normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({
