@@ -193,6 +193,13 @@ export async function matchSectionChunk({
     .parse(layoutChunks);
   z.number().min(1).parse(maxCandidates);
 
+  if (isBlankString(sectionChunk.pageContent)) {
+    console.warn(
+      'matchSectionChunk: Empty section chunk detecting, no candidates returned.'
+    );
+    return [];
+  }
+
   // Filter by proximity to the document ordering. We know that what we
   // want mustn't be very far away. This way we save a ton of computations.
   const nearbyChunks: TextChunkDoc[] = layoutChunks.filter(
