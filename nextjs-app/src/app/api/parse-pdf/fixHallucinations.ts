@@ -120,6 +120,29 @@ export async function fixHallucinationsOnSections({
     return result;
   })();
 
+  // TODO: Remove this on production
+  writeToTimestampedFile({
+    content: JSON.stringify(
+      {
+        matchedChunks: matchedChunks.map((match) => {
+          return {
+            id: match.sectionChunk.id,
+            sectionTitle: match.sectionChunk.metadata.headerRoute,
+            sectionChunk: match.sectionChunk,
+            candidate: match.candidates[0]?.pageContent ?? 'N/A',
+          };
+        }),
+        layoutChunks,
+      },
+      null,
+      2
+    ),
+    destinationFolderPath: 'tmp/matchedChunks',
+    fileExtension: 'json',
+    fileName: file.name,
+    createFolderIfNotExists: true,
+  });
+
   throw new Error('NOT IMPLEMENTED YET');
 
   // TODO: The reconciliation function fixes LLM's hallucinations, but
