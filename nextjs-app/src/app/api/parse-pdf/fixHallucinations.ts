@@ -201,6 +201,12 @@ export async function matchSectionChunk({
       c.metadata.totalOrder <= referenceTotalOrder + 30
   );
 
+  if (nearbyChunks.length === 0) {
+    throw new Error(
+      'No nearby chunks found. This should not happen as always we should have close candidates.'
+    );
+  }
+
   const normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({
     ...c,
     pageContent: c.pageContent
