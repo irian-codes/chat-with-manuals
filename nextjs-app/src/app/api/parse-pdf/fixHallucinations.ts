@@ -1,3 +1,4 @@
+import {MultipleRegexTextSplitter} from '@/app/common/types/MultipleRegexTextSplitter';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {SectionNode} from '@/app/common/types/SectionNode';
 import {
@@ -11,10 +12,10 @@ import {
 import {OpenAIEmbeddings} from '@langchain/openai';
 import {diffWords} from 'diff';
 import {Document} from 'langchain/document';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {MemoryVectorStore} from 'langchain/vectorstores/memory';
 import {LevenshteinDistance} from 'natural';
 import {z} from 'zod';
+import {writeToTimestampedFile} from '../utils/fileUtils';
 import {chunkSectionNodes, chunkString} from './chunking';
 import {pdfParseWithPdfReader} from './functions';
 
@@ -50,18 +51,21 @@ export async function fixHallucinationsOnSections({
   // return the fixed sections
 
   // Chunking sections with a sentence splitter
-  const sentenceSplitter = new RecursiveCharacterTextSplitter({
-    // This chunk size may seem small, but it's so we ensure we split
-    // headers (in the text parsed document) that appear alongside
-    // sentences. Because they are very small and we need to ensure
-    // we split by all the indicated separators without leaving any.
-    chunkSize: 1,
-    chunkOverlap: 0,
-    separators: ['\n\n', '. ', '? ', '! ', '.\n', '?\n', '!\n', ':\n'],
-    keepSeparator: false,
+  const sectionSentenceSplitter = new MultipleRegexTextSplitter({
+    keepSeparators: true,
+    separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
+    noMatchSequences: [
+      /e\.g\./i,
+      /i\.e\./i,
+      /f\.e\./i,
+      /^\s*\w{1,2}[.:]\s+\w/m,
+    ],
   });
 
-  const sectionChunks = await chunkSectionNodes(sections, sentenceSplitter);
+  const sectionChunks = await chunkSectionNodes(
+    sections,
+    sectionSentenceSplitter
+  );
 
   // Chunking layout parsed text (traditionally parsed)
   const layoutExtractedText = await pdfParseWithPdfReader({
@@ -73,9 +77,20 @@ export async function fixHallucinationsOnSections({
     throw new Error('Layout parser produced an empty file');
   }
 
+  const layoutStringSentenceSplitter = new MultipleRegexTextSplitter({
+    keepSeparators: true,
+    separators: [/[\.?!]{1}\s+/],
+    noMatchSequences: [
+      /e\.g\./i,
+      /i\.e\./i,
+      /f\.e\./i,
+      /^\s*\w{1,2}[.:]\s+\w/m,
+    ],
+  });
+
   const layoutChunks = await chunkString({
     text: layoutExtractedText,
-    splitter: sentenceSplitter,
+    splitter: layoutStringSentenceSplitter,
   });
 
   // Match section chunk with most probable layoutChunks candidates
@@ -110,6 +125,8 @@ export async function fixHallucinationsOnSections({
     return result;
   })();
 
+  throw new Error('NOT IMPLEMENTED YET');
+
   // TODO: The reconciliation function fixes LLM's hallucinations, but
   // there's another issue as well: the missing sentences.
   // Sometimes the LLM skips chunks of texts, and those should be added
@@ -117,13 +134,11 @@ export async function fixHallucinationsOnSections({
   // though, creating an incomplete text but hopefully useful enough for
   // now.
   const fixedChunks = matchedChunks.map((match) => {
-    return reconcileChunk({
+    return reconcileSectionChunk({
       sectionChunk,
       candidates,
     });
   });
-
-  throw new Error('NOT IMPLEMENTED YET');
 
   // Reconcile texts of the section chunks and merge back into sections
   const fixedSections = mergeChunksIntoSections({
