@@ -574,6 +574,8 @@ export async function pdfParseWithPdfReader({
     // Replacing unwanted extra spaces before and after punctuation characters
     .replaceAll(/([\w,:;!?\])’”"'»›])[ ]+([.,:;!?\])’”"'»›])/g, '$1$2')
     .replaceAll(/([\(\[`‘“"'«‹])[ ]+(\w)/g, '$1$2')
+    // Replacing list characters to '-'
+    .replaceAll(/^[•·o*—‒–][ ]+(\w)/gm, '- $1')
     .trim();
 
   return parsedText;
