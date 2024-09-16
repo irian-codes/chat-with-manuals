@@ -336,7 +336,7 @@ async function chunkSectionNode({
       splitter,
     });
 
-    chunks.push(...newChunks);
+    chunks.push(...newChunks.filter((c) => !isBlankString(c.pageContent)));
     currentOrder += newChunks.length;
     totalOrder += newChunks.length;
   }
