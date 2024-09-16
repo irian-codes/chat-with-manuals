@@ -211,37 +211,37 @@ describe('MultipleCharacterTextSplitter', () => {
 
   it("should split lists correctly with the 'm' flag", async () => {
     const splitter = new MultipleRegexTextSplitter({
-      separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
-      noMatchSequences: [/^\s*\w{1,2}[.:]\s+/m],
+      separators: [/^\s*(?=(?:\w{1,2}[.:]|-)[ ]+\w)/m],
+      noMatchSequences: [],
       keepSeparators: true,
     });
 
     // Test without exceptions
     const text = `This is not a list.
 This list begins now:
-    a. Item1
-    b. Item2
+    a. Item 1
+  b. Item 2
+c. Item 3
 
 End of the list.`;
     let result = await splitter.splitText(text);
 
     expect(result).toEqual([
-      'This is not a list.\n',
-      'This list begins now:\n',
-      '    a. Item1\n',
-      '    b. Item2\n\n',
-      'End of the list.',
+      'This is not a list.\nThis list begins now:\n    ',
+      'a. Item 1\n  ',
+      'b. Item 2\n',
+      'c. Item 3\n\nEnd of the list.',
     ]);
 
     // Test without keeping separators
     splitter.keepSeparators = false;
     result = await splitter.splitText(text);
+
     expect(result).toEqual([
-      'This is not a list',
-      'This list begins now:',
-      '    a. Item1',
-      '    b. Item2',
-      'End of the list.',
+      'This is not a list.\nThis list begins now:\n',
+      'a. Item 1\n',
+      'b. Item 2\n',
+      'c. Item 3\n\nEnd of the list.',
     ]);
   });
 

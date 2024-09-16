@@ -79,13 +79,8 @@ export async function fixHallucinationsOnSections({
 
   const layoutStringSentenceSplitter = new MultipleRegexTextSplitter({
     keepSeparators: true,
-    separators: [/[\.?!]{1}\s+/],
-    noMatchSequences: [
-      /e\.g\./i,
-      /i\.e\./i,
-      /f\.e\./i,
-      /^\s*\w{1,2}[.:]\s+\w/m,
-    ],
+    separators: [/^\s*(?=(?:\w{1,2}[.:]|-)[ ]+\w)/m, /[\.?!]{1}\s+/],
+    noMatchSequences: [/e\.g\./i, /i\.e\./i, /f\.e\./i],
   });
 
   const layoutChunks = await chunkString({
