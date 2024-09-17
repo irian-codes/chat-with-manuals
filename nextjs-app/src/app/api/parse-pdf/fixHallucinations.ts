@@ -94,6 +94,9 @@ export async function fixHallucinationsOnSections({
   // traditionally parsed text.
   const matchedChunks = await (async function () {
     const result = [];
+    // We need to store it in case the matching fails and at least
+    // continues from the last candidate found.
+    let lastReferenceTotalOrder = sectionChunks[0].metadata.totalOrder - 1;
 
     for (const sectionChunk of sectionChunks) {
       // TODO: The best candidate is temporarily determined just by taking
@@ -101,14 +104,14 @@ export async function fixHallucinationsOnSections({
       // in the chunk reconciliation function decides which candidate was
       // the chosen one to reconciliate the LLM chunk. Therefore, the
       // referenceTotalOrder value should come from the reconciliation function.
-      const lastBestCandidate = result[result.length - 1]?.candidates[0];
+      lastReferenceTotalOrder =
+        result[result.length - 1]?.candidates[0]?.metadata.totalOrder ??
+        lastReferenceTotalOrder + 1;
 
       const candidates = await matchSectionChunk({
         sectionChunk,
         layoutChunks,
-        referenceTotalOrder:
-          lastBestCandidate?.metadata.totalOrder ??
-          sectionChunk.metadata.totalOrder,
+        referenceTotalOrder: lastReferenceTotalOrder,
       });
 
       result.push({
