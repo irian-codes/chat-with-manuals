@@ -53,7 +53,7 @@ export async function fixHallucinationsOnSections({
   // Chunking sections with a sentence splitter
   const sectionSentenceSplitter = new MultipleRegexTextSplitter({
     keepSeparators: true,
-    separators: [/[\r\n]+/, /[\.?!]{1}\s+/],
+    separators: [/[\r\n]+/, /[\.?!]{1}[)\]}`’”"'»›]*\s+/],
     noMatchSequences: [
       /e\.g\./i,
       /i\.e\./i,
@@ -79,7 +79,10 @@ export async function fixHallucinationsOnSections({
 
   const layoutStringSentenceSplitter = new MultipleRegexTextSplitter({
     keepSeparators: true,
-    separators: [/^\s*(?=(?:\w{1,2}[.:]|-)[ ]+\w)/m, /[\.?!]{1}\s+/],
+    separators: [
+      /^\s*(?=(?:\w{1,2}[.:]|-)[ ]+\w)/m,
+      /[\.?!]{1}[)\]}`’”"'»›]*\s+/,
+    ],
     noMatchSequences: [/e\.g\./i, /i\.e\./i, /f\.e\./i],
   });
 
