@@ -326,10 +326,10 @@ async function chunkSectionNode({
   let currentOrder = 1;
   let totalOrder = startTotalOrder;
   for (let i = 0; i < splits.length; i++) {
-    const part = splits[i];
+    const split = splits[i];
 
     const newChunks = await chunkSingleSplit({
-      part,
+      split,
       section,
       startOrder: currentOrder,
       startTotalOrder: totalOrder,
@@ -375,13 +375,13 @@ async function chunkSectionNode({
  * of ChunkDoc objects.
  */
 async function chunkSingleSplit({
-  part,
+  split,
   section,
   startOrder = 1,
   startTotalOrder,
   splitter,
 }: {
-  part: string;
+  split: string;
   startOrder?: number;
   section: SectionNode;
   startTotalOrder: number;
@@ -392,7 +392,7 @@ async function chunkSingleSplit({
 
   // Detecting if chunk is a table
   const tableRegex = new RegExp(tableDelimiter.replace('%d', '(\\d+)'), 'i');
-  const tableMatch = part.match(tableRegex);
+  const tableMatch = split.match(tableRegex);
   const tableIndex = tableMatch && tableMatch[1] ? Number(tableMatch[1]) : -1;
   const isTable = z
     .literal(-1)
@@ -405,7 +405,9 @@ async function chunkSingleSplit({
     .transform((tableIndex) => tableIndex >= 0)
     .parse(tableIndex);
 
-  const text = (isTable ? (section.tables.get(tableIndex) ?? '') : part).trim();
+  const text = (
+    isTable ? (section.tables.get(tableIndex) ?? '') : split
+  ).trim();
 
   // TODO: Refactor this as the variable is not used but the validation it is
   const tokens = (function () {
