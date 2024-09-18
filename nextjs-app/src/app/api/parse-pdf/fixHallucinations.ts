@@ -102,7 +102,7 @@ export async function fixHallucinationsOnSections({
     let lastReferenceTotalOrder = sectionChunks[0].metadata.totalOrder - 1;
     const matchSectionChunk = cachedMatchSectionChunk({
       layoutChunks,
-      proximityThreshold: 200,
+      proximityThreshold: 100,
       levenshteinThreshold: 0.3,
     });
 
@@ -244,7 +244,7 @@ export async function fixHallucinationsOnSections({
  *   of the chunk that was determined to be the best candidate in the
  *   previous pass (with whatever criteria that doesn't concern to this
  *   function).
- * @param {number} [proximityThreshold=30] The range of `totalOrder`
+ * @param {number} [proximityThreshold=100] The range of `totalOrder`
  *   positions (both above and below `referenceTotalOrder`) to consider
  *   when filtering chunks. I.e. a value of 30 means considering 30 chunks
  *   upwards and downwards from `referenceTotalOrder`.
@@ -256,7 +256,7 @@ export function cachedMatchSectionChunk({
   layoutChunks,
   maxCandidates = 10,
   levenshteinThreshold = 0.6,
-  proximityThreshold = 30,
+  proximityThreshold = 100,
 }: {
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
