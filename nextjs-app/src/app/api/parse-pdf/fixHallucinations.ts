@@ -282,10 +282,6 @@ export function cachedMatchSectionChunk({
 
   const normalizedLayoutChunks: NormalizedTextChunkDoc[] = layoutChunks.map(
     (c) => ({
-      // REMEMBER ⚠️: This is a SHALLOW copy, if you ever need to modify
-      // the metadata object you'll be modifying the `layoutChunk` one. I
-      // leave it as spread operator because the performance is better and
-      // now we aren't modifying anything.
       ...c,
       pageContent: c.pageContent
         .split(/[\s\n]+/)
