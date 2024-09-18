@@ -110,11 +110,13 @@ export async function POST(request: NextRequest) {
 
         console.log('Fixing LLM hallucinations...', `File hash: ${fileHash}`);
 
+        console.time('Fixing LLM hallucinations');
         const fixedChunks = await fixHallucinationsOnSections({
           file,
           columnsNumber,
           sections: mdToJson,
         });
+        console.timeEnd('Fixing LLM hallucinations');
 
         throw new Error('TEMPORARY DEBUG ERROR');
 
