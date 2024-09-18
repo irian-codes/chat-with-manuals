@@ -100,8 +100,18 @@ export async function fixHallucinationsOnSections({
     // We need to store it in case the matching fails and at least
     // continues from the last candidate found.
     let lastReferenceTotalOrder = sectionChunks[0].metadata.totalOrder - 1;
+    const matchSectionChunk = cachedMatchSectionChunk({
+      layoutChunks,
+      proximityThreshold: 200,
+      levenshteinThreshold: 0.3,
+    });
 
     for (const sectionChunk of sectionChunks) {
+      console.log('Matching section chunk...', {
+        id: sectionChunk.id,
+        totalOrder: sectionChunk.metadata.totalOrder,
+      });
+
       // We don't match tables for now, as the layout parser cannot parse
       // them effectively.
       if (sectionChunk.metadata.table) {
@@ -124,7 +134,6 @@ export async function fixHallucinationsOnSections({
 
       const candidates = await matchSectionChunk({
         sectionChunk,
-        layoutChunks,
         referenceTotalOrder: lastReferenceTotalOrder,
       });
 
@@ -160,7 +169,7 @@ export async function fixHallucinationsOnSections({
     createFolderIfNotExists: true,
   });
 
-  throw new Error('NOT IMPLEMENTED YET');
+  return;
 
   // TODO: The reconciliation function fixes LLM's hallucinations, but
   // there's another issue as well: the missing sentences.
@@ -168,7 +177,7 @@ export async function fixHallucinationsOnSections({
   // back as well. For now we're only fixing what the LLM outputted,
   // though, creating an incomplete text but hopefully useful enough for
   // now.
-  const fixedChunks = matchedChunks.map((match) => {
+  const reconciledChunks = matchedChunks.map((match) => {
     return reconcileSectionChunk({
       sectionChunk,
       candidates,
@@ -178,7 +187,7 @@ export async function fixHallucinationsOnSections({
   // Reconcile texts of the section chunks and merge back into sections
   const fixedSections = mergeChunksIntoSections({
     originalSections: sections,
-    newChunks: fixedChunks,
+    newChunks: reconciledChunks,
   });
 
   // Return the new fixed SectionNodes
@@ -239,143 +248,170 @@ export async function fixHallucinationsOnSections({
  *   positions (both above and below `referenceTotalOrder`) to consider
  *   when filtering chunks. I.e. a value of 30 means considering 30 chunks
  *   upwards and downwards from `referenceTotalOrder`.
- * @returns {Promise<TextChunkDoc[]>} A Promise that resolves to an array
- *   of matching layout chunks, sorted by similarity score and proximity.
+ * @returns {Promise<TextChunkDoc[]>} A Promise that resolves to a new
+ *   array of matching layout chunks, sorted by similarity score and
+ *   proximity.
  */
-export async function matchSectionChunk({
-  sectionChunk,
+export function cachedMatchSectionChunk({
   layoutChunks,
   maxCandidates = 10,
   levenshteinThreshold = 0.6,
-  referenceTotalOrder = sectionChunk.metadata.totalOrder,
   proximityThreshold = 30,
 }: {
-  sectionChunk: SectionChunkDoc;
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
   levenshteinThreshold?: number;
-  referenceTotalOrder?: number;
   proximityThreshold?: number;
-}): Promise<TextChunkDoc[]> {
+}): ({
+  sectionChunk,
+  referenceTotalOrder,
+}: {
+  sectionChunk: SectionChunkDoc;
+  referenceTotalOrder?: number;
+}) => Promise<TextChunkDoc[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
     .parse(layoutChunks);
   z.number().min(1).parse(maxCandidates);
 
-  if (isBlankString(sectionChunk.pageContent)) {
-    console.warn(
-      'matchSectionChunk: Empty section chunk detecting, no candidates returned.'
+  type NormalizedTextChunkDoc = Document<
+    TextChunkDoc['metadata'] & {
+      originalPageContent: string;
+    }
+  >;
+
+  const normalizedLayoutChunks: NormalizedTextChunkDoc[] = layoutChunks.map(
+    (c) => ({
+      // REMEMBER ⚠️: This is a SHALLOW copy, if you ever need to modify
+      // the metadata object you'll be modifying the `layoutChunk` one. I
+      // leave it as spread operator because the performance is better and
+      // now we aren't modifying anything.
+      ...c,
+      pageContent: c.pageContent
+        .split(/[\s\n]+/)
+        .map((s) => s.trim())
+        .join(' '),
+      metadata: {
+        ...c.metadata,
+        originalPageContent: c.pageContent,
+      },
+    })
+  );
+
+  return async function ({
+    sectionChunk,
+    referenceTotalOrder = sectionChunk.metadata.totalOrder,
+  }) {
+    if (isBlankString(sectionChunk.pageContent)) {
+      console.warn(
+        'matchSectionChunk: Empty section chunk detecting, no candidates returned.'
+      );
+      return [];
+    }
+
+    // Filter by proximity to the document ordering. We know that what we
+    // want mustn't be very far away. This way we save a ton of computations.
+    const normalizedNearbyChunks: NormalizedTextChunkDoc[] =
+      normalizedLayoutChunks.filter(
+        (c) =>
+          c.metadata.totalOrder >= referenceTotalOrder - proximityThreshold &&
+          c.metadata.totalOrder <= referenceTotalOrder + proximityThreshold
+      );
+
+    if (normalizedNearbyChunks.length === 0) {
+      console.warn(
+        'matchSectionChunk: No nearby chunks detected, no candidates returned.'
+      );
+
+      return [];
+    }
+
+    const normalizedSectionChunk: SectionChunkDoc = {
+      ...sectionChunk,
+      pageContent: sectionChunk.pageContent
+        .split(/[\s\n]+/)
+        .map((s) => s.trim())
+        .join(' '),
+    };
+
+    const levenshteinResults = await getNormalizedInvertedLevenshteinDistance(
+      normalizedSectionChunk,
+      normalizedNearbyChunks
     );
-    return [];
-  }
 
-  // Filter by proximity to the document ordering. We know that what we
-  // want mustn't be very far away. This way we save a ton of computations.
-  const nearbyChunks: TextChunkDoc[] = layoutChunks.filter(
-    (c) =>
-      c.metadata.totalOrder >= referenceTotalOrder - proximityThreshold &&
-      c.metadata.totalOrder <= referenceTotalOrder + proximityThreshold
-  );
+    // Pre-filter out chunks where Inverted Normalized Levenshtein Distance is 1, as we found the exact matches
+    const exactMatches = levenshteinResults.filter((r) => r.score === 1);
 
-  if (nearbyChunks.length === 0) {
-    console.warn(
-      'matchSectionChunk: No nearby chunks detected, no candidates returned.'
+    if (exactMatches.length > 0) {
+      return orderChunksByScoreAndTotalOrder(exactMatches);
+    }
+
+    // If no exact matches found, filter those that deviate too much. As we
+    // determine these are not the chunks we're looking for because they have
+    // too many character differences. This may happen when two chunks talk
+    // about the same thing but using different words. We assume the LLM will
+    // hallucinate but not this much, that's why we filter.
+    const filteredChunks = levenshteinResults.filter(
+      (r) => r.score >= levenshteinThreshold
     );
 
-    return [];
-  }
+    // If we have one candidate we shouldn't waste time trying to compute cosine similarity score
+    if (filteredChunks.length === 1) {
+      return orderChunksByScoreAndTotalOrder(filteredChunks);
+    }
 
-  const normalizedNearbyChunks: TextChunkDoc[] = nearbyChunks.map((c) => ({
-    ...c,
-    pageContent: c.pageContent
-      .split(/[\s\n]+/)
-      .map((s) => s.trim())
-      .join(' '),
-  }));
+    const similarityResults = await getSimilarityScores(
+      normalizedSectionChunk,
+      filteredChunks.map((r) => r.chunk)
+    );
 
-  const normalizedSectionChunk: SectionChunkDoc = {
-    ...sectionChunk,
-    pageContent: sectionChunk.pageContent
-      .split(/[\s\n]+/)
-      .map((s) => s.trim())
-      .join(' '),
-  };
+    // Sort candidates by score in descending order (higher score is better)
+    return orderChunksByScoreAndTotalOrder(similarityResults);
 
-  const levenshteinResults = await getNormalizedInvertedLevenshteinDistance(
-    normalizedSectionChunk,
-    normalizedNearbyChunks
-  );
+    // HELPER FUNCTIONS
 
-  // Pre-filter out chunks where Inverted Normalized Levenshtein Distance is 1, as we found the exact matches
-  const exactMatches = levenshteinResults.filter((r) => r.score === 1);
+    function orderChunksByScoreAndTotalOrder(
+      matches: {chunk: NormalizedTextChunkDoc; score: number}[]
+    ) {
+      const groups = Map.groupBy(matches, (m) => m.score);
 
-  if (exactMatches.length > 0) {
-    return orderChunksByScoreAndTotalOrder(exactMatches);
-  }
+      const orderedGroups = Array.from(groups.entries())
+        .sort((a, b) => b[0] - a[0])
+        .map(([score, chunks]) => {
+          const sectionTotalOrder = sectionChunk.metadata.totalOrder;
 
-  // If no exact matches found, filter those that deviate too much. As we
-  // determine these are not the chunks we're looking for because they have
-  // too many character differences. This may happen when two chunks talk
-  // about the same thing but using different words. We assume the LLM will
-  // hallucinate but not this much, that's why we filter.
-  const filteredChunks = levenshteinResults.filter(
-    (r) => r.score >= levenshteinThreshold
-  );
+          return chunks.sort((a, b) => {
+            const aDistance = Math.abs(
+              a.chunk.metadata.totalOrder - sectionTotalOrder
+            );
 
-  // If we have one candidate we shouldn't waste time trying to compute cosine similarity score
-  if (filteredChunks.length === 1) {
-    return orderChunksByScoreAndTotalOrder(filteredChunks);
-  }
+            const bDistance = Math.abs(
+              b.chunk.metadata.totalOrder - sectionTotalOrder
+            );
 
-  const similarityResults = await getSimilarityScores(
-    normalizedSectionChunk,
-    filteredChunks.map((r) => r.chunk)
-  );
-
-  // Sort candidates by score in descending order (higher score is better)
-  return orderChunksByScoreAndTotalOrder(similarityResults);
-
-  // HELPER FUNCTIONS
-
-  function orderChunksByScoreAndTotalOrder(
-    matches: {chunk: TextChunkDoc; score: number}[]
-  ) {
-    const groups = Map.groupBy(matches, (m) => m.score);
-
-    const orderedGroups = Array.from(groups.entries())
-      .sort((a, b) => b[0] - a[0])
-      .map(([score, chunks]) => {
-        const sectionTotalOrder = sectionChunk.metadata.totalOrder;
-
-        return chunks.sort((a, b) => {
-          const aDistance = Math.abs(
-            a.chunk.metadata.totalOrder - sectionTotalOrder
-          );
-
-          const bDistance = Math.abs(
-            b.chunk.metadata.totalOrder - sectionTotalOrder
-          );
-
-          return aDistance - bDistance;
+            return aDistance - bDistance;
+          });
         });
+
+      return restoreChunks(orderedGroups.flat().slice(0, maxCandidates));
+    }
+
+    function restoreChunks(
+      matches: {chunk: NormalizedTextChunkDoc}[]
+    ): TextChunkDoc[] {
+      return matches.map((match) => {
+        const result = {
+          ...structuredClone(match.chunk),
+          pageContent: match.chunk.metadata.originalPageContent,
+        };
+
+        // @ts-expect-error It complaints the prop is not optional... But we aren't reusing the type anymore so it's fine.
+        delete result.metadata.originalPageContent;
+
+        return result;
       });
-
-    return getOriginalChunks(orderedGroups.flat().slice(0, maxCandidates));
-  }
-
-  function getOriginalChunks(matches: {chunk: TextChunkDoc}[]): TextChunkDoc[] {
-    return matches.map((match) => {
-      const originalChunk = nearbyChunks.find((n) => n.id === match.chunk.id);
-
-      if (originalChunk == null) {
-        throw new Error(
-          `Chunk with ID '${match.chunk.id}' not found in 'nearbyChunks' array`
-        );
-      }
-
-      return originalChunk;
-    });
-  }
+    }
+  };
 }
 
 async function getSimilarityScores<T extends Document, K extends Document>(

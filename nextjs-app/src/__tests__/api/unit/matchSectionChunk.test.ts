@@ -1,4 +1,4 @@
-import {matchSectionChunk} from '@/app/api/parse-pdf/fixHallucinations';
+import {cachedMatchSectionChunk} from '@/app/api/parse-pdf/fixHallucinations';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {TextChunkDoc} from '@/app/common/types/TextChunkDoc';
 import {Document} from 'langchain/document';
@@ -38,9 +38,12 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk: hardMatchSectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks: hardMatchLayoutChunks,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk: hardMatchSectionChunk,
     });
 
     expect(orderedCandidates).toHaveLength(1);
@@ -81,10 +84,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk: easyMatchSectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks: easyMatchLayoutChunks,
       levenshteinThreshold: 0.6,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk: easyMatchSectionChunk,
     });
 
     expect(orderedCandidates[0].pageContent).toBe(
@@ -125,10 +131,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk: mediumMatchSectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks: mediumMatchLayoutChunks,
       levenshteinThreshold: 0.6,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk: mediumMatchSectionChunk,
     });
 
     expect(orderedCandidates[0].pageContent).toBe('The quick brown foxy.');
@@ -172,10 +181,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk: hardMatchSectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks: hardMatchLayoutChunks,
       levenshteinThreshold: 0.6,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk: hardMatchSectionChunk,
     });
 
     expect(orderedCandidates[0].pageContent).toBe(
@@ -219,10 +231,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk: hardMatchSectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks: hardMatchLayoutChunks,
       levenshteinThreshold: 0.6,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk: hardMatchSectionChunk,
     });
 
     expect(orderedCandidates[0].pageContent).toBe(
@@ -273,10 +288,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks,
       levenshteinThreshold: 0,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk,
     });
 
     expect(orderedCandidates).toHaveLength(3);
@@ -341,10 +359,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks,
       levenshteinThreshold: 0,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk,
     });
 
     expect(orderedCandidates).toHaveLength(4);
@@ -395,10 +416,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks,
       levenshteinThreshold: 0,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk,
     });
 
     expect(orderedCandidates).toHaveLength(4);
@@ -447,10 +471,13 @@ describe('matchSectionChunk', () => {
       }),
     ];
 
-    const orderedCandidates = await matchSectionChunk({
-      sectionChunk,
+    const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks,
       levenshteinThreshold: 0,
+    });
+
+    const orderedCandidates = await matchSectionChunks({
+      sectionChunk,
     });
 
     expect(orderedCandidates.length).toBe(3);
