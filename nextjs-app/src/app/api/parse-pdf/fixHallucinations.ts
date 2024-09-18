@@ -102,6 +102,17 @@ export async function fixHallucinationsOnSections({
     let lastReferenceTotalOrder = sectionChunks[0].metadata.totalOrder - 1;
 
     for (const sectionChunk of sectionChunks) {
+      // We don't match tables for now, as the layout parser cannot parse
+      // them effectively.
+      if (sectionChunk.metadata.table) {
+        result.push({
+          sectionChunk,
+          candidates: [],
+        });
+
+        continue;
+      }
+
       // TODO: The best candidate is temporarily determined just by taking
       // the first prior candidate. However this may not be the case when
       // in the chunk reconciliation function decides which candidate was
