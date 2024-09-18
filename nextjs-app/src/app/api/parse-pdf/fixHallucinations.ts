@@ -96,54 +96,68 @@ export async function fixHallucinationsOnSections({
   // may be shifts in the number of lines between the LLM text and the
   // traditionally parsed text.
   const matchedChunks = await (async function () {
-    const result = [];
-    // We need to store it in case the matching fails and at least
-    // continues from the last candidate found.
-    let lastReferenceTotalOrder = sectionChunks[0].metadata.totalOrder - 1;
+    const batchSize = 50;
     const matchSectionChunk = cachedMatchSectionChunk({
       layoutChunks,
-      proximityThreshold: 100,
+      proximityThreshold: 200,
       levenshteinThreshold: 0.3,
     });
 
-    for (const sectionChunk of sectionChunks) {
-      console.log('Matching section chunk...', {
-        id: sectionChunk.id,
-        totalOrder: sectionChunk.metadata.totalOrder,
-      });
-
-      // We don't match tables for now, as the layout parser cannot parse
-      // them effectively.
-      if (sectionChunk.metadata.table) {
-        result.push({
-          sectionChunk,
-          candidates: [],
-        });
-
-        continue;
-      }
-
-      // TODO: The best candidate is temporarily determined just by taking
-      // the first prior candidate. However this may not be the case when
-      // in the chunk reconciliation function decides which candidate was
-      // the chosen one to reconciliate the LLM chunk. Therefore, the
-      // referenceTotalOrder value should come from the reconciliation function.
-      lastReferenceTotalOrder =
-        result[result.length - 1]?.candidates[0]?.metadata.totalOrder ??
-        lastReferenceTotalOrder + 1;
-
-      const candidates = await matchSectionChunk({
-        sectionChunk,
-        referenceTotalOrder: lastReferenceTotalOrder,
-      });
-
-      result.push({
-        sectionChunk,
-        candidates,
-      });
+    // Divide sectionChunks into batches of batchSize
+    const batches = [];
+    for (let i = 0; i < sectionChunks.length; i += batchSize) {
+      batches.push(sectionChunks.slice(i, i + batchSize));
     }
 
-    return result;
+    // Process each batch in parallel
+    const batchResults = await Promise.all(
+      batches.map(async (batch) => {
+        const batchResult = [];
+        // Set lastReferenceTotalOrder to the first section chunk of the batch
+        let lastReferenceTotalOrder = batch[0].metadata.totalOrder - 1;
+
+        for (const sectionChunk of batch) {
+          console.log('Matching section chunk...', {
+            id: sectionChunk.id,
+            totalOrder: sectionChunk.metadata.totalOrder,
+          });
+
+          // We don't match tables for now, as the layout parser cannot parse
+          // them effectively.
+          if (sectionChunk.metadata.table) {
+            batchResult.push({
+              sectionChunk,
+              candidates: [],
+            });
+
+            continue;
+          }
+
+          // TODO: The best candidate is temporarily determined just by taking
+          // the first prior candidate. However this may not be the case when
+          // in the chunk reconciliation function decides which candidate was
+          // the chosen one to reconciliate the LLM chunk. Therefore, the
+          // referenceTotalOrder value should come from the reconciliation function.
+          lastReferenceTotalOrder =
+            batchResult[batchResult.length - 1]?.candidates[0]?.metadata
+              .totalOrder ?? lastReferenceTotalOrder + 1;
+
+          const candidates = await matchSectionChunk({
+            sectionChunk,
+            referenceTotalOrder: lastReferenceTotalOrder,
+          });
+
+          batchResult.push({
+            sectionChunk,
+            candidates,
+          });
+        }
+        return batchResult;
+      })
+    );
+
+    // Flatten the batch results into a single result array
+    return batchResults.flat();
   })();
 
   // TODO: Remove this on production
