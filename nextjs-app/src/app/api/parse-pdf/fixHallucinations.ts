@@ -95,7 +95,58 @@ export async function fixHallucinationsOnSections({
   // Updating the reference from when to search from each time, since there
   // may be shifts in the number of lines between the LLM text and the
   // traditionally parsed text.
-  const matchedChunks = await (async function () {
+  const matchedChunks = await getMatchedChunks();
+
+  // TODO: Remove this on production
+  writeToTimestampedFile({
+    content: JSON.stringify(
+      {
+        matchedChunks: matchedChunks.map((match) => {
+          return {
+            id: match.sectionChunk.id,
+            sectionTitle: match.sectionChunk.metadata.headerRoute,
+            sectionChunk: match.sectionChunk,
+            candidate: match.candidates[0]?.pageContent ?? 'N/A',
+          };
+        }),
+        layoutChunks,
+      },
+      null,
+      2
+    ),
+    destinationFolderPath: 'tmp/matchedChunks',
+    fileExtension: 'json',
+    fileName: file.name,
+    createFolderIfNotExists: true,
+  });
+
+  return;
+
+  // TODO: The reconciliation function fixes LLM's hallucinations, but
+  // there's another issue as well: the missing sentences.
+  // Sometimes the LLM skips chunks of texts, and those should be added
+  // back as well. For now we're only fixing what the LLM outputted,
+  // though, creating an incomplete text but hopefully useful enough for
+  // now.
+  const reconciledChunks = matchedChunks.map((match) => {
+    return reconcileSectionChunk({
+      sectionChunk,
+      candidates,
+    });
+  });
+
+  // Reconcile texts of the section chunks and merge back into sections
+  const fixedSections = mergeChunksIntoSections({
+    originalSections: sections,
+    newChunks: reconciledChunks,
+  });
+
+  // Return the new fixed SectionNodes
+  return fixedSections;
+
+  // HELPER FUNCTIONS
+
+  async function getMatchedChunks() {
     const batchSize = 50;
     const matchSectionChunk = cachedMatchSectionChunk({
       layoutChunks,
@@ -158,54 +209,7 @@ export async function fixHallucinationsOnSections({
 
     // Flatten the batch results into a single result array
     return batchResults.flat();
-  })();
-
-  // TODO: Remove this on production
-  writeToTimestampedFile({
-    content: JSON.stringify(
-      {
-        matchedChunks: matchedChunks.map((match) => {
-          return {
-            id: match.sectionChunk.id,
-            sectionTitle: match.sectionChunk.metadata.headerRoute,
-            sectionChunk: match.sectionChunk,
-            candidate: match.candidates[0]?.pageContent ?? 'N/A',
-          };
-        }),
-        layoutChunks,
-      },
-      null,
-      2
-    ),
-    destinationFolderPath: 'tmp/matchedChunks',
-    fileExtension: 'json',
-    fileName: file.name,
-    createFolderIfNotExists: true,
-  });
-
-  return;
-
-  // TODO: The reconciliation function fixes LLM's hallucinations, but
-  // there's another issue as well: the missing sentences.
-  // Sometimes the LLM skips chunks of texts, and those should be added
-  // back as well. For now we're only fixing what the LLM outputted,
-  // though, creating an incomplete text but hopefully useful enough for
-  // now.
-  const reconciledChunks = matchedChunks.map((match) => {
-    return reconcileSectionChunk({
-      sectionChunk,
-      candidates,
-    });
-  });
-
-  // Reconcile texts of the section chunks and merge back into sections
-  const fixedSections = mergeChunksIntoSections({
-    originalSections: sections,
-    newChunks: reconciledChunks,
-  });
-
-  // Return the new fixed SectionNodes
-  return fixedSections;
+  }
 }
 
 /**
