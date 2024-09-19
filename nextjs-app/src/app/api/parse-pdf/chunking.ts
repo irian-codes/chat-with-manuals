@@ -420,10 +420,6 @@ async function chunkSingleSplit({
       throw new Error(
         "This shouldn't happen. Attempting to get the token size of a chunk."
       );
-    } else if (isTable && tokenNum < 1) {
-      throw new Error(
-        `Table index ${tableIndex} does not exist. Attempting to get the token size of a chunk.`
-      );
     } else {
       return tokenNum;
     }
