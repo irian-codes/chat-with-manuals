@@ -150,7 +150,10 @@ export async function fixHallucinationsOnSections({
     const batchSize = 50;
     const matchSectionChunk = cachedMatchSectionChunk({
       layoutChunks,
-      proximityThreshold: 200,
+      // We will consider any chunks in the most proximal 50% of the document at most.
+      proximityWindow: Math.floor(
+        Math.max(sectionChunks.length, layoutChunks.length) * 0.5
+      ),
       levenshteinThreshold: 0.3,
     });
 
@@ -222,7 +225,7 @@ export async function fixHallucinationsOnSections({
  * The matching process involves the following steps:
  *
  * 1. **Proximity Filtering**: Filters `layoutChunks` to include only those
- *    within a specified range (`proximityThreshold`) of the
+ *    within a specified range (`proximityWindow`) of the
  *    `referenceTotalOrder` in the document's sequence. This optimizes
  *    performance by narrowing down the candidates by document proximity to
  *    the section chunk.
@@ -262,10 +265,11 @@ export async function fixHallucinationsOnSections({
  *   of the chunk that was determined to be the best candidate in the
  *   previous pass (with whatever criteria that doesn't concern to this
  *   function).
- * @param {number} [proximityThreshold=100] The range of `totalOrder`
- *   positions (both above and below `referenceTotalOrder`) to consider
- *   when filtering chunks. I.e. a value of 30 means considering 30 chunks
- *   upwards and downwards from `referenceTotalOrder`.
+ * @param {number} [proximityWindow=100] The range of `totalOrder`
+ *   positions (both above and below `referenceTotalOrder`, so a search
+ *   window) to consider when filtering chunks. I.e. a value of 100 means
+ *   considering 50 chunks upwards and 50 more chunks downwards from
+ *   `referenceTotalOrder`.
  * @returns {Promise<TextChunkDoc[]>} A Promise that resolves to a new
  *   array of matching layout chunks, sorted by similarity score and
  *   proximity.
@@ -274,12 +278,12 @@ export function cachedMatchSectionChunk({
   layoutChunks,
   maxCandidates = 10,
   levenshteinThreshold = 0.6,
-  proximityThreshold = 100,
+  proximityWindow = 200,
 }: {
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
   levenshteinThreshold?: number;
-  proximityThreshold?: number;
+  proximityWindow?: number;
 }): ({
   sectionChunk,
   referenceTotalOrder,
@@ -328,8 +332,10 @@ export function cachedMatchSectionChunk({
     const normalizedNearbyChunks: NormalizedTextChunkDoc[] =
       normalizedLayoutChunks.filter(
         (c) =>
-          c.metadata.totalOrder >= referenceTotalOrder - proximityThreshold &&
-          c.metadata.totalOrder <= referenceTotalOrder + proximityThreshold
+          c.metadata.totalOrder >=
+            referenceTotalOrder - Math.floor(proximityWindow / 2) &&
+          c.metadata.totalOrder <=
+            referenceTotalOrder + Math.floor(proximityWindow / 2)
       );
 
     if (normalizedNearbyChunks.length === 0) {

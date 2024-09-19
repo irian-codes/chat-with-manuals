@@ -291,6 +291,7 @@ describe('matchSectionChunk', () => {
     const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks,
       levenshteinThreshold: 0,
+      proximityWindow: 60,
     });
 
     const orderedCandidates = await matchSectionChunks({
@@ -362,6 +363,7 @@ describe('matchSectionChunk', () => {
     const matchSectionChunks = cachedMatchSectionChunk({
       layoutChunks,
       levenshteinThreshold: 0,
+      proximityWindow: 60,
     });
 
     const orderedCandidates = await matchSectionChunks({
