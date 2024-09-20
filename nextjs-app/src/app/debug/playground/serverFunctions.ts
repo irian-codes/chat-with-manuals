@@ -11,6 +11,7 @@ import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
+import {LevenshteinDistance} from 'natural';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -100,43 +101,61 @@ Alliance's hand size. Hello?! Supporters are face down,
 but the Alliance may inspect them at any time.
 Supporters are i.e. a Rabbit suited card.`;
 
-  const regexp =
-    /(?<noMatches>i\.e\.|e\.g\.)|(?<separators>[.?!]\s+|[\r\n]+)/gi;
+  const candidates = new Array(2000).fill(`Take various actions,
+the Alliance spends supporters, which are cards
+on their Supporters stack. Supporters can only be
+spent for their suit and do not count against the
+Alliance's hand size. Hello?! Supporters are face down,
+but the Alliance may inspect them at any time.
+Supporters are i.e. a Rabbit suited card.`);
 
-  const splitIndexes: number[] = [];
-  let lastMatch;
-  let counter = 0;
-  while ((lastMatch = regexp.exec(str)) !== null) {
-    console.dir(
-      {
-        logId: 'heeey 4.5',
-        i: counter,
-        lastMatch,
-      },
-      {
-        colors: true,
-        depth: null,
-      }
+  console.log('Start syncLevenshteinDistance');
+  console.time('syncLevenshteinDistance');
+  const result = syncLevenshteinDistance(str, candidates);
+  console.timeEnd('syncLevenshteinDistance');
+
+  console.log('Start asyncLevenshteinDistance');
+  console.time('asyncLevenshteinDistance');
+  const result2 = await asyncLevenshteinDistance(str, candidates);
+  console.timeEnd('asyncLevenshteinDistance');
+
+  return {results: [result, result2]};
+
+  // HELPER FUNCTIONS
+
+  function syncLevenshteinDistance(str: string, candidates: string[]) {
+    const result = [];
+
+    for (const candidate of candidates) {
+      const lDistance = LevenshteinDistance(str, candidate, {
+        insertion_cost: 1,
+        deletion_cost: 1,
+        substitution_cost: 1,
+      });
+
+      result.push(lDistance);
+    }
+
+    return result;
+  }
+
+  async function asyncLevenshteinDistance(str: string, candidates: string[]) {
+    const result = new Array(candidates.length);
+
+    await Promise.all(
+      candidates.map(async (candidate) => {
+        const lDistance = LevenshteinDistance(str, candidate, {
+          insertion_cost: 1,
+          deletion_cost: 1,
+          substitution_cost: 1,
+        });
+
+        result.push(lDistance);
+      })
     );
 
-    counter++;
-
-    if (lastMatch.groups?.noMatches == null) {
-      splitIndexes.push(lastMatch.index + lastMatch[0].length);
-    }
+    return result;
   }
-
-  let result: string[] = [];
-
-  for (let i = 0; i < splitIndexes.length; i++) {
-    const index = splitIndexes[i];
-    const lastIndex = splitIndexes[i - 1] || 0;
-    const split = str.slice(lastIndex, index);
-
-    result.push(split);
-  }
-
-  return result;
 }
 
 export async function clearNodePersistStorage() {
