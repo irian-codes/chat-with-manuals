@@ -4,7 +4,7 @@ import {ChatPromptValueInterface} from '@langchain/core/prompt_values';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI, OpenAIEmbeddings} from '@langchain/openai';
 import {loadEvaluator} from 'langchain/evaluation';
-import {afterAll, describe, expect, it} from 'vitest';
+import {afterAll, describe, it} from 'vitest';
 
 // Set up OpenAI API key (ensure you have your API key set in your environment variables)
 const OPENAI_API_KEY = process.env.VITE_OPENAI_API_KEY;
@@ -172,12 +172,12 @@ For context, the text belongs to these nested section titles: {sectionTitle}
 
   const results: {[key: string]: any}[] = [];
 
-  it.for(filledPrompts)(
+  it.concurrent.for(filledPrompts)(
     'Rating prompt ID: $promptId with data ID: $dataId',
     async ({promptId, dataId, filledPrompt}, ctx) => {
       const dataEntry = data.find((d) => d.id === dataId)!;
 
-      expect(dataEntry).toBeDefined();
+      ctx.expect(dataEntry).toBeDefined();
 
       const chat = new ChatOpenAI({
         model: 'gpt-4o-mini',
@@ -190,11 +190,11 @@ For context, the text belongs to these nested section titles: {sectionTitle}
         ...filledPrompt.toChatMessages(),
       ]);
 
-      expect(typeof response.content === 'string').toBeTruthy();
+      ctx.expect(typeof response.content === 'string').toBeTruthy();
 
       const llmAnswer = response.content.toString().trim();
 
-      expect(llmAnswer.length).toBeGreaterThan(0);
+      ctx.expect(llmAnswer.length).toBeGreaterThan(0);
 
       const evaluator = await loadEvaluator('embedding_distance', {
         embedding: embeddingModel,
@@ -220,7 +220,7 @@ For context, the text belongs to these nested section titles: {sectionTitle}
         result: similarityDistance <= threshold ? 'PASS ✅' : 'FAIL ❌',
       } as const);
 
-      expect(similarityDistance).toBeLessThanOrEqual(threshold);
+      ctx.expect(similarityDistance).toBeLessThanOrEqual(threshold);
     }
   );
 
