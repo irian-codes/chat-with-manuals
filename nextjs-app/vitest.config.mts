@@ -9,5 +9,6 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 30000,
     env: loadEnv('testing', process.cwd()),
+    printConsoleTrace: true,
   },
 });
