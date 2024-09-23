@@ -354,7 +354,7 @@ export function cachedMatchSectionChunk({
         .join(' '),
     };
 
-    const levenshteinResults = await getNormalizedInvertedLevenshteinDistance(
+    const levenshteinResults = getNormalizedInvertedLevenshteinDistance(
       normalizedSectionChunk,
       normalizedNearbyChunks
     );
@@ -478,39 +478,41 @@ async function getSimilarityScores<T extends Document, K extends Document>(
  *   `chunk` is the candidate and `score` is the normalized inverted
  *   Levenshtein distance.
  */
-async function getNormalizedInvertedLevenshteinDistance<
+function getNormalizedInvertedLevenshteinDistance<
   T extends Document,
   K extends Document,
 >(
   queryDoc: T,
   candidates: K[],
   decimalPlaces = 4
-): Promise<{chunk: K; score: number}[]> {
-  return Promise.all(
-    candidates.map(async (candidate) => {
-      const lDistance = LevenshteinDistance(
-        queryDoc.pageContent,
-        candidate.pageContent,
-        {
-          insertion_cost: 1,
-          deletion_cost: 1,
-          substitution_cost: 1,
-        }
-      );
+): {chunk: K; score: number}[] {
+  const results: {chunk: K; score: number}[] = [];
 
-      const maxLength = Math.max(
-        queryDoc.pageContent.length,
-        candidate.pageContent.length
-      );
+  for (const candidate of candidates) {
+    const lDistance = LevenshteinDistance(
+      queryDoc.pageContent,
+      candidate.pageContent,
+      {
+        insertion_cost: 1,
+        deletion_cost: 1,
+        substitution_cost: 1,
+      }
+    );
 
-      const normalizedDistance = lDistance / maxLength;
+    const maxLength = Math.max(
+      queryDoc.pageContent.length,
+      candidate.pageContent.length
+    );
 
-      return {
-        chunk: candidate,
-        score: Number((1 - normalizedDistance).toFixed(decimalPlaces)),
-      };
-    })
-  );
+    const normalizedDistance = lDistance / maxLength;
+
+    results.push({
+      chunk: candidate,
+      score: Number((1 - normalizedDistance).toFixed(decimalPlaces)),
+    });
+  }
+
+  return results;
 }
 
 /**
