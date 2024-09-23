@@ -23,7 +23,7 @@ describe('Testing different prompts to reconciliate a section chunk with a candi
   // Input data
   const data: ReconciliationEntry[] = [
     {
-      id: 0,
+      id: 1,
       sectionTitle: 'WELCOME TO THE WEIRD WEST>TRAIT TESTS',
       sectionChunk:
         'If your roll (adding any modifiers) is equal to than the "Target Number (TN)," you succeed.',
@@ -33,7 +33,7 @@ describe('Testing different prompts to reconciliate a section chunk with a candi
         'If your roll (plus or minus any modifiers) is equal to or greater than the “Target Number (TN),” you succeed.',
     },
     {
-      id: 1,
+      id: 2,
       sectionTitle: 'BASICS>BENNIES',
       sectionChunk:
         'The Game Master starts with a single Benny per player character, and each of her Wild Cards has two of their own as well.',
@@ -82,7 +82,7 @@ describe('Testing different prompts to reconciliate a section chunk with a candi
     content: string;
   }[] = [
     {
-      id: 0,
+      id: 1,
       content: `Given the following fragments of a section of a document:
 
 **Fragment A:** {sectionChunk}
@@ -95,7 +95,7 @@ To give you more context in your correction, here is the list of the nested sect
 Your answer output format: The corrected version of Fragment A without adding extra information.`,
     },
     {
-      id: 1,
+      id: 2,
       content: `Given the following section fragments from a document:
 
       Fragment A: {sectionChunk}
@@ -114,7 +114,7 @@ Your answer output format: The corrected version of Fragment A without adding ex
       **Your answer should be only the corrected version of Fragment A.**`,
     },
     {
-      id: 2,
+      id: 3,
       content: `You are tasked with correcting the following section text by using accurate information from another source.
 
 ---
@@ -140,31 +140,31 @@ For context, the text belongs to these nested section titles: {sectionTitle}
     },
   ];
 
-  const filledPrompts: Map<number, ChatPromptValueInterface[]> =
-    await (async () => {
-      const result = new Map();
+  const filledPrompts: {
+    promptId: number;
+    dataId: number;
+    filledPrompt: ChatPromptValueInterface;
+  }[] = await (async () => {
+    const result = [];
 
-      for (const prompt of prompts) {
-        const promptsArr = [];
-        const promptId = prompt.id;
+    for (const prompt of prompts) {
+      const promptId = prompt.id;
 
-        for (const entry of data) {
-          const filledPrompt = await ChatPromptTemplate.fromTemplate(
-            prompt.content
-          ).invoke({
-            sectionChunk: entry.sectionChunk,
-            candidate: entry.candidate,
-            sectionTitle: entry.sectionTitle,
-          });
+      for (const entry of data) {
+        const filledPrompt = await ChatPromptTemplate.fromTemplate(
+          prompt.content
+        ).invoke({
+          sectionChunk: entry.sectionChunk,
+          candidate: entry.candidate,
+          sectionTitle: entry.sectionTitle,
+        });
 
-          promptsArr.push(filledPrompt);
-        }
-
-        result.set(promptId, promptsArr);
+        result.push({promptId, dataId: entry.id, filledPrompt});
       }
+    }
 
-      return result;
-    })();
+    return result;
+  })();
 
   const systemMessage = new SystemMessage(
     "You're an AI agent tasked with fixing hallucinations of text fragments from candidate fragments."
@@ -172,19 +172,12 @@ For context, the text belongs to these nested section titles: {sectionTitle}
 
   const results: {[key: string]: any}[] = [];
 
-  const promptsWithFilledValues = Array.from(filledPrompts).flatMap(
-    ([key, values]) =>
-      values.map((value, i) => ({
-        promptId: key,
-        dataId: i,
-        filledPrompt: value,
-      }))
-  );
-
-  it.for(promptsWithFilledValues)(
+  it.for(filledPrompts)(
     'Rating prompt ID: $promptId with data ID: $dataId',
     async ({promptId, dataId, filledPrompt}, ctx) => {
-      const dataEntry = data[dataId];
+      const dataEntry = data.find((d) => d.id === dataId)!;
+
+      expect(dataEntry).toBeDefined();
 
       const chat = new ChatOpenAI({
         model: 'gpt-4o-mini',
@@ -238,7 +231,8 @@ For context, the text belongs to these nested section titles: {sectionTitle}
     let lastPromptId = -1;
     for (const [promptId, groupEntries] of groups) {
       if (promptId !== lastPromptId) {
-        console.log(`Prompt ID ${promptId}:`, prompts[promptId].content);
+        const prompt = prompts.find((p) => p.id === promptId)!;
+        console.log(`Prompt ID ${promptId}:`, prompt.content);
         lastPromptId = promptId;
       }
 
