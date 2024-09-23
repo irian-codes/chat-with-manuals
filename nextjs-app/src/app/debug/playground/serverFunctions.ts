@@ -7,6 +7,8 @@ import {
   markdownToSectionsJson,
 } from '@/app/api/parse-pdf/chunking';
 import {reconcileTexts} from '@/app/api/parse-pdf/fixHallucinations';
+import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
+import {TextChunkDoc} from '@/app/common/types/TextChunkDoc';
 import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {marked} from 'marked';
@@ -16,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export async function parseMarkdownToPlainText() {
-  const fileContents = readTestFile();
+  const fileContents = readFile('tmp/markdown-test-files/test1.md');
 
   try {
     const parsedMd = await marked
@@ -32,11 +34,13 @@ export async function parseMarkdownToPlainText() {
 }
 
 export async function getMarkdownLexer() {
-  return marked.lexer(readTestFile());
+  return marked.lexer(readFile('tmp/markdown-test-files/test1.md'));
 }
 
 export async function parseMarkdownToJson() {
-  return await markdownToSectionsJson(readTestFile());
+  return await markdownToSectionsJson(
+    readFile('tmp/markdown-test-files/test1.md')
+  );
 }
 
 export async function chunkSections() {
@@ -93,69 +97,37 @@ wins the game, the Vagabond also wins.`;
 }
 
 export async function function1() {
-  const str = `To take various actions,
-the Alliance spends supporters, which are cards
-on their Supporters stack. Supporters can only be
-spent for their suit and do not count against the
-Alliance's hand size. Hello?! Supporters are face down,
-but the Alliance may inspect them at any time.
-Supporters are i.e. a Rabbit suited card.`;
+  const parsedPdfJson = readFile(
+    'tmp/matchedChunks/crypto-whitepaper-bitcoin.pdf_202409231907.json'
+  );
 
-  const candidates = new Array(2000).fill(`Take various actions,
-the Alliance spends supporters, which are cards
-on their Supporters stack. Supporters can only be
-spent for their suit and do not count against the
-Alliance's hand size. Hello?! Supporters are face down,
-but the Alliance may inspect them at any time.
-Supporters are i.e. a Rabbit suited card.`);
+  const parsedPdf: {
+    matchedChunks: {
+      id: string;
+      sectionTitle: string;
+      sectionChunk: SectionChunkDoc;
+      candidate: string;
+    }[];
+    layoutChunks: TextChunkDoc[];
+  } = JSON.parse(parsedPdfJson);
 
-  console.log('Start syncLevenshteinDistance');
-  console.time('syncLevenshteinDistance');
-  const result = syncLevenshteinDistance(str, candidates);
-  console.timeEnd('syncLevenshteinDistance');
+  return parsedPdf.matchedChunks.filter((m) => {
+    if (m.candidate === 'N/A') {
+      return false;
+    }
 
-  console.log('Start asyncLevenshteinDistance');
-  console.time('asyncLevenshteinDistance');
-  const result2 = await asyncLevenshteinDistance(str, candidates);
-  console.timeEnd('asyncLevenshteinDistance');
-
-  return {results: [result, result2]};
-
-  // HELPER FUNCTIONS
-
-  function syncLevenshteinDistance(str: string, candidates: string[]) {
-    const result = [];
-
-    for (const candidate of candidates) {
-      const lDistance = LevenshteinDistance(str, candidate, {
+    const lDistance = LevenshteinDistance(
+      m.sectionChunk.pageContent,
+      m.candidate,
+      {
         insertion_cost: 1,
         deletion_cost: 1,
         substitution_cost: 1,
-      });
-
-      result.push(lDistance);
-    }
-
-    return result;
-  }
-
-  async function asyncLevenshteinDistance(str: string, candidates: string[]) {
-    const result = new Array(candidates.length);
-
-    await Promise.all(
-      candidates.map(async (candidate) => {
-        const lDistance = LevenshteinDistance(str, candidate, {
-          insertion_cost: 1,
-          deletion_cost: 1,
-          substitution_cost: 1,
-        });
-
-        result.push(lDistance);
-      })
+      }
     );
 
-    return result;
-  }
+    return lDistance > 8;
+  });
 }
 
 export async function clearNodePersistStorage() {
@@ -167,21 +139,18 @@ export async function clearVectorDB() {
   await clearDatabase();
 }
 
-const fileRoute = 'markdown-test-files/test1.md';
-
-function readTestFile() {
-  const content = fs.readFileSync(
-    path.join(process.cwd(), 'tmp', fileRoute),
-    'utf8'
-  );
+function readFile(route: string) {
+  const content = fs.readFileSync(path.join(process.cwd(), route), 'utf8');
 
   return content;
 }
 
-function writeNewFile(content: string) {
+function writeNewFile(content: string, folder: string, fileName: string) {
   fs.writeFileSync(
-    path.join(process.cwd(), 'tmp', 'new_' + fileRoute),
+    path.join(process.cwd(), folder, 'new_' + fileName),
     content,
-    {encoding: 'utf8'}
+    {
+      encoding: 'utf8',
+    }
   );
 }
