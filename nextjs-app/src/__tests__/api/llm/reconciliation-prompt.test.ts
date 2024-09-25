@@ -8,7 +8,11 @@ import {afterAll, describe, it} from 'vitest';
 
 // Set up OpenAI API key (ensure you have your API key set in your environment variables)
 const OPENAI_API_KEY = process.env.VITE_OPENAI_API_KEY;
-const embeddingModel = new OpenAIEmbeddings({apiKey: OPENAI_API_KEY});
+const embeddingModel = new OpenAIEmbeddings({
+  apiKey: OPENAI_API_KEY,
+  model: 'text-embedding-3-small',
+  dimensions: 1536,
+});
 
 type ReconciliationEntry = {
   id: number;
