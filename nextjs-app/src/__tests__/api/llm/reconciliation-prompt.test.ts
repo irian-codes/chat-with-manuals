@@ -28,9 +28,9 @@ describe('Testing different prompts to reconciliate a section chunk with a candi
       sectionChunk:
         'If your roll (adding any modifiers) is equal to than the "Target Number (TN)," you succeed.',
       candidate:
-        'ROLLING: If your roll (plus or \nminus any modifiers) is equal to or greater than \nthe “Target Number (TN),” you succeed.',
+        'ROLLING: If your roll (plus or \nminus any modifiers) is equal to or greater than \nthe "Target Number (TN)," you succeed.',
       expectedAnswer:
-        'If your roll (plus or minus any modifiers) is equal to or greater than the “Target Number (TN),” you succeed.',
+        'If your roll (plus or minus any modifiers) is equal to or greater than the "Target Number (TN)," you succeed.',
     },
     {
       id: 2,
@@ -38,7 +38,7 @@ describe('Testing different prompts to reconciliate a section chunk with a candi
       sectionChunk:
         'The Game Master starts with a single Benny per player character, and each of her Wild Cards has two of their own as well.',
       candidate:
-        '(“Bennies” is a slang \nterm derived from “benefits.”)\nThe Game Master starts with one Benny per \nplayer character, and each of her Wild Cards \nhas two of their own as well.',
+        '("Bennies" is a slang \nterm derived from "benefits.")\nThe Game Master starts with one Benny per \nplayer character, and each of her Wild Cards \nhas two of their own as well.',
       expectedAnswer:
         'The Game Master starts with one Benny per player character, and each of her Wild Cards has two of their own as well.',
     },
