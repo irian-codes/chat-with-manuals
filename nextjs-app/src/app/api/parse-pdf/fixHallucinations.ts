@@ -147,6 +147,9 @@ export async function fixHallucinationsOnSections({
   // HELPER FUNCTIONS
 
   async function getMatchedChunks() {
+    // We need batches because otherwise we cannot track
+    // `lastReferenceTotalOrder` and that's important to not accumulate
+    // errors.
     const batchSize = 50;
     const matchSectionChunk = cachedMatchSectionChunk({
       layoutChunks,
@@ -167,7 +170,7 @@ export async function fixHallucinationsOnSections({
     const batchResults = await Promise.all(
       batches.map(async (batch) => {
         const batchResult = [];
-        // Set lastReferenceTotalOrder to the first section chunk of the batch
+        // Set `lastReferenceTotalOrder` to the first section chunk of the batch
         let lastReferenceTotalOrder = batch[0].metadata.totalOrder - 1;
 
         for (const sectionChunk of batch) {
