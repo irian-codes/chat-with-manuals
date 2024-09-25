@@ -9,7 +9,9 @@ import {
   isBlankString,
   matchCaseBySurroundingWords,
 } from '@/app/common/utils/stringUtils';
-import {OpenAIEmbeddings} from '@langchain/openai';
+import {SystemMessage} from '@langchain/core/messages';
+import {ChatPromptTemplate} from '@langchain/core/prompts';
+import {ChatOpenAI, OpenAIEmbeddings} from '@langchain/openai';
 import {diffWords} from 'diff';
 import {Document} from 'langchain/document';
 import {MemoryVectorStore} from 'langchain/vectorstores/memory';
@@ -95,32 +97,8 @@ export async function fixHallucinationsOnSections({
   // Updating the reference from when to search from each time, since there
   // may be shifts in the number of lines between the LLM text and the
   // traditionally parsed text.
+  console.log('Start chunk matching...');
   const matchedChunks = await getMatchedChunks();
-
-  // TODO: Remove this on production
-  writeToTimestampedFile({
-    content: JSON.stringify(
-      {
-        matchedChunks: matchedChunks.map((match) => {
-          return {
-            id: match.sectionChunk.id,
-            sectionTitle: match.sectionChunk.metadata.headerRoute,
-            sectionChunk: match.sectionChunk,
-            candidate: match.candidates[0]?.pageContent ?? 'N/A',
-          };
-        }),
-        layoutChunks,
-      },
-      null,
-      2
-    ),
-    destinationFolderPath: 'tmp/matchedChunks',
-    fileExtension: 'json',
-    fileName: file.name,
-    createFolderIfNotExists: true,
-  });
-
-  return;
 
   // TODO: The reconciliation function fixes LLM's hallucinations, but
   // there's another issue as well: the missing sentences.
@@ -128,12 +106,46 @@ export async function fixHallucinationsOnSections({
   // back as well. For now we're only fixing what the LLM outputted,
   // though, creating an incomplete text but hopefully useful enough for
   // now.
-  const reconciledChunks = matchedChunks.map((match) => {
-    return reconcileSectionChunk({
-      sectionChunk,
-      candidates,
-    });
+  console.log('Start chunk reconciliation...');
+  console.time('tryReconcileSectionChunk');
+  const reconciledChunks = (
+    await Promise.allSettled(
+      matchedChunks.map((match) => {
+        return tryReconcileSectionChunk({
+          sectionChunk: match.sectionChunk,
+          candidates: match.candidates,
+        });
+      })
+    )
+  )
+    .filter((p) => p.status === 'fulfilled')
+    .map((r) => r.value);
+  console.timeEnd('tryReconcileSectionChunk');
+
+  // TODO: Remove this on production
+  writeToTimestampedFile({
+    content: JSON.stringify(
+      {
+        reconciledChunks: reconciledChunks.map((recon) => {
+          return {
+            id: recon.sectionChunk.id,
+            sectionChunkOriginal: recon.sectionChunk.pageContent,
+            reconciledContent: recon.reconciledChunk?.pageContent ?? null,
+            sectionChunk: recon.sectionChunk,
+            chosenCandidate: recon.chosenCandidate ?? null,
+          };
+        }),
+      },
+      null,
+      2
+    ),
+    destinationFolderPath: 'tmp/reconciledChunks',
+    fileExtension: 'json',
+    fileName: file.name,
+    createFolderIfNotExists: true,
   });
+
+  return;
 
   // Reconcile texts of the section chunks and merge back into sections
   const fixedSections = mergeChunksIntoSections({
@@ -617,4 +629,116 @@ export function reconcileTexts(firstText: string, secondText: string): string {
   }, '');
 
   return finalStr;
+}
+async function tryReconcileSectionChunk({
+  sectionChunk,
+  candidates,
+}: {
+  sectionChunk: SectionChunkDoc;
+  candidates: TextChunkDoc[];
+}): Promise<{
+  sectionChunk: SectionChunkDoc;
+  chosenCandidate: TextChunkDoc | null;
+  reconciledChunk: TextChunkDoc | null;
+}> {
+  if (
+    isBlankString(sectionChunk.pageContent) ||
+    candidates.length === 0 ||
+    sectionChunk.metadata.table
+  ) {
+    return {sectionChunk, chosenCandidate: null, reconciledChunk: null};
+  }
+
+  // TODO: Very simple candidate chosing criteria, maybe this could be improved if we gain something.
+  const candidate = candidates[0];
+
+  // TODO: This is not really the best way to skip LLM calls. I should
+  // fully normalize the strings because that also gets rid of extra
+  // newlines, quotes and other character that don't add meaning to texts
+  // (they aren't words) which is what we want to reconcile. However, this
+  // has an issue, and its that normalization with RegExp is very CPU
+  // expensive and slows down the process significantly. Furthermore,
+  // normalization is needed for chunk matching as well, so we would be
+  // duplicating expensive work and that's a no no.
+  //
+  // POSSIBLE SOLUTIONS I SEE:
+  // 1. Create a StringNormalizer class (or use a library) that caches and
+  //    acts as a tool to fast normalize text when needed.
+  // 2. Use JSDiff instead of normalizing and then make all the checks
+  //    needed to ensure that to proceed with LLM normalization the
+  //    differences happen in the content, not the format.
+  // 3. Don't optimize for now as its not that expensive nor slow to call
+  //    the LLM more than needed (I'd need to run tests to know this for
+  //    sure though).
+  if (
+    sectionChunk.pageContent.trim().toLowerCase() ===
+    candidate.pageContent.trim().toLowerCase()
+  ) {
+    return {
+      sectionChunk,
+      chosenCandidate: candidate,
+      reconciledChunk: structuredClone(candidate),
+    };
+  }
+
+  const chat = new ChatOpenAI({
+    model: 'gpt-4o-mini',
+    temperature: 0,
+    apiKey:
+      process.env.NODE_ENV === 'test'
+        ? process.env.VITE_OPENAI_API_KEY
+        : process.env.OPENAI_API_KEY,
+  });
+
+  const systemMessage = new SystemMessage(
+    "You're an AI agent tasked with fixing hallucinations of text fragments from candidate fragments."
+  );
+
+  const promptTemplate = `Given the following section fragments from a document:
+
+Fragment A: {sectionChunk}
+      
+Fragment B: {candidate}
+      
+**Task:**
+      
+- Correct any errors, typos, or hallucinations in **Fragment A** by referencing **Fragment B**.
+- **Do not** add any new sentences, phrases, or information from **Fragment B** that are not already present in **Fragment A**.
+- **Do not** include any labels, headings, or additional text in your answer.
+- Preserve the structure, layout, and content of **Fragment A** as closely as possible.
+- Make only the minimal necessary changes to correct errors in **Fragment A**.
+- Provide **only** the corrected version of **Fragment A** without adding extra information or newlines.
+      
+For additional context, the fragments belong to the following nested section titles: {sectionTitle}
+      
+**Your answer should be only the corrected version of Fragment A, with minimal corrections made.**`;
+
+  const filledPrompt = await ChatPromptTemplate.fromTemplate(
+    promptTemplate
+  ).invoke({
+    sectionChunk: sectionChunk.pageContent,
+    candidate: candidate.pageContent,
+    sectionTitle: sectionChunk.metadata.headerRoute,
+  });
+
+  const response = await chat.invoke([
+    systemMessage,
+    ...filledPrompt.toChatMessages(),
+  ]);
+
+  if (typeof response.content !== 'string' || isBlankString(response.content)) {
+    return {sectionChunk, chosenCandidate: candidate, reconciledChunk: null};
+  }
+
+  const llmAnswer = response.content.toString().trim();
+  const reconciledChunk = {
+    ...structuredClone(candidate),
+    pageContent: llmAnswer,
+  };
+
+  return {
+    sectionChunk,
+    chosenCandidate: candidate,
+    reconciledChunk,
+  };
 }
