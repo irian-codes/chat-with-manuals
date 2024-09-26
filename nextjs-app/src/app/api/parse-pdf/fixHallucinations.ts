@@ -118,6 +118,32 @@ export async function fixHallucinationsOnSections({
   const matchedChunks = await getMatchedChunks();
   console.timeEnd('getMatchedChunks');
 
+  // TODO: Remove this on production
+  writeToTimestampedFile({
+    content: JSON.stringify(
+      {
+        matchedChunks: matchedChunks.map((match) => {
+          return {
+            id: match.sectionChunk.id,
+            sectionTitle: match.sectionChunk.metadata.headerRoute,
+            sectionChunk: match.sectionChunk,
+            candidate:
+              match.candidates[0] == null ? 'N/A' : match.candidates[0],
+          };
+        }),
+        layoutChunks,
+      },
+      null,
+      2
+    ),
+    destinationFolderPath: 'tmp/matchedChunks',
+    fileExtension: 'json',
+    fileName: file.name,
+    createFolderIfNotExists: true,
+  });
+
+  // return;
+
   // TODO: The reconciliation function fixes LLM's hallucinations, but
   // there's another issue as well: the missing sentences.
   // Sometimes the LLM skips chunks of texts, and those should be added
@@ -154,7 +180,7 @@ export async function fixHallucinationsOnSections({
                 ? res.data.reconciledChunk.pageContent
                 : 'N/A',
               sectionChunk: res.data.sectionChunk,
-              chosenCandidate: res.data.chosenCandidate ?? null,
+              chosenCandidate: res.data.chosenCandidate,
             },
           };
         }),
@@ -193,10 +219,11 @@ export async function fixHallucinationsOnSections({
         Math.max(sectionChunks.length, layoutChunks.length) * 0.5
       ),
       levenshteinThreshold: 0.3,
+      similarityThreshold: 0.75,
     });
 
     // Divide sectionChunks into batches of batchSize
-    const batches = [];
+    const batches: SectionChunkDoc[][] = [];
     for (let i = 0; i < sectionChunks.length; i += batchSize) {
       batches.push(sectionChunks.slice(i, i + batchSize));
     }
@@ -204,7 +231,10 @@ export async function fixHallucinationsOnSections({
     // Process each batch in parallel
     const batchResults = await Promise.all(
       batches.map(async (batch) => {
-        const batchResult = [];
+        const batchResult: {
+          sectionChunk: SectionChunkDoc;
+          candidates: {candidate: TextChunkDoc; score: number}[];
+        }[] = [];
         // Set `lastReferenceTotalOrder` to the first section chunk of the batch
         let lastReferenceTotalOrder = batch[0].metadata.totalOrder - 1;
 
@@ -231,8 +261,8 @@ export async function fixHallucinationsOnSections({
           // the chosen one to reconciliate the LLM chunk. Therefore, the
           // referenceTotalOrder value should come from the reconciliation function.
           lastReferenceTotalOrder =
-            batchResult[batchResult.length - 1]?.candidates[0]?.metadata
-              .totalOrder ?? lastReferenceTotalOrder + 1;
+            batchResult[batchResult.length - 1]?.candidates[0]?.candidate
+              .metadata.totalOrder ?? lastReferenceTotalOrder + 1;
 
           const candidates = await matchSectionChunk({
             sectionChunk,
@@ -296,6 +326,10 @@ export async function fixHallucinationsOnSections({
  *   normalized Levenshtein Distance score required. Chunks with a lower
  *   score are discarded. For example, 0.6 means keeping chunks that share
  *   at least 60% of characters with the `sectionChunk`.
+ * @param {number} [similarityThreshold=0.75] The minimum Similarity score
+ *   required. Chunks with a lower score are discarded. For example, 0.7
+ *   means keeping chunks that are rated at least with a 0.7 or higher in
+ *   the Similarity score against `sectionChunk`.
  * @param {number} [referenceTotalOrder=sectionChunk.metadata.totalOrder]
  *   The reference `totalOrder` position to filter chunks based on
  *   proximity. Defaults to the `sectionChunk`'s `totalOrder`, but after
@@ -316,11 +350,13 @@ export function cachedMatchSectionChunk({
   layoutChunks,
   maxCandidates = 10,
   levenshteinThreshold = 0.6,
+  similarityThreshold = 0.75,
   proximityWindow = 200,
 }: {
   layoutChunks: TextChunkDoc[];
   maxCandidates?: number;
   levenshteinThreshold?: number;
+  similarityThreshold?: number;
   proximityWindow?: number;
 }): ({
   sectionChunk,
@@ -328,7 +364,7 @@ export function cachedMatchSectionChunk({
 }: {
   sectionChunk: SectionChunkDoc;
   referenceTotalOrder?: number;
-}) => Promise<TextChunkDoc[]> {
+}) => Promise<{candidate: TextChunkDoc; score: number}[]> {
   z.array(textChunkDocSchema)
     .nonempty({message: 'Layout chunks must not be empty'})
     .parse(layoutChunks);
@@ -391,7 +427,9 @@ export function cachedMatchSectionChunk({
       normalizedNearbyChunks
     );
 
-    // Pre-filter out chunks where Inverted Normalized Levenshtein Distance is 1, as we found the exact matches
+    // Pre-filter out chunks where Inverted Normalized Levenshtein Distance
+    // is 1, as we found the exact matches and we want to return only
+    // those.
     const exactMatches = levenshteinResults.filter((r) => r.score === 1);
 
     if (exactMatches.length > 0) {
@@ -399,17 +437,18 @@ export function cachedMatchSectionChunk({
     }
 
     // If no exact matches found, filter those that deviate too much. As we
-    // determine these are not the chunks we're looking for because they have
-    // too many character differences. This may happen when two chunks talk
-    // about the same thing but using different words. We assume the LLM will
-    // hallucinate but not this much, that's why we filter.
-    const filteredChunks = levenshteinResults.filter(
+    // determine these are not the chunks we're looking for because they
+    // have too many character differences. A false negative may happen
+    // when two chunks talk about the same thing but using different words.
+    // But we assume the LLM will hallucinate but not very much, that's why
+    // we filter.
+    let filteredChunks = levenshteinResults.filter(
       (r) => r.score >= levenshteinThreshold
     );
 
-    // If we have one candidate we shouldn't waste time trying to compute cosine similarity score
-    if (filteredChunks.length === 1) {
-      return orderChunksByScoreAndTotalOrder(filteredChunks);
+    // If we have no candidates left return early.
+    if (filteredChunks.length === 0) {
+      return [];
     }
 
     const similarityResults = await getSimilarityScores(
@@ -417,8 +456,12 @@ export function cachedMatchSectionChunk({
       filteredChunks.map((r) => r.chunk)
     );
 
+    filteredChunks = similarityResults.filter(
+      (r) => r.score >= similarityThreshold
+    );
+
     // Sort candidates by score in descending order (higher score is better)
-    return orderChunksByScoreAndTotalOrder(similarityResults);
+    return orderChunksByScoreAndTotalOrder(filteredChunks);
 
     // HELPER FUNCTIONS
 
@@ -449,16 +492,20 @@ export function cachedMatchSectionChunk({
     }
 
     function restoreChunks(
-      matches: {chunk: NormalizedTextChunkDoc}[]
-    ): TextChunkDoc[] {
+      matches: {chunk: NormalizedTextChunkDoc; score: number}[]
+    ): {candidate: TextChunkDoc; score: number}[] {
       return matches.map((match) => {
         const result = {
-          ...structuredClone(match.chunk),
-          pageContent: match.chunk.metadata.originalPageContent,
+          candidate: {
+            ...structuredClone(match.chunk),
+            pageContent: match.chunk.metadata.originalPageContent,
+          },
+          score: match.score,
         };
 
-        // @ts-expect-error It complaints the prop is not optional... But we aren't reusing the type anymore so it's fine.
-        delete result.metadata.originalPageContent;
+        // @ts-expect-error It complaints the prop is not optional... But
+        // we aren't reusing the type anymore so it's fine.
+        delete result.candidate.metadata.originalPageContent;
 
         return result;
       });
@@ -506,9 +553,9 @@ async function getSimilarityScores<T extends Document, K extends Document>(
  *
  * @param queryDoc The document to query.
  * @param candidates The list of candidates to compare against.
- * @returns A list of objects with keys `chunk` and `score`, where
- *   `chunk` is the candidate and `score` is the normalized inverted
- *   Levenshtein distance.
+ * @returns A list of objects with keys `chunk` and `score`, where `chunk`
+ *   is the candidate and `score` is the normalized inverted Levenshtein
+ *   distance.
  */
 function getNormalizedInvertedLevenshteinDistance<
   T extends Document,
@@ -550,13 +597,16 @@ function getNormalizedInvertedLevenshteinDistance<
 /**
  * Reconciles two texts by comparing and merging their differences.
  *
- * This function takes two texts as input, normalizes the first text, generates a diff JSON using jsdiff,
- * and then iterates over the diff to merge the differences between the two texts.
- * It handles cases where the second text has extra words, missing words, or equal words.
- * It tries to preserve the structure and case of the second text with the words of the first text.
+ * This function takes two texts as input, normalizes the first text,
+ * generates a diff JSON using jsdiff, and then iterates over the diff to
+ * merge the differences between the two texts. It handles cases where the
+ * second text has extra words, missing words, or equal words. It tries to
+ * preserve the structure and case of the second text with the words of the
+ * first text.
  *
  * @param {string} firstText - The original text to be reconciled.
- * @param {string} secondText - The LLM text to be reconciled with the original text.
+ * @param {string} secondText - The LLM text to be reconciled with the
+ * original text.
  * @return {string} The reconciled text.
  */
 export function reconcileTexts(firstText: string, secondText: string): string {
@@ -652,7 +702,7 @@ async function tryReconcileSectionChunk({
   candidates,
 }: {
   sectionChunk: SectionChunkDoc;
-  candidates: TextChunkDoc[];
+  candidates: {candidate: TextChunkDoc; score: number}[];
 }): Promise<{
   couldReconcile: boolean;
   reconciliationStrategy:
@@ -664,7 +714,7 @@ async function tryReconcileSectionChunk({
     | 'error';
   data: {
     sectionChunk: SectionChunkDoc;
-    chosenCandidate: TextChunkDoc | null;
+    chosenCandidate: {candidate: TextChunkDoc; score: number} | null;
     reconciledChunk: ReconciledChunkDoc | SectionChunkDoc;
   };
 }> {
@@ -692,7 +742,11 @@ async function tryReconcileSectionChunk({
     };
   }
 
-  if (candidates.length === 0) {
+  // TODO: Very simple candidate choosing criteria, maybe this could be
+  // improved if we gain something.
+  const candidate = candidates[0];
+
+  if (candidates.length === 0 || candidate == null) {
     return {
       couldReconcile: false,
       reconciliationStrategy: 'empty-candidates',
@@ -703,10 +757,6 @@ async function tryReconcileSectionChunk({
       },
     };
   }
-
-  // TODO: Very simple candidate choosing criteria, maybe this could be
-  // improved if we gain something.
-  const candidate = candidates[0];
 
   // TODO: This is not really the best way to skip LLM calls. I should
   // fully normalize the strings because that also gets rid of extra
@@ -727,8 +777,12 @@ async function tryReconcileSectionChunk({
   //    the LLM more than needed (I'd need to run tests to know this for
   //    sure though).
   if (
+    candidate.score === 1 ||
     sectionChunk.pageContent.trim().toLowerCase().replaceAll(/\s+/g, ' ') ===
-    candidate.pageContent.trim().toLowerCase().replaceAll(/\s+/g, ' ')
+      candidate.candidate.pageContent
+        .trim()
+        .toLowerCase()
+        .replaceAll(/\s+/g, ' ')
   ) {
     const sectionChunkClone = structuredClone(sectionChunk);
 
@@ -785,7 +839,7 @@ For additional context, the fragments belong to the following nested section tit
     promptTemplate
   ).invoke({
     sectionChunk: sectionChunk.pageContent,
-    candidate: candidate.pageContent,
+    candidate: candidate.candidate.pageContent,
     sectionTitle: sectionChunk.metadata.headerRoute,
   });
 
