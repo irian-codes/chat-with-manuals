@@ -1,4 +1,5 @@
 import {MultipleRegexTextSplitter} from '@/app/common/types/MultipleRegexTextSplitter';
+import {ReconciledChunkDoc} from '@/app/common/types/ReconciledChunkDoc';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {SectionNode} from '@/app/common/types/SectionNode';
 import {
@@ -108,7 +109,7 @@ export async function fixHallucinationsOnSections({
   // now.
   console.log('Start chunk reconciliation...');
   console.time('tryReconcileSectionChunk');
-  const reconciledChunks = (
+  const reconciledChunksResults = (
     await Promise.allSettled(
       matchedChunks.map((match) => {
         return tryReconcileSectionChunk({
@@ -126,13 +127,16 @@ export async function fixHallucinationsOnSections({
   writeToTimestampedFile({
     content: JSON.stringify(
       {
-        reconciledChunks: reconciledChunks.map((recon) => {
+        reconciledChunks: reconciledChunksResults.map((res) => {
           return {
-            id: recon.sectionChunk.id,
-            sectionChunkOriginal: recon.sectionChunk.pageContent,
-            reconciledContent: recon.reconciledChunk?.pageContent ?? null,
-            sectionChunk: recon.sectionChunk,
-            chosenCandidate: recon.chosenCandidate ?? null,
+            reconciliationStrategy: `Reconciliation result: ${res.couldReconcile}:${res.reconciliationStrategy}`,
+            data: {
+              id: res.data.sectionChunk.id,
+              sectionChunkOriginal: res.data.sectionChunk.pageContent,
+              reconciledContent: res.data.reconciledChunk?.pageContent ?? null,
+              sectionChunk: res.data.sectionChunk,
+              chosenCandidate: res.data.chosenCandidate ?? null,
+            },
           };
         }),
       },
@@ -637,19 +641,46 @@ async function tryReconcileSectionChunk({
   sectionChunk: SectionChunkDoc;
   candidates: TextChunkDoc[];
 }): Promise<{
+  couldReconcile: boolean;
+  reconciliationStrategy:
+    | 'llm'
+    | 'same-text'
+    | 'is-table'
+    | 'empty-section'
+    | 'empty-candidates'
+    | 'error';
+  data: {
   sectionChunk: SectionChunkDoc;
   chosenCandidate: TextChunkDoc | null;
-  reconciledChunk: TextChunkDoc | null;
+    reconciledChunk: ReconciledChunkDoc | null;
+  };
 }> {
-  if (
-    isBlankString(sectionChunk.pageContent) ||
-    candidates.length === 0 ||
-    sectionChunk.metadata.table
-  ) {
-    return {sectionChunk, chosenCandidate: null, reconciledChunk: null};
+  if (isBlankString(sectionChunk.pageContent)) {
+    return {
+      couldReconcile: false,
+      reconciliationStrategy: 'empty-section',
+      data: {sectionChunk, chosenCandidate: null, reconciledChunk: null},
+    };
   }
 
-  // TODO: Very simple candidate chosing criteria, maybe this could be improved if we gain something.
+  if (candidates.length === 0) {
+    return {
+      couldReconcile: false,
+      reconciliationStrategy: 'empty-candidates',
+      data: {sectionChunk, chosenCandidate: null, reconciledChunk: null},
+    };
+  }
+
+  if (sectionChunk.metadata.table) {
+    return {
+      couldReconcile: false,
+      reconciliationStrategy: 'is-table',
+      data: {sectionChunk, chosenCandidate: null, reconciledChunk: null},
+    };
+  }
+
+  // TODO: Very simple candidate choosing criteria, maybe this could be
+  // improved if we gain something.
   const candidate = candidates[0];
 
   // TODO: This is not really the best way to skip LLM calls. I should
@@ -674,10 +705,22 @@ async function tryReconcileSectionChunk({
     sectionChunk.pageContent.trim().toLowerCase() ===
     candidate.pageContent.trim().toLowerCase()
   ) {
+    const sectionChunkClone = structuredClone(sectionChunk);
+
     return {
+      couldReconcile: true,
+      reconciliationStrategy: 'same-text',
+      data: {
       sectionChunk,
       chosenCandidate: candidate,
-      reconciledChunk: structuredClone(candidate),
+        reconciledChunk: {
+          ...sectionChunkClone,
+          metadata: {
+            ...sectionChunkClone.metadata,
+            reconciled: true,
+          },
+        },
+      },
     };
   }
 
@@ -727,18 +770,31 @@ For additional context, the fragments belong to the following nested section tit
   ]);
 
   if (typeof response.content !== 'string' || isBlankString(response.content)) {
-    return {sectionChunk, chosenCandidate: candidate, reconciledChunk: null};
+    return {
+      couldReconcile: false,
+      reconciliationStrategy: 'error',
+      data: {sectionChunk, chosenCandidate: candidate, reconciledChunk: null},
+    };
   }
 
   const llmAnswer = response.content.toString().trim();
+  const sectionChunkClone = structuredClone(sectionChunk);
   const reconciledChunk = {
-    ...structuredClone(candidate),
+    ...sectionChunkClone,
     pageContent: llmAnswer,
-  };
+    metadata: {
+      ...sectionChunkClone.metadata,
+      reconciled: true,
+    },
+  } as const;
 
   return {
+    couldReconcile: true,
+    reconciliationStrategy: 'llm',
+    data: {
     sectionChunk,
     chosenCandidate: candidate,
     reconciledChunk,
+    },
   };
 }
