@@ -702,8 +702,8 @@ async function tryReconcileSectionChunk({
   //    the LLM more than needed (I'd need to run tests to know this for
   //    sure though).
   if (
-    sectionChunk.pageContent.trim().toLowerCase() ===
-    candidate.pageContent.trim().toLowerCase()
+    sectionChunk.pageContent.trim().toLowerCase().replaceAll(/\s+/g, ' ') ===
+    candidate.pageContent.trim().toLowerCase().replaceAll(/\s+/g, ' ')
   ) {
     const sectionChunkClone = structuredClone(sectionChunk);
 
