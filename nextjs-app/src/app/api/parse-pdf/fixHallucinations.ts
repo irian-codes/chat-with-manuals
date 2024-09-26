@@ -144,7 +144,9 @@ export async function fixHallucinationsOnSections({
             data: {
               id: res.data.sectionChunk.id,
               sectionChunkOriginal: res.data.sectionChunk.pageContent,
-              reconciledContent: res.data.reconciledChunk?.pageContent ?? null,
+              reconciledContent: res.couldReconcile
+                ? res.data.reconciledChunk.pageContent
+                : null,
               sectionChunk: res.data.sectionChunk,
               chosenCandidate: res.data.chosenCandidate ?? null,
             },
@@ -663,14 +665,18 @@ async function tryReconcileSectionChunk({
   data: {
     sectionChunk: SectionChunkDoc;
     chosenCandidate: TextChunkDoc | null;
-    reconciledChunk: ReconciledChunkDoc | null;
+    reconciledChunk: ReconciledChunkDoc | SectionChunkDoc;
   };
 }> {
   if (isBlankString(sectionChunk.pageContent)) {
     return {
       couldReconcile: false,
       reconciliationStrategy: 'empty-section',
-      data: {sectionChunk, chosenCandidate: null, reconciledChunk: null},
+      data: {
+        sectionChunk,
+        chosenCandidate: null,
+        reconciledChunk: structuredClone(sectionChunk),
+      },
     };
   }
 
@@ -678,7 +684,11 @@ async function tryReconcileSectionChunk({
     return {
       couldReconcile: false,
       reconciliationStrategy: 'empty-candidates',
-      data: {sectionChunk, chosenCandidate: null, reconciledChunk: null},
+      data: {
+        sectionChunk,
+        chosenCandidate: null,
+        reconciledChunk: structuredClone(sectionChunk),
+      },
     };
   }
 
@@ -686,7 +696,11 @@ async function tryReconcileSectionChunk({
     return {
       couldReconcile: false,
       reconciliationStrategy: 'is-table',
-      data: {sectionChunk, chosenCandidate: null, reconciledChunk: null},
+      data: {
+        sectionChunk,
+        chosenCandidate: null,
+        reconciledChunk: structuredClone(sectionChunk),
+      },
     };
   }
 
@@ -784,7 +798,11 @@ For additional context, the fragments belong to the following nested section tit
     return {
       couldReconcile: false,
       reconciliationStrategy: 'error',
-      data: {sectionChunk, chosenCandidate: candidate, reconciledChunk: null},
+      data: {
+        sectionChunk,
+        chosenCandidate: candidate,
+        reconciledChunk: structuredClone(sectionChunk),
+      },
     };
   }
 
