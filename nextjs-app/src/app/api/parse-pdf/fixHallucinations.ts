@@ -95,6 +95,8 @@ export async function fixHallucinationsOnSections({
       /[\.?!]{1}[)\]}`’”"'»›]*\s+/,
       // An enumeration starts
       /\w{3,}:[ ]{0,1}[\n\r]/,
+      // Obvious titles
+      /[\n\r][A-Z0-9 ]+[\n\r]/,
     ],
     noMatchSequences: [/e\.g\./i, /i\.e\./i, /f\.e\./i],
   });
