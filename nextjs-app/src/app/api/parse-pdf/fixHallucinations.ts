@@ -337,10 +337,7 @@ export function cachedMatchSectionChunk({
   const normalizedLayoutChunks: NormalizedTextChunkDoc[] = layoutChunks.map(
     (c) => ({
       ...c,
-      pageContent: c.pageContent
-        .split(/[\s\n]+/)
-        .map((s) => s.trim())
-        .join(' '),
+      pageContent: c.pageContent.trim().replaceAll(/\s+/g, ' '),
       metadata: {
         ...c.metadata,
         originalPageContent: c.pageContent,
@@ -380,10 +377,7 @@ export function cachedMatchSectionChunk({
 
     const normalizedSectionChunk: SectionChunkDoc = {
       ...sectionChunk,
-      pageContent: sectionChunk.pageContent
-        .split(/[\s\n]+/)
-        .map((s) => s.trim())
-        .join(' '),
+      pageContent: sectionChunk.pageContent.trim().replaceAll(/\s+/g, ' '),
     };
 
     const levenshteinResults = getNormalizedInvertedLevenshteinDistance(
