@@ -389,6 +389,7 @@ async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
       return new LlamaParseReader({
         resultType: 'text',
         fastMode: true,
+        // TODO: Update when adding multi language suppport
         language: 'en',
         skipDiagonalText: false,
         doNotUnrollColumns: false,
@@ -402,6 +403,7 @@ async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
     } else {
       return new LlamaParseReader({
         resultType: 'markdown',
+        // TODO: Update when adding multi language suppport
         language: 'en',
         skipDiagonalText: false,
         doNotUnrollColumns: false,
