@@ -59,6 +59,9 @@ export class MultipleRegexTextSplitter implements TextSplitter {
     /f\.e\./i,
     /^\s*\w{1,2}[.:]\s+\w/m,
   ];
+  // TODO: This is not ideal, we should be able to choose, per each
+  // separator which ones to keep and which ones to drop.
+  // This doesn't seem a nightmare to implement.
   keepSeparators: boolean = false;
 
   constructor({
