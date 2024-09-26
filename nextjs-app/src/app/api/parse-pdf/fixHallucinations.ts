@@ -146,7 +146,7 @@ export async function fixHallucinationsOnSections({
               sectionChunkOriginal: res.data.sectionChunk.pageContent,
               reconciledContent: res.couldReconcile
                 ? res.data.reconciledChunk.pageContent
-                : null,
+                : 'N/A',
               sectionChunk: res.data.sectionChunk,
               chosenCandidate: res.data.chosenCandidate ?? null,
             },
@@ -668,6 +668,18 @@ async function tryReconcileSectionChunk({
     reconciledChunk: ReconciledChunkDoc | SectionChunkDoc;
   };
 }> {
+  if (sectionChunk.metadata.table) {
+    return {
+      couldReconcile: false,
+      reconciliationStrategy: 'is-table',
+      data: {
+        sectionChunk,
+        chosenCandidate: null,
+        reconciledChunk: structuredClone(sectionChunk),
+      },
+    };
+  }
+
   if (isBlankString(sectionChunk.pageContent)) {
     return {
       couldReconcile: false,
@@ -684,18 +696,6 @@ async function tryReconcileSectionChunk({
     return {
       couldReconcile: false,
       reconciliationStrategy: 'empty-candidates',
-      data: {
-        sectionChunk,
-        chosenCandidate: null,
-        reconciledChunk: structuredClone(sectionChunk),
-      },
-    };
-  }
-
-  if (sectionChunk.metadata.table) {
-    return {
-      couldReconcile: false,
-      reconciliationStrategy: 'is-table',
       data: {
         sectionChunk,
         chosenCandidate: null,
