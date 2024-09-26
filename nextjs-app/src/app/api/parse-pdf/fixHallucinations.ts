@@ -65,16 +65,22 @@ export async function fixHallucinationsOnSections({
     ],
   });
 
+  console.log('Chunk section nodes for reconciliation...');
+  console.time('chunkSectionNodes');
   const sectionChunks = await chunkSectionNodes(
     sections,
     sectionSentenceSplitter
   );
+  console.timeEnd('chunkSectionNodes');
 
   // Chunking layout parsed text (traditionally parsed)
+  console.log('Parsing with layout parser...');
+  console.time('pdfParseWithPdfReader');
   const layoutExtractedText = await pdfParseWithPdfReader({
     file,
     columnsNumber,
   });
+  console.timeEnd('pdfParseWithPdfReader');
 
   if (isBlankString(layoutExtractedText)) {
     throw new Error('Layout parser produced an empty file');
@@ -89,17 +95,22 @@ export async function fixHallucinationsOnSections({
     noMatchSequences: [/e\.g\./i, /i\.e\./i, /f\.e\./i],
   });
 
+  console.log('Chunk layout text for reconciliation...');
+  console.time('chunkString');
   const layoutChunks = await chunkString({
     text: layoutExtractedText,
     splitter: layoutStringSentenceSplitter,
   });
+  console.timeEnd('chunkString');
 
   // Match section chunk with most probable layoutChunks candidates
   // Updating the reference from when to search from each time, since there
   // may be shifts in the number of lines between the LLM text and the
   // traditionally parsed text.
   console.log('Start chunk matching...');
+  console.time('getMatchedChunks');
   const matchedChunks = await getMatchedChunks();
+  console.timeEnd('getMatchedChunks');
 
   // TODO: The reconciliation function fixes LLM's hallucinations, but
   // there's another issue as well: the missing sentences.
@@ -154,7 +165,7 @@ export async function fixHallucinationsOnSections({
   // Reconcile texts of the section chunks and merge back into sections
   const fixedSections = mergeChunksIntoSections({
     originalSections: sections,
-    newChunks: reconciledChunks,
+    newChunks: reconciledChunksResults,
   });
 
   // Return the new fixed SectionNodes
@@ -650,8 +661,8 @@ async function tryReconcileSectionChunk({
     | 'empty-candidates'
     | 'error';
   data: {
-  sectionChunk: SectionChunkDoc;
-  chosenCandidate: TextChunkDoc | null;
+    sectionChunk: SectionChunkDoc;
+    chosenCandidate: TextChunkDoc | null;
     reconciledChunk: ReconciledChunkDoc | null;
   };
 }> {
@@ -711,8 +722,8 @@ async function tryReconcileSectionChunk({
       couldReconcile: true,
       reconciliationStrategy: 'same-text',
       data: {
-      sectionChunk,
-      chosenCandidate: candidate,
+        sectionChunk,
+        chosenCandidate: candidate,
         reconciledChunk: {
           ...sectionChunkClone,
           metadata: {
@@ -792,9 +803,9 @@ For additional context, the fragments belong to the following nested section tit
     couldReconcile: true,
     reconciliationStrategy: 'llm',
     data: {
-    sectionChunk,
-    chosenCandidate: candidate,
-    reconciledChunk,
+      sectionChunk,
+      chosenCandidate: candidate,
+      reconciledChunk,
     },
   };
 }
