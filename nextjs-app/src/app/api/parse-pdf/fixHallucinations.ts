@@ -194,12 +194,33 @@ export async function fixHallucinationsOnSections({
     createFolderIfNotExists: true,
   });
 
-  return;
-
   // Reconcile texts of the section chunks and merge back into sections
-  const fixedSections = mergeChunksIntoSections({
+  const fixedSections = reconcileSections({
     originalSections: sections,
-    newChunks: reconciledChunksResults,
+    reconciledChunks: reconciledChunksResults.map(
+      (r) => r.data.reconciledChunk
+    ),
+  });
+
+  // TODO: Remove this on production
+  writeToTimestampedFile({
+    content: JSON.stringify(
+      {
+        fixedSections: Map.groupBy(
+          [
+            ...flattenSectionsTree(fixedSections),
+            ...flattenSectionsTree(sections),
+          ],
+          (s) => s.id
+        ),
+      },
+      null,
+      2
+    ),
+    destinationFolderPath: 'tmp/reconciledSections',
+    fileExtension: 'json',
+    fileName: file.name,
+    createFolderIfNotExists: true,
   });
 
   // Return the new fixed SectionNodes
@@ -280,6 +301,17 @@ export async function fixHallucinationsOnSections({
 
     // Flatten the batch results into a single result array
     return batchResults.flat();
+  }
+
+  function flattenSectionsTree(sections: SectionNode[]): SectionNode[] {
+    const flattened: SectionNode[] = [];
+
+    sections.forEach((section) => {
+      flattened.push(section);
+      flattened.push(...flattenSectionsTree(section.subsections));
+    });
+
+    return flattened;
   }
 }
 
@@ -880,4 +912,70 @@ For additional context, the fragments belong to the following nested section tit
       reconciledChunk,
     },
   };
+}
+
+function reconcileSections({
+  originalSections,
+  reconciledChunks,
+}: {
+  originalSections: SectionNode[];
+  reconciledChunks: SectionChunkDoc[];
+}): SectionNode[] {
+  // Group reconciled chunks by headerRouteLevels (act as a section ID)
+  const chunksByHeaderRouteLevels = Map.groupBy(
+    reconciledChunks,
+    (c) => c.metadata.headerRouteLevels
+  );
+
+  // Process originalSections
+  const updatedSections: SectionNode[] = originalSections.map((section) =>
+    processSection(section)
+  );
+
+  return updatedSections;
+
+  // HELPER FUNCTIONS
+
+  // Function to process sections recursively
+  function processSection(section: SectionNode): SectionNode {
+    // Create a structured clone of the section
+    const clone: SectionNode = {
+      ...section,
+      tables: new Map(section.tables),
+      content: '',
+      subsections: [],
+    };
+
+    // Process subsections recursively
+    for (const subsection of section.subsections) {
+      const processedSubsection = processSection(subsection);
+      clone.subsections.push(processedSubsection);
+    }
+
+    // If the section's headerRouteLevels is in chunksByHeaderRouteLevels
+    const chunks = chunksByHeaderRouteLevels.get(section.headerRouteLevels);
+    if (chunks != null) {
+      let currentTableCount = 0;
+      let contentParts: string[] = [];
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+
+        if (chunk.metadata.table === true) {
+          contentParts.push(`<<<TABLE:${++currentTableCount}>>>`);
+
+          // Skip table chunks since we don't reconcile them for now.
+          while (i < chunks.length && chunks[i + 1]?.metadata.table === true) {
+            i++;
+          }
+        } else {
+          contentParts.push(chunk.pageContent);
+        }
+      }
+
+      clone.content = contentParts.join('\n');
+    }
+
+    return clone;
+  }
 }
