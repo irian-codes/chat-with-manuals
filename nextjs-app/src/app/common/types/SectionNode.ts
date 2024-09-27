@@ -1,4 +1,5 @@
 export type SectionNode = {
+  id: string;
   type: 'section';
   title: string;
   level: number;

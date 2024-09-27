@@ -53,6 +53,7 @@ export async function markdownToSectionsJson(
       pushContent();
 
       const node: SectionNode = {
+        id: uuidv4(),
         type: 'section',
         title: token.text,
         level: token.depth,
@@ -265,7 +266,7 @@ export async function markdownToSectionsJson(
 export async function chunkSectionNodes(
   sectionsJson: SectionNode[],
   splitter?: TextSplitter
-) {
+): Promise<SectionChunkDoc[]> {
   if (splitter == null) {
     splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 150,
@@ -451,6 +452,7 @@ async function chunkSingleSplit({
           tokens,
           charCount: text.length,
           table: isTable,
+          sectionId: section.id,
         },
       })
     );

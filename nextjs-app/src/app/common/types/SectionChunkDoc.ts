@@ -9,6 +9,7 @@ export const sectionChunkMetadataSchema = z.object({
   tokens: z.number().gt(0),
   charCount: z.number().gt(0),
   table: z.boolean(),
+  sectionId: z.string().min(1).uuid(),
 });
 
 export const sectionChunkDocSchema = z.instanceof(
