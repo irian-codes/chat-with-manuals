@@ -265,16 +265,8 @@ export async function markdownToSectionsJson(
 
 export async function chunkSectionNodes(
   sectionsJson: SectionNode[],
-  splitter?: TextSplitter
+  splitter: TextSplitter
 ): Promise<SectionChunkDoc[]> {
-  if (splitter == null) {
-    splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 150,
-      chunkOverlap: 0,
-      keepSeparator: false,
-    });
-  }
-
   const chunks: SectionChunkDoc[] = [];
   let totalOrder = 1;
 

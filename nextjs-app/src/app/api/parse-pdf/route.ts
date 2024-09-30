@@ -1,4 +1,5 @@
 import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {NextRequest, NextResponse} from 'next/server';
 import {z} from 'zod';
 import {
@@ -118,7 +119,14 @@ export async function POST(request: NextRequest) {
         });
         console.timeEnd('Fixing LLM hallucinations');
 
-        const sectionChunks = await chunkSectionNodes(fixedChunks);
+        const sectionChunks = await chunkSectionNodes(
+          fixedChunks,
+          new RecursiveCharacterTextSplitter({
+            chunkSize: 150,
+            chunkOverlap: 0,
+            keepSeparator: false,
+          })
+        );
 
         const store = await embedPDF(fileHash, sectionChunks);
         await setFileByHash(fileHash, {collectionName: store.collectionName});

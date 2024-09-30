@@ -11,6 +11,7 @@ import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {TextChunkDoc} from '@/app/common/types/TextChunkDoc';
 import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
 import {LevenshteinDistance} from 'natural';
@@ -45,7 +46,14 @@ export async function parseMarkdownToJson() {
 
 export async function chunkSections() {
   const sectionNodes = await parseMarkdownToJson();
-  const chunkedSections = await chunkSectionNodes(sectionNodes);
+  const chunkedSections = await chunkSectionNodes(
+    sectionNodes,
+    new RecursiveCharacterTextSplitter({
+      chunkSize: 150,
+      chunkOverlap: 0,
+      keepSeparator: false,
+    })
+  );
 
   // Without doing this Next.js complaints that we cannot return class
   // instances to a client component.
