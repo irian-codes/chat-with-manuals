@@ -54,22 +54,20 @@ export async function fixHallucinationsOnSections({
   // return the fixed sections
 
   // Chunking sections with a sentence splitter
-  const sectionSentenceSplitter = new MultipleRegexTextSplitter({
-    keepSeparators: true,
-    separators: [/[\r\n]+/, /[\.?!]{1}[)\]}`’”"'»›]*\s+/],
-    noMatchSequences: [
-      /e\.g\./i,
-      /i\.e\./i,
-      /f\.e\./i,
-      /^\s*\w{1,2}[.:]\s+\w/m,
-    ],
-  });
-
   console.log('Chunk section nodes for reconciliation...');
   console.time('chunkSectionNodes');
   const sectionChunks = await chunkSectionNodes(
     sections,
-    sectionSentenceSplitter
+    new MultipleRegexTextSplitter({
+      keepSeparators: true,
+      separators: [/[\r\n]+/, /[\.?!]{1}[)\]}`’”"'»›]*\s+/],
+      noMatchSequences: [
+        /e\.g\./i,
+        /i\.e\./i,
+        /f\.e\./i,
+        /^\s*\w{1,2}[.:]\s+\w/m,
+      ],
+    })
   );
   console.timeEnd('chunkSectionNodes');
 
@@ -86,26 +84,24 @@ export async function fixHallucinationsOnSections({
     throw new Error('Layout parser produced an empty file');
   }
 
-  const layoutStringSentenceSplitter = new MultipleRegexTextSplitter({
-    keepSeparators: true,
-    separators: [
-      // Lists
-      /^\s*(?=(?:\w{1,2}[.:)]|-)[ ]+\w)/m,
-      // Sentence terminators
-      /[\.?!]{1}[)\]}`’”"'»›]*\s+/,
-      // An enumeration starts
-      /\w{3,}:[ ]{0,1}[\n\r]/,
-      // Obvious titles
-      /[\n\r][A-Z0-9 ]+[\n\r]/,
-    ],
-    noMatchSequences: [/e\.g\./i, /i\.e\./i, /f\.e\./i],
-  });
-
   console.log('Chunk layout text for reconciliation...');
   console.time('chunkString');
   const layoutChunks = await chunkString({
     text: layoutExtractedText,
-    splitter: layoutStringSentenceSplitter,
+    splitter: new MultipleRegexTextSplitter({
+      keepSeparators: true,
+      separators: [
+        // Lists
+        /^\s*(?=(?:\w{1,2}[.:)]|-)[ ]+\w)/m,
+        // Sentence terminators
+        /[\.?!]{1}[)\]}`’”"'»›]*\s+/,
+        // An enumeration starts
+        /\w{3,}:[ ]{0,1}[\n\r]/,
+        // Obvious titles
+        /[\n\r][A-Z0-9 ]+[\n\r]/,
+      ],
+      noMatchSequences: [/e\.g\./i, /i\.e\./i, /f\.e\./i],
+    }),
   });
   console.timeEnd('chunkString');
 
