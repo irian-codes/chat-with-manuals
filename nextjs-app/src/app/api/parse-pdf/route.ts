@@ -103,22 +103,23 @@ export async function POST(request: NextRequest) {
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
 
         console.log(
-          'Sectioning parsed Markdwon file...',
+          'Sectioning parsed Markdown file...',
           `File hash: ${fileHash}`
         );
 
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
 
         console.log('Fixing LLM hallucinations...', `File hash: ${fileHash}`);
-
-        console.time('Fixing LLM hallucinations');
+        console.time('fixHallucinationsOnSections');
         const fixedChunks = await fixHallucinationsOnSections({
           file,
           columnsNumber,
           sections: mdToJson,
         });
-        console.timeEnd('Fixing LLM hallucinations');
+        console.timeEnd('fixHallucinationsOnSections');
 
+        console.log('Chunking section nodes for embedding');
+        console.time('chunkSectionNodes');
         const sectionChunks = await chunkSectionNodes(
           fixedChunks,
           new RecursiveCharacterTextSplitter({
@@ -127,8 +128,13 @@ export async function POST(request: NextRequest) {
             keepSeparator: false,
           })
         );
+        console.timeEnd('chunkSectionNodes');
 
+        console.log('Embedding PDF chunks...', `File hash: ${fileHash}`);
+        console.time('embedPDF');
         const store = await embedPDF(fileHash, sectionChunks);
+        console.timeEnd('embedPDF');
+
         await setFileByHash(fileHash, {collectionName: store.collectionName});
 
         return NextResponse.json({
