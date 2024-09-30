@@ -118,8 +118,6 @@ export async function POST(request: NextRequest) {
         });
         console.timeEnd('Fixing LLM hallucinations');
 
-        throw new Error('TEMPORARY DEBUG ERROR');
-
         const sectionChunks = await chunkSectionNodes(fixedChunks);
 
         const store = await embedPDF(fileHash, sectionChunks);
