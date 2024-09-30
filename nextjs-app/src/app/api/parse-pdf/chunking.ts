@@ -9,7 +9,6 @@ import {isBlankString} from '@/app/common/utils/stringUtils';
 import {decodeHTML} from 'entities';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
 import {Document} from 'langchain/document';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {Marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
 import {v4 as uuidv4} from 'uuid';
@@ -458,18 +457,9 @@ export async function chunkString({
   splitter,
 }: {
   text: string;
-  splitter?: TextSplitter;
+  splitter: TextSplitter;
 }): Promise<TextChunkDoc[]> {
-  if (splitter == null) {
-    splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 20,
-      chunkOverlap: 0,
-      keepSeparator: false,
-    });
-  }
-
   const splits = await splitter.splitText(text);
-
   const chunks: TextChunkDoc[] = [];
 
   for (let i = 0; i < splits.length; i++) {
