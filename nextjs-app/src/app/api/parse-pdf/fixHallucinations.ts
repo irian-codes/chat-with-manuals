@@ -307,7 +307,7 @@ export async function fixHallucinationsOnSections({
     const flattened: SectionNode[] = [];
 
     sections.forEach((section) => {
-      flattened.push(section);
+      flattened.push({...section, subsections: []});
       flattened.push(...flattenSectionsTree(section.subsections));
     });
 
