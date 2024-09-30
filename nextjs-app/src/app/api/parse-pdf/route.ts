@@ -1,4 +1,5 @@
 import {pdfParsingOutputScheme} from '@/app/common/types/PdfParsingOutput';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {NextRequest, NextResponse} from 'next/server';
 import {z} from 'zod';
 import {
@@ -9,12 +10,9 @@ import {
 } from '../db/uploaded-files-db/files';
 import {deleteCollection, embedPDF} from '../db/vector-db/VectorDB';
 import {getFileHash} from '../utils/fileUtils';
-import {
-  chunkSectionsJson,
-  lintAndFixMarkdown,
-  markdownToSectionsJson,
-  parsePdf,
-} from './functions';
+import {chunkSectionNodes, markdownToSectionsJson} from './chunking';
+import {fixHallucinationsOnSections} from './fixHallucinations';
+import {lintAndFixMarkdown, parsePdf} from './functions';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -78,6 +76,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('Parsing main PDF...', `File hash: ${fileHash}`);
+
     const parseResult = await parsePdf({file, output, force, columnsNumber});
 
     switch (parseResult.contentType) {
@@ -101,10 +101,40 @@ export async function POST(request: NextRequest) {
 
       case 'markdown':
         const lintedMarkdown = lintAndFixMarkdown(parseResult.text);
+
+        console.log(
+          'Sectioning parsed Markdown file...',
+          `File hash: ${fileHash}`
+        );
+
         const mdToJson = await markdownToSectionsJson(lintedMarkdown);
-        // TODO: 1. Parse with pdfreader. 2. Match section text on pdfreader text. 3. Reconcile SectionNode[] to fix hallucinations with some difference tolerance
-        const chunks = await chunkSectionsJson(mdToJson);
-        const store = await embedPDF(fileHash, chunks);
+
+        console.log('Fixing LLM hallucinations...', `File hash: ${fileHash}`);
+        console.time('fixHallucinationsOnSections');
+        const fixedChunks = await fixHallucinationsOnSections({
+          file,
+          columnsNumber,
+          sections: mdToJson,
+        });
+        console.timeEnd('fixHallucinationsOnSections');
+
+        console.log('Chunking section nodes for embedding');
+        console.time('chunkSectionNodes');
+        const sectionChunks = await chunkSectionNodes(
+          fixedChunks,
+          new RecursiveCharacterTextSplitter({
+            chunkSize: 150,
+            chunkOverlap: 0,
+            keepSeparator: false,
+          })
+        );
+        console.timeEnd('chunkSectionNodes');
+
+        console.log('Embedding PDF chunks...', `File hash: ${fileHash}`);
+        console.time('embedPDF');
+        const store = await embedPDF(fileHash, sectionChunks);
+        console.timeEnd('embedPDF');
+
         await setFileByHash(fileHash, {collectionName: store.collectionName});
 
         return NextResponse.json({

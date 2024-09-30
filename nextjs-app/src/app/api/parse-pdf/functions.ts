@@ -2,12 +2,8 @@ import {
   saveFileObjectToFileSystem,
   writeToTimestampedFile,
 } from '@/app/api/utils/fileUtils';
-import {ChunkDoc} from '@/app/common/types/ChunkDoc';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
-import {
-  isBlankString,
-  matchCaseBySurroundingWords,
-} from '@/app/common/utils/stringUtils';
+import {isBlankString} from '@/app/common/utils/stringUtils';
 import DocumentIntelligence, {
   AnalyzeResultOperationOutput,
   getLongRunningPoller,
@@ -16,17 +12,10 @@ import DocumentIntelligence, {
 import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
 import pdf2md from '@opendocsg/pdf2md';
-import {diffWords} from 'diff';
-import {decodeHTML} from 'entities';
-import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o';
-import {Document} from 'langchain/document';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import markdownlint from 'markdownlint';
 import markdownlintRuleHelpers from 'markdownlint-rule-helpers';
-import {Marked} from 'marked';
-import markedPlaintify from 'marked-plaintify';
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,7 +27,6 @@ import {
   ChunkingStrategy,
   Strategy,
 } from 'unstructured-client/sdk/models/shared';
-import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 
 export async function parsePdf({
@@ -99,13 +87,13 @@ export async function parsePdf({
   switch (output) {
     case 'json': {
       const res = await pdfParseToJson(file);
-      writeToTimestampedFile(
-        res,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'json',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: res,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'json',
+        prefix: 'parsedPdf',
+      });
 
       return {text: res, contentType: 'json', cachedTime: null};
     }
@@ -119,13 +107,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -133,13 +121,13 @@ export async function parsePdf({
     case 'unstructured': {
       const unstructuredRes = await pdfParseWithUnstructured(file);
 
-      writeToTimestampedFile(
-        JSON.stringify(unstructuredRes, null, 2),
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'json',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: JSON.stringify(unstructuredRes, null, 2),
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'json',
+        prefix: 'parsedPdf',
+      });
 
       return {
         text: JSON.stringify(unstructuredRes, null, 2),
@@ -156,13 +144,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -175,13 +163,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'md',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'md',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'markdown', cachedTime: null};
     }
@@ -194,13 +182,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -215,13 +203,13 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'md',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'md',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'markdown', cachedTime: null};
     }
@@ -233,31 +221,31 @@ export async function parsePdf({
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'md',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'md',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'markdown', cachedTime: null};
     }
 
     case 'pdfreader': {
-      const text = await pdfParseWithPdfreader({file, columnsNumber});
+      const text = await pdfParseWithPdfReader({file, columnsNumber});
 
       if (isBlankString(text)) {
         throw new Error(`Parser ${output} produced an empty file`);
       }
 
-      writeToTimestampedFile(
-        text,
-        'tmp',
-        `${file.name}_parser-${output}`,
-        'txt',
-        'parsedPdf'
-      );
+      writeToTimestampedFile({
+        content: text,
+        destinationFolderPath: 'tmp',
+        fileName: `${file.name}_parser-${output}`,
+        fileExtension: 'txt',
+        prefix: 'parsedPdf',
+      });
 
       return {text, contentType: 'string', cachedTime: null};
     }
@@ -401,6 +389,7 @@ async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
       return new LlamaParseReader({
         resultType: 'text',
         fastMode: true,
+        // TODO: Update when adding multi language suppport
         language: 'en',
         skipDiagonalText: false,
         doNotUnrollColumns: false,
@@ -414,6 +403,7 @@ async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
     } else {
       return new LlamaParseReader({
         resultType: 'markdown',
+        // TODO: Update when adding multi language suppport
         language: 'en',
         skipDiagonalText: false,
         doNotUnrollColumns: false,
@@ -479,7 +469,7 @@ export async function pdfParseWithAzureDocumentIntelligence(file: File) {
   return result.analyzeResult.content;
 }
 
-export async function pdfParseWithPdfreader({
+export async function pdfParseWithPdfReader({
   file,
   columnsNumber,
 }: {
@@ -502,6 +492,7 @@ export async function pdfParseWithPdfreader({
 
   type PageData = {page: number; width: number; height: number};
   type ItemData = Item & {
+    column: 'left' | 'right';
     page: {num: number; width: number; height: number};
   };
   type FileData = {file: {path: string}};
@@ -514,50 +505,40 @@ export async function pdfParseWithPdfreader({
     let leftColumn: ItemData[] = [];
     let rightColumn: ItemData[] = [];
     let currentPage: PageData = {page: 0, width: 0, height: 0};
+    let lastHeight = 0;
 
     new PdfReader().parseBuffer(fileBuffer, (err, item: PdfItem | null) => {
       if (err) {
         reject(err);
       } else if (item == null) {
         // Processing last page
-        pages.push(
-          leftColumn.map((i) => i.text).join(' ') +
-            ' ' +
-            rightColumn.map((i) => i.text).join(' ')
-        );
-
+        pushPage();
         resolve([]);
       } else if ('text' in item) {
         // Determine which column the text belongs to based on the x-coordinate
         const columnBoundary = currentPage.width / columnsNumber;
+        const column = item.x <= columnBoundary ? 'left' : 'right';
+        const newItem = {
+          ...item,
+          column,
+          page: {
+            num: currentPage.page,
+            height: currentPage.height,
+            width: currentPage.width,
+          },
+        } as const;
 
-        if (item.x <= columnBoundary) {
-          leftColumn.push({
-            ...item,
-            page: {
-              num: currentPage.page,
-              height: currentPage.height,
-              width: currentPage.width,
-            },
-          });
+        if (column === 'left') {
+          leftColumn.push(newItem);
         } else {
-          rightColumn.push({
-            ...item,
-            page: {
-              num: currentPage.page,
-              height: currentPage.height,
-              width: currentPage.width,
-            },
-          });
+          rightColumn.push(newItem);
         }
+
+        lastHeight = item.y;
       } else if ('page' in item) {
         // Processing previous page
         if (currentPage.page > 0) {
-          pages.push(
-            leftColumn.map((i) => i.text).join(' ') +
-              ' ' +
-              rightColumn.map((i) => i.text).join(' ')
-          );
+          pushPage();
         }
 
         leftColumn = [];
@@ -565,24 +546,41 @@ export async function pdfParseWithPdfreader({
         currentPage = item;
       }
     });
+
+    /**
+     * Pushes the content of the current page to the pages array adding a
+     * newline character when the line changes in the original PDF.
+     */
+    function pushPage() {
+      let previousI: {y: number} | null = null;
+      pages.push(
+        [...leftColumn, ...rightColumn].reduce((acc, i) => {
+          if (previousI?.y !== i.y) {
+            acc += '\n';
+          }
+
+          previousI = i;
+          return acc + i.text;
+        }, '')
+      );
+    }
   });
 
-  return (
-    pages
-      .join(' ')
-      // Replacing double spaces from single ones
-      .replaceAll(/\s+/g, ' ')
-      // Sometimes in some PDFs the words are split with hyphens when they
-      // change lines or columns, we transform the sequence to a regular
-      // hyphen. We cannot flat out remove the hyphens because if the PDF
-      // contains mathematical formulas or composite words we could remove
-      // those and confuse the LLM even more.
-      .replaceAll(/(\w)\s-\s(\w)/gi, '$1-$2')
-      // Replacing unwanted extra spaces before and after punctuation characters
-      .replaceAll(/([\w,:;!?\])’”"'»›])\s+([.,:;!?\])’”"'»›])/g, '$1$2')
-      .replaceAll(/([\(\[`‘“"'«‹])\s+(\w)/g, '$1$2')
-      .trim()
-  );
+  const parsedText = pages
+    .join(' ')
+    // Removing hyphens on newlines
+    .replaceAll(/([a-z]+)-[\r\n]+([a-z]+[ .,:;!?\])’”"'»›]{0,1})/g, '$1$2\n')
+    // Replacing double spaces and multiple newlines to single ones
+    .replaceAll(/[ ]+/g, ' ')
+    .replaceAll(/[\r\n]+/g, '\n')
+    // Replacing unwanted extra spaces before and after punctuation characters
+    .replaceAll(/([\w,:;!?\])’”"'»›])[ ]+([.,:;!?\])’”"'»›])/g, '$1$2')
+    .replaceAll(/([\(\[`‘“"'«‹])[ ]+(\w)/g, '$1$2')
+    // Replacing list characters to '-'
+    .replaceAll(/^[•·o*—‒–][ ]+([\w\r\n])/gm, '- $1')
+    .trim();
+
+  return parsedText;
 }
 
 export function lintAndFixMarkdown(markdown: string) {
@@ -598,148 +596,6 @@ export function lintAndFixMarkdown(markdown: string) {
   });
 
   return markdownlintRuleHelpers.applyFixes(markdown, results.content);
-}
-
-type SectionNode = {
-  type: 'section';
-  level: number;
-  title: string;
-  content: string;
-  subsections: SectionNode[];
-};
-
-export async function markdownToSectionsJson(
-  markdown: string
-): Promise<SectionNode[]> {
-  const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
-  const tokens = plainMarked.lexer(markdown);
-  // This should be an array because the object itself acts as a fake root
-  // node, in case there are more than one level 1 headings in the document
-  const jsonStructure: SectionNode[] = [];
-  const stack: SectionNode[] = [];
-  let currentContent = '';
-
-  for (const token of tokens) {
-    if (token.type === 'heading') {
-      // When we encounter a new heading, we should finalize the previous section content
-      if (currentContent.length > 0) {
-        if (stack.length > 0) {
-          stack[stack.length - 1].content = decodeHTML(
-            await plainMarked.parse(currentContent.trim())
-          );
-        }
-
-        currentContent = '';
-      }
-
-      const node: SectionNode = {
-        type: 'section',
-        level: token.depth,
-        title: token.text,
-        content: '',
-        subsections: [],
-      };
-
-      // Find the right place to insert the node based on its level
-      while (stack.length > 0 && stack[stack.length - 1].level >= token.depth) {
-        stack.pop();
-      }
-
-      if (stack.length === 0) {
-        jsonStructure.push(node);
-      } else {
-        stack[stack.length - 1].subsections.push(node);
-      }
-
-      stack.push(node);
-    } else {
-      // Append the current token to the content string
-      currentContent += token.raw;
-    }
-  }
-
-  // Finalize the last section content
-  if (currentContent && stack.length > 0) {
-    stack[stack.length - 1].content = decodeHTML(
-      await plainMarked.parse(currentContent.trim())
-    );
-  }
-
-  return jsonStructure;
-}
-
-export async function chunkSectionsJson(sectionsJson: SectionNode[]) {
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 150,
-    chunkOverlap: 0,
-    separators: ['\n\n', '\n', '.', '?', '!', ' ', ''],
-  });
-
-  async function chunkSectionContent({
-    section,
-    headerRoute,
-    headerRouteLevels,
-    chunks,
-  }: {
-    section: SectionNode;
-    headerRoute: string;
-    headerRouteLevels: string;
-    chunks: Document[];
-  }) {
-    const splits = await splitter.splitText(section.content);
-
-    const newChunks = splits.map((text, index): ChunkDoc => {
-      const tokens = (function () {
-        const res = isWithinTokenLimit(text.trim(), Number.MAX_VALUE);
-
-        if (res === false) {
-          throw new Error(
-            "This shouldn't happen. Attempting to get the token size of a chunk."
-          );
-        } else {
-          return res;
-        }
-      })();
-
-      return new Document({
-        id: uuidv4(),
-        pageContent: text.trim(),
-        metadata: {
-          headerRoute,
-          headerRouteLevels,
-          order: index + 1,
-          tokens,
-        },
-      });
-    });
-
-    chunks.push(...newChunks);
-
-    for (let i = 0; i < section.subsections.length; i++) {
-      const subsection = section.subsections[i];
-
-      await chunkSectionContent({
-        section: subsection,
-        headerRoute: `${headerRoute}>${subsection.title}`,
-        headerRouteLevels: `${headerRouteLevels}>${i + 1}`,
-        chunks,
-      });
-    }
-  }
-
-  const chunks: ChunkDoc[] = [];
-
-  for (let i = 0; i < sectionsJson.length; i++) {
-    const section = sectionsJson[i];
-    await chunkSectionContent({
-      section,
-      headerRoute: section.title,
-      headerRouteLevels: `${i + 1}`,
-      chunks,
-    });
-  }
-
-  return chunks;
 }
 
 async function findMostRecentParsedFilePath(
@@ -796,105 +652,4 @@ function extractTimestamp(fileName: string): number {
 
   // Return 0 if timestamp not found (shouldn't happen if file name matches regex)
   return 0;
-}
-
-/**
- * Reconciles two texts by comparing and merging their differences.
- *
- * This function takes two texts as input, normalizes the first text, generates a diff JSON using jsdiff,
- * and then iterates over the diff to merge the differences between the two texts.
- * It handles cases where the second text has extra words, missing words, or equal words.
- * It tries to preserve the structure and case of the second text with the words of the first text.
- *
- * @param {string} firstText - The original text to be reconciled.
- * @param {string} secondText - The LLM text to be reconciled with the original text.
- * @return {string} The reconciled text.
- */
-export function reconcileTexts(firstText: string, secondText: string): string {
-  // Normalize the first text for easier diffing
-  const normalizedFirstText = firstText
-    .split(/[\s\n]+/)
-    .map((s) => s.trim())
-    .join(' ');
-
-  // Generate the diff JSON using jsdiff
-  const diff = diffWords(normalizedFirstText, secondText, {
-    ignoreCase: true,
-  });
-
-  const chunks: string[] = [];
-  let firstTextIndex = 0;
-
-  diff.forEach((part) => {
-    if (part.added) {
-      // LLM has an extra piece of text, we need to remove it. Don't add
-      // this text to the result array, as we need to remove them
-    } else if (part.removed) {
-      // Traditional text has a piece of text that LLM is missing.
-      // Insert the missing words but handle the case based on the context
-      const missingWords = part.value
-        .split(/\s+/)
-        .filter((w) => !isBlankString(w));
-
-      missingWords.forEach((word) => {
-        let newWord: string = '';
-
-        if (chunks.length > 0) {
-          const lastChunkSplit = chunks[chunks.length - 1]
-            .split(/[\s\n]+/)
-            .filter((w) => !isBlankString(w));
-          const lastWord = lastChunkSplit[lastChunkSplit.length - 1];
-          const nextWord = secondText
-            .slice(firstTextIndex)
-            .split(/\s+/)
-            .filter((w) => !isBlankString(w))[0];
-
-          newWord = matchCaseBySurroundingWords(word, lastWord, nextWord);
-        } else {
-          newWord = word;
-        }
-
-        chunks.push(newWord);
-      });
-    } else {
-      // Words are equal
-      chunks.push(part.value); // Directly use the part value from the LLM text
-    }
-
-    firstTextIndex += part.value.length;
-  });
-
-  // The final step is to join the words together with a space and remove
-  // any double spaces. We only add a space between words, not other
-  // characters.
-  const finalStr = chunks.reduce((prev, curr) => {
-    const shouldAddSpace = (() => {
-      // Combine the strings with a special delimiter to aid in regex
-      const combined = `${prev.trim()}#--#${curr.trim()}`;
-
-      const noSpacePatterns = [
-        /[(\[{`‘“"'«‹]#--#/, // no space when a parenthesis or quote opens (eg. '["a')
-        /\d#--#\d/, // no space between digits (eg. 06)
-        /\w#--#\W/i, // no space between a word char and a non word char (eg. 'a.')
-        /#--#[)\]}`’”"'»›]/, // curr starts with a closing parenthesis or quote (eg. '[a"'),
-        /#--#…/, // No space before an ellipsis (e.g., 'word…'),
-      ];
-
-      // Check if any pattern matches the combined string
-      for (const pattern of noSpacePatterns) {
-        if (pattern.test(combined)) {
-          return false; // No space should be added
-        }
-      }
-
-      // Otherwise, return true (space needed)
-      return true;
-    })();
-
-    const newString = prev + (shouldAddSpace ? ' ' : '') + curr;
-
-    return newString.replaceAll(/\s{2,}/g, ' ').trim();
-  }, '');
-
-  return finalStr;
 }

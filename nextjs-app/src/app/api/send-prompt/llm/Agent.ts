@@ -1,8 +1,11 @@
-import {ChunkDoc, chunkMetadataSchema} from '@/app/common/types/ChunkDoc';
 import {
   ReconstructedSectionDoc,
   reconstructedSectionMetadataSchema,
 } from '@/app/common/types/ReconstructedSectionDoc';
+import {
+  SectionChunkDoc,
+  sectionChunkMetadataSchema,
+} from '@/app/common/types/SectionChunkDoc';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
@@ -29,11 +32,11 @@ export async function sendPrompt(
   }
 
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
-  const retrievedContext = (
-    await retrieveContext(prompt, collectionName, sectionPrefix)
-  )
-    .replaceAll('\n. ', '.\n')
-    .replaceAll('\n.', '.');
+  const retrievedContext = await retrieveContext(
+    prompt,
+    collectionName,
+    sectionPrefix
+  );
 
   const chatText = `{documentDescription}
 From the following fragments of text extracted from the original document, use the relevant fragments as context to answer the user's question to the best of your ability.
@@ -56,7 +59,7 @@ DOCUMENT FRAGMENTS:
 
   const llm = new ChatOpenAI({
     model: 'gpt-4o-mini',
-    temperature: 0.5,
+    temperature: 0.2,
     apiKey: process.env.OPENAI_API_KEY,
   });
 
@@ -88,18 +91,19 @@ DOCUMENT FRAGMENTS:
 
   const finalHtml = sanitizeHtml(await marked.parse(responseContent));
 
-  const answerFilePath = writeToTimestampedFile(
-    `[PROMPT]: ${systemMessage.content}\n` +
+  const answerFilePath = writeToTimestampedFile({
+    content:
+      `[PROMPT]: ${systemMessage.content}\n` +
       chatTemplate
         .toChatMessages()
         .map((m) => m.content)
         .join('\n\n') +
       '\n\n' +
       `[RESPONSE]: ${responseContent}\n`,
-    'tmp',
-    'llmAnswer',
-    'txt'
-  );
+    destinationFolderPath: 'tmp',
+    fileName: 'llmAnswer',
+    fileExtension: 'txt',
+  });
 
   console.log('Saved answer to file:', answerFilePath);
 
@@ -115,11 +119,11 @@ export async function retrieveContext(
     collectionName,
     prompt,
     30
-  )) as ChunkDoc[];
+  )) as SectionChunkDoc[];
 
   assert(
     similarChunks
-      .map((c) => chunkMetadataSchema.safeParse(c.metadata))
+      .map((c) => sectionChunkMetadataSchema.safeParse(c.metadata))
       .every((r) => r.success),
     'Invalid chunk metadata'
   );
@@ -128,7 +132,7 @@ export async function retrieveContext(
 
   // This is to avoid reconstructing the same section twice. Although it
   // needs refining (check reconstructSection() TODO comment)
-  const seenHeaderRoutes = new Set();
+  const seenSectionsIds = new Set();
 
   const reconstructedSections = await (async function () {
     const result: ReconstructedSectionDoc[] = [];
@@ -138,9 +142,7 @@ export async function retrieveContext(
         break;
       }
 
-      if (
-        seenHeaderRoutes.has(chunk.metadata.headerRoute.trim().toUpperCase())
-      ) {
+      if (seenSectionsIds.has(chunk.metadata.sectionId)) {
         continue;
       }
 
@@ -151,7 +153,7 @@ export async function retrieveContext(
         1000
       );
 
-      seenHeaderRoutes.add(chunk.metadata.headerRoute.trim().toUpperCase());
+      seenSectionsIds.add(chunk.metadata.sectionId);
       leftTotalTokens = leftTotalTokens - reconstructedSection.metadata.tokens;
 
       result.push(reconstructedSection);
@@ -181,34 +183,31 @@ export async function retrieveContext(
 
 async function reconstructSection(
   prompt: string,
-  chunk: ChunkDoc,
+  chunk: SectionChunkDoc,
   collectionName: string,
   maxSectionTokens: number
 ): Promise<ReconstructedSectionDoc> {
   const {headerRoute, headerRouteLevels, order} = chunk.metadata;
 
-  // Step 1: Query all chunks for the given section using the headerRoute filter
-  const allChunksInSection = await queryCollection(
-    collectionName,
-    prompt,
-    100,
-    {
-      filter: {headerRouteLevels},
-    }
-  );
+  // Query all chunks for the given section using the headerRoute filter.
+  // Well, 100 is Chroma limit so maybe we aren't retrieving all of them
+  // but 100 should be way more than what we need.
+  const chunksInSection = await queryCollection(collectionName, prompt, 100, {
+    filter: {headerRouteLevels},
+  });
 
-  // Step 2: Sort the chunks based on their order in the document
-  const sortedChunks = allChunksInSection.sort(
+  // Sort the chunks based on their order in the document
+  const sortedChunks = chunksInSection.sort(
     (a, b) => a.metadata.order - b.metadata.order
   );
 
-  // Step 3: Initialize reconstruction with the current chunk
+  // Initialize reconstruction with the current chunk
   const initialChunkIndex = order - 1;
   const initialChunk = sortedChunks[initialChunkIndex];
   let reconstructedChunks = [initialChunk];
   let currentTokenCount = initialChunk.metadata.tokens;
 
-  // Step 4: Reconstruct by adding chunks above and below
+  // Reconstruct by adding chunks above and below
   let priorIndex = initialChunkIndex - 1;
   let afterIndex = initialChunkIndex + 1;
 
@@ -237,15 +236,18 @@ async function reconstructSection(
   // TODO: Return all the order numbers of tokens included in this section,
   // so we can check on the call if the current chunk was included or not.
 
+  const finalText = reconstructedChunks
+    .map((chunk) => chunk.pageContent)
+    .join('\n');
+
   const finalDoc = new Document({
     id: uuidv4(),
-    pageContent: reconstructedChunks
-      .map((chunk) => chunk.pageContent)
-      .join('\n'),
+    pageContent: finalText,
     metadata: {
       headerRoute,
       headerRouteLevels,
       tokens: currentTokenCount,
+      charCount: finalText.length,
     },
   });
 
