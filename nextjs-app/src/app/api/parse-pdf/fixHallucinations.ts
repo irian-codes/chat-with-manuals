@@ -206,12 +206,14 @@ export async function fixHallucinationsOnSections({
   writeToTimestampedFile({
     content: JSON.stringify(
       {
-        fixedSections: Map.groupBy(
-          [
-            ...flattenSectionsTree(fixedSections),
-            ...flattenSectionsTree(sections),
-          ],
-          (s) => s.id
+        fixedSections: Object.fromEntries(
+          Map.groupBy(
+            [
+              ...flattenSectionsTree(fixedSections),
+              ...flattenSectionsTree(sections),
+            ],
+            (s) => s.headerRouteLevels
+          )
         ),
       },
       null,
