@@ -132,7 +132,7 @@ export async function retrieveContext(
 
   // This is to avoid reconstructing the same section twice. Although it
   // needs refining (check reconstructSection() TODO comment)
-  const seenHeaderRoutes = new Set();
+  const seenSectionsIds = new Set();
 
   const reconstructedSections = await (async function () {
     const result: ReconstructedSectionDoc[] = [];
@@ -142,9 +142,7 @@ export async function retrieveContext(
         break;
       }
 
-      if (
-        seenHeaderRoutes.has(chunk.metadata.headerRoute.trim().toUpperCase())
-      ) {
+      if (seenSectionsIds.has(chunk.metadata.sectionId)) {
         continue;
       }
 
@@ -155,7 +153,7 @@ export async function retrieveContext(
         1000
       );
 
-      seenHeaderRoutes.add(chunk.metadata.headerRoute.trim().toUpperCase());
+      seenSectionsIds.add(chunk.metadata.sectionId);
       leftTotalTokens = leftTotalTokens - reconstructedSection.metadata.tokens;
 
       result.push(reconstructedSection);
@@ -191,28 +189,25 @@ async function reconstructSection(
 ): Promise<ReconstructedSectionDoc> {
   const {headerRoute, headerRouteLevels, order} = chunk.metadata;
 
-  // Step 1: Query all chunks for the given section using the headerRoute filter
-  const allChunksInSection = await queryCollection(
-    collectionName,
-    prompt,
-    100,
-    {
-      filter: {headerRouteLevels},
-    }
-  );
+  // Query all chunks for the given section using the headerRoute filter.
+  // Well, 100 is Chroma limit so maybe we aren't retrieving all of them
+  // but 100 should be way more than what we need.
+  const chunksInSection = await queryCollection(collectionName, prompt, 100, {
+    filter: {headerRouteLevels},
+  });
 
-  // Step 2: Sort the chunks based on their order in the document
-  const sortedChunks = allChunksInSection.sort(
+  // Sort the chunks based on their order in the document
+  const sortedChunks = chunksInSection.sort(
     (a, b) => a.metadata.order - b.metadata.order
   );
 
-  // Step 3: Initialize reconstruction with the current chunk
+  // Initialize reconstruction with the current chunk
   const initialChunkIndex = order - 1;
   const initialChunk = sortedChunks[initialChunkIndex];
   let reconstructedChunks = [initialChunk];
   let currentTokenCount = initialChunk.metadata.tokens;
 
-  // Step 4: Reconstruct by adding chunks above and below
+  // Reconstruct by adding chunks above and below
   let priorIndex = initialChunkIndex - 1;
   let afterIndex = initialChunkIndex + 1;
 
