@@ -2,10 +2,7 @@ import {
   ReconstructedSectionDoc,
   reconstructedSectionMetadataSchema,
 } from '@/app/common/types/ReconstructedSectionDoc';
-import {
-  SectionChunkDoc,
-  sectionChunkMetadataSchema,
-} from '@/app/common/types/SectionChunkDoc';
+import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
@@ -120,13 +117,6 @@ export async function retrieveContext(
     prompt,
     30
   )) as SectionChunkDoc[];
-
-  assert(
-    similarChunks
-      .map((c) => sectionChunkMetadataSchema.safeParse(c.metadata))
-      .every((r) => r.success),
-    'Invalid chunk metadata'
-  );
 
   let leftTotalTokens = 3000;
 
