@@ -279,11 +279,20 @@ export async function fixHallucinationsOnSections({
     return batchResults.flat();
   }
 
-  function flattenSectionsTree(sections: SectionNode[]): SectionNode[] {
-    const flattened: SectionNode[] = [];
+  function flattenSectionsTree(sections: SectionNode[]) {
+    const flattened: (Omit<SectionNode, 'tables'> & {
+      tables: {
+        [key: number]: string;
+      };
+    })[] = [];
 
     sections.forEach((section) => {
-      flattened.push({...section, subsections: []});
+      flattened.push({
+        ...section,
+        subsections: [],
+        // So we can serialize it
+        tables: Object.fromEntries(section.tables),
+      });
       flattened.push(...flattenSectionsTree(section.subsections));
     });
 
