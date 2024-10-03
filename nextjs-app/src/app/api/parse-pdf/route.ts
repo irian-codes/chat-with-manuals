@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
         console.log('Fixing LLM hallucinations...', `File hash: ${fileHash}`);
         console.time('fixHallucinationsOnSections');
-        const fixedChunks = await fixHallucinationsOnSections({
+        const fixedSections = await fixHallucinationsOnSections({
           file,
           columnsNumber,
           sections: mdToJson,
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
         console.log('Chunking section nodes for embedding');
         console.time('chunkSectionNodes');
         const sectionChunks = await chunkSectionNodes(
-          fixedChunks,
+          fixedSections,
           new RecursiveCharacterTextSplitter({
             chunkSize: 150,
             chunkOverlap: 0,
