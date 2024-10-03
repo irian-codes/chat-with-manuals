@@ -947,7 +947,7 @@ function reconcileSections({
         const chunk = chunks[i];
 
         if (chunk.metadata.table === true) {
-          contentParts.push(`<<<TABLE:${++currentTableCount}>>>`);
+          contentParts.push(`<<<TABLE:${currentTableCount++}>>>`);
 
           // Skip table chunks since we don't reconcile them for now.
           while (i < chunks.length && chunks[i + 1]?.metadata.table === true) {
