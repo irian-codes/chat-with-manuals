@@ -938,7 +938,10 @@ function reconcileSections({
     }
 
     // If the section's headerRouteLevels is in chunksByHeaderRouteLevels
-    const chunks = chunksByHeaderRouteLevels.get(section.headerRouteLevels);
+    const chunks = chunksByHeaderRouteLevels
+      .get(section.headerRouteLevels)
+      ?.sort((a, b) => a.metadata.order - b.metadata.order);
+
     if (chunks != null) {
       let currentTableCount = 0;
       let contentParts: string[] = [];
