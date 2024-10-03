@@ -899,7 +899,7 @@ For additional context, the fragments belong to the following nested section tit
   };
 }
 
-function reconcileSections({
+export function reconcileSections({
   originalSections,
   reconciledChunks,
 }: {
@@ -952,7 +952,16 @@ function reconcileSections({
         if (chunk.metadata.table === true) {
           contentParts.push(`<<<TABLE:${currentTableCount++}>>>`);
 
-          // Skip table chunks since we don't reconcile them for now.
+          // Skip table chunks since we don't reconcile them for now. TODO:
+          // TODO: This for now seems not to matter, but at least we have
+          // to note the bug. If there are two tables in the original
+          // section like this `<<<TABLE:x>>>\n<<<TABLE:y>>>` this loop
+          // will reconciliate both tables as `<<<TABLE:x>>>` since the
+          // correct table number increases by one if there are non table
+          // elements between them. It doesn't seem to matter much because
+          // joining tables like this should not affect the embeddings
+          // since we're only registering if a chunk is table or not, not
+          // the table number it belongs to.
           while (i < chunks.length && chunks[i + 1]?.metadata.table === true) {
             i++;
           }
