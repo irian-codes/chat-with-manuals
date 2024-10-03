@@ -31,28 +31,6 @@ export async function fixHallucinationsOnSections({
   file: File;
   columnsNumber: number;
 }): Promise<SectionNode[]> {
-  // TODO:
-  // - Parse with pdfreader.
-  //
-  // - Chunk pdfreader output and sections by sentences
-  //
-  // - Match section text chunk to pdfreader chunk (or maybe chunks
-  //   if they aren't the same).
-
-  //    -- Skip table chunks
-  //    -- Tools:
-  //      `totalOrder` prop segmentation, Levenhstein Distance, Cosine
-  //      similarity, Approximate String Matching (natural package)
-  //
-  // - Reconcile LLM chunk with pdfreader chunk(s) to fix
-  //   hallucinations with some difference tolerance.
-  //    -- Either ChatGPT4o mini or some way with 'natural' of detecting garbage and strip it
-  //
-  // - Using 'headerRoutesLevels' on the chunks, group them
-  //   and merge them and substitute the Section content.
-  //
-  // return the fixed sections
-
   // Chunking sections with a sentence splitter
   console.log('Chunk section nodes for reconciliation...');
   console.time('chunkSectionNodes');
