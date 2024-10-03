@@ -6,6 +6,7 @@ import {
   clearVectorDB,
   diffTexts,
   function1,
+  function2,
   getMarkdownLexer,
   parseMarkdownToJson,
   parseMarkdownToPlainText,
@@ -62,6 +63,12 @@ export default function Page({}: Props) {
     });
   }
 
+  function handleButtonClick9() {
+    function2().then((res) => {
+      console.log(res);
+    });
+  }
+
   return (
     <div>
       <h1 className="m-6 bg-red-500 p-3 text-center text-3xl text-white">
@@ -103,6 +110,12 @@ export default function Page({}: Props) {
           onClick={handleButtonClick8}
         >
           Function 1 (generic)
+        </button>
+        <button
+          className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"
+          onClick={handleButtonClick9}
+        >
+          Function 2 (generic)
         </button>
         <button
           className="m-6 rounded-sm border-2 border-white p-3 hover:border-blue-500 hover:bg-blue-100 hover:text-black"

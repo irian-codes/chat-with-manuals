@@ -3,6 +3,7 @@ import {
   reconstructedSectionMetadataSchema,
 } from '@/app/common/types/ReconstructedSectionDoc';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
+import {CohereRerank} from '@langchain/cohere';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
@@ -32,7 +33,8 @@ export async function sendPrompt(
   const retrievedContext = await retrieveContext(
     prompt,
     collectionName,
-    sectionPrefix
+    sectionPrefix,
+    null
   );
 
   const chatText = `{documentDescription}
@@ -110,14 +112,10 @@ DOCUMENT FRAGMENTS:
 export async function retrieveContext(
   prompt: string,
   collectionName: string,
-  sectionHeaderPrefix: string
+  sectionHeaderPrefix: string,
+  reranker: 'cohere' | null
 ): Promise<string> {
-  const similarChunks = (await queryCollection(
-    collectionName,
-    prompt,
-    30
-  )) as SectionChunkDoc[];
-
+  const similarChunks = await getSimilarChunks(30);
   let leftTotalTokens = 3000;
 
   // This is to avoid reconstructing the same section twice. Although it
@@ -169,6 +167,49 @@ export async function retrieveContext(
         `${sectionHeaderPrefix}${doc.metadata.headerRoute}\n\n${doc.pageContent}`
     )
     .join('\n\n');
+
+  // HELPER FUNCTIONS
+
+  async function getSimilarChunks(
+    maxChunks: number
+  ): Promise<SectionChunkDoc[]> {
+    z.number().int().min(1).parse(maxChunks);
+
+    const chunks = (await queryCollection(
+      collectionName,
+      prompt,
+      100
+    )) as SectionChunkDoc[];
+
+    if (!reranker) {
+      return chunks.slice(0, maxChunks);
+    } else if (reranker === 'cohere') {
+      const cohereRerank = new CohereRerank({
+        apiKey:
+          process.env.NODE_ENV === 'test'
+            ? process.env.VITE_COHERE_API_KEY
+            : process.env.COHERE_API_KEY,
+        model: 'rerank-english-v3.0',
+      });
+
+      const rerankedDocumentsResults = await cohereRerank.rerank(
+        chunks.map(
+          (c) =>
+            `SECTION TITLE: ${c.metadata.headerRoute}\nSECTION CONTENT: ${c.pageContent}`
+        ),
+        prompt,
+        {
+          topN: maxChunks,
+        }
+      );
+
+      const result = rerankedDocumentsResults.map((res) => chunks[res.index]);
+
+      return result;
+    } else {
+      throw new Error('Unsupported reranker passed as parameter: ' + reranker);
+    }
+  }
 }
 
 async function reconstructSection(

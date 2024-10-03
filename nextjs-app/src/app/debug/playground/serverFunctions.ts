@@ -1,5 +1,6 @@
 'use server';
 
+import {runRerankerTests} from '@/__tests__/api/llm/reranker';
 import {clearStorage, initStorage} from '@/app/api/db/uploaded-files-db/files';
 import {clearDatabase} from '@/app/api/db/vector-db/VectorDB';
 import {
@@ -136,6 +137,11 @@ export async function function1() {
 
     return lDistance > 8;
   });
+}
+
+export async function function2() {
+  console.log('Function 2 called');
+  return await runRerankerTests();
 }
 
 export async function clearNodePersistStorage() {
