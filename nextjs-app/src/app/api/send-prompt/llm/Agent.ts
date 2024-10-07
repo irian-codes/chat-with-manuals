@@ -65,7 +65,7 @@ DOCUMENT FRAGMENTS:
   });
 
   const systemMessage = new SystemMessage(
-    "You're a helpful AI assistant expert in explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I couldn't find the answer in the provided document.'."
+    "You're a helpful AI assistant expert in explaining documents. Answer based only on the supplied context. Provide accurate, clear answers. Cite references in the context. Do not include external information, assumptions, opinions, or interpretations. If you can't find the answer, say 'I couldn't find the answer in the provided document.'"
   );
 
   console.log('Sending message to LLM...');
@@ -121,8 +121,8 @@ export async function retrieveContext(
   sectionHeaderPrefix: string,
   reranker: 'cohere' | null
 ): Promise<string> {
-  const similarChunks = await getSimilarChunks(30);
-  let leftTotalTokens = 3000;
+  const similarChunks = await getSimilarChunks(20);
+  let leftTotalTokens = 1000;
 
   // This is to avoid reconstructing the same section twice. Although it
   // needs refining (check reconstructSection() TODO comment)
@@ -146,7 +146,7 @@ export async function retrieveContext(
         prompt,
         chunk,
         collectionName,
-        1000
+        200
       );
 
       seenSectionsIds.add(chunk.metadata.sectionId);
