@@ -29,6 +29,8 @@ export async function sendPrompt(
     documentDescription = '';
   }
 
+  console.log('Retrieving context...');
+
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
   const retrievedContext = await retrieveContext(
     prompt,
@@ -66,6 +68,8 @@ DOCUMENT FRAGMENTS:
     "You're a helpful AI assistant expert in explaining documents in understandable terms. Your answers should be elaborate. If you don't know the answer just say 'I couldn't find the answer in the provided document.'."
   );
 
+  console.log('Sending message to LLM...');
+
   const response = await llm.invoke([
     systemMessage,
     ...chatTemplate.toChatMessages(),
@@ -81,6 +85,8 @@ DOCUMENT FRAGMENTS:
         .join('\n\n'),
     response: response.content,
   });
+
+  console.log('Transforming answer to HTML...');
 
   // According to marked we better do this:
   // https://marked.js.org/#usage
@@ -134,6 +140,8 @@ export async function retrieveContext(
         continue;
       }
 
+      console.log('Reconstructing section: ', chunk.metadata.headerRoute);
+
       const reconstructedSection = await reconstructSection(
         prompt,
         chunk,
@@ -174,6 +182,8 @@ export async function retrieveContext(
     maxChunks: number
   ): Promise<SectionChunkDoc[]> {
     z.number().int().min(1).parse(maxChunks);
+
+    console.log('Getting similar chunks...');
 
     const chunks = (await queryCollection(
       collectionName,
