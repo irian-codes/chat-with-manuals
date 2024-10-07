@@ -253,13 +253,21 @@ async function reconstructSection(
   let afterIndex = initialChunkIndex + 1;
 
   while (priorIndex >= 0 || afterIndex < sortedChunks.length) {
+    const chunkSkipped: {above?: boolean; below?: boolean} = {
+      above: undefined,
+      below: undefined,
+    };
+
     // Add the chunk above if available and within token limit
     if (priorIndex >= 0) {
       const aboveChunk = sortedChunks[priorIndex];
       if (currentTokenCount + aboveChunk.metadata.tokens <= maxSectionTokens) {
+        chunkSkipped.above = false;
         reconstructedChunks.unshift(aboveChunk);
         currentTokenCount += aboveChunk.metadata.tokens;
         priorIndex--;
+      } else {
+        chunkSkipped.above = true;
       }
     }
 
@@ -267,10 +275,18 @@ async function reconstructSection(
     if (afterIndex < sortedChunks.length) {
       const belowChunk = sortedChunks[afterIndex];
       if (currentTokenCount + belowChunk.metadata.tokens <= maxSectionTokens) {
+        chunkSkipped.below = false;
         reconstructedChunks.push(belowChunk);
         currentTokenCount += belowChunk.metadata.tokens;
         afterIndex++;
+      } else {
+        chunkSkipped.below = true;
       }
+    }
+
+    // We detect we could add at least one chunk, so we continue.
+    if (!(chunkSkipped.above === false || chunkSkipped.below === false)) {
+      break;
     }
   }
 
