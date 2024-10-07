@@ -202,6 +202,8 @@ export async function retrieveContext(
         model: 'rerank-english-v3.0',
       });
 
+      // TODO: Cohere can rate limit and for whatever reason it just
+      // "hangs" instead of returning an error, so add a timeout here.
       const rerankedDocumentsResults = await cohereRerank.rerank(
         chunks.map(
           (c) =>
