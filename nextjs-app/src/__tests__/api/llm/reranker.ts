@@ -25,7 +25,9 @@ type TestResult = PromptReference & {
 
 const documents = {
   rootManual: '1733c6da-6de4-4aa1-8e8a-e4bd92ed23ff',
-  swadeManual: 'f3fd1efc-dfb8-45aa-a80f-2c21bb8a2c54',
+  aliensManual: '84e763aa-943a-46f5-8b06-0b53d3e491e8',
+  bitcoinWhitepaper: 'c76946a7-671b-42b6-8d5a-3e57cd88690b',
+  airPurifierManual: '86b5aea9-9848-4f90-829e-aad28539cece',
 } as const;
 
 const llm = new ChatOpenAI({
@@ -107,18 +109,35 @@ async function testLLMAnswers() {
   const testCases: PromptReference[] = [
     {
       prompt: 'How do I get wood as the Cat?',
-      referenceAnswer: `Starting Supplies: At the beginning of the game, you should set up by forming supplies of 8 wood tokens. This is part of your initial setup as the Marquise de Cat (refer to section 6.3.1 Gather Warriors and Wood).
-    Using Sawmills: During your Birdsong phase, you can place wood tokens in each clearing that has a sawmill. You will receive one wood token for each sawmill you have in those clearings (see section 6.4 Birdsong). This means that if you have multiple sawmills, you can accumulate more wood.
-    Building and Overworking: In the Daylight phase, you can also gain wood by using the Overwork action. This involves spending a card that matches the clearing of a sawmill you control, which allows you to place an additional wood token there (refer to section 6.5.5 Overwork).`,
+      referenceAnswer: `To get wood as the Marquise de Cat, you can follow these steps:
+Place Wood Tokens: During the Birdsong phase, place wood tokens in each clearing where you have sawmills, with one wood token for each sawmill present (SECTION HEADER ROUTE: 6. Marquise de Cat>6.4 Birdsong).
+Build Buildings: When you build a building (sawmill, workshop, or recruiter), you will need to pay the cost in wood tokens. You can remove wood tokens equal to the building's cost from the chosen clearing, any adjacent clearings you rule, or any clearings connected to the chosen clearing that you rule (SECTION HEADER ROUTE: 6. Marquise de Cat>6.5 Daylight>6.5.4 Build).
+Overwork: You can also spend a card that matches the clearing of a sawmill to place an additional wood token there (SECTION HEADER ROUTE: 6. Marquise de Cat>6.5 Daylight>6.5.5 Overwork).
+By utilizing these methods, you can effectively gather and manage wood as the Marquise de Cat.
+`,
       collectionName: documents.rootManual,
     },
     {
       prompt:
         "As the Alliance, if I'm the defender in a combat which die result should I keep, the highest or the lowest?",
       collectionName: documents.rootManual,
-      referenceAnswer: `As the Woodland Alliance, if you are the defender in a combat, you should keep the highest die result.
-    According to the rules outlined in the document fragments, specifically in the section regarding the Woodland Alliance's faction rules, it states that "As defender in battle, the Alliance will deal hits equal to the higher roll, and the attacker will deal hits equal to the lower roll."
-    This means that in a battle, as the defender, you benefit from keeping the highest roll to maximize the hits you can deal to the attacker.`,
+      referenceAnswer:
+        'As the Alliance, if you are the defender in a combat, you should keep the highest die result. According to the relevant fragment, "As defender in battle, the Alliance will deal hits equal to the higher roll, and the attacker will deal hits equal to the lower roll" (SECTION HEADER ROUTE: 8. Woodland Alliance>8.2 Faction Rules and Abilities>8.2.2 Guerrilla War).',
+    },
+    {
+      prompt: 'How many grunts can a player activate?',
+      collectionName: documents.aliensManual,
+      referenceAnswer: `A player can activate Grunts based on their Hero's Rank. Specifically:
+    Rank 1: Activate one Grunt.
+    Rank 2: Activate up to two Grunts.
+    Rank 3: Activate up to three Grunts.`,
+    },
+    {
+      prompt:
+        'Is a blip spotted if if there are furniture or other items in the middle of the line of sight but the doors are all open?',
+      collectionName: documents.aliensManual,
+      referenceAnswer: `A Blip will be spotted as soon as it comes into Line of Sight of a Character. According to the provided document fragments, doors do not block Line of Sight or movement when they are open. Therefore, if there are furniture or other items in the middle of the line of sight, the presence of open doors means that the Blip can still be spotted as long as it comes into Line of Sight of a Character.
+In summary, a Blip can be spotted even if there are furniture or other items in the middle of the line of sight, provided the doors are open.`,
     },
   ];
 
