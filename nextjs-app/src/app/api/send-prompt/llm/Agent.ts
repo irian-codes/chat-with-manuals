@@ -194,6 +194,20 @@ export async function retrieveContext(
     if (!reranker) {
       return chunks.slice(0, maxChunks);
     } else if (reranker === 'cohere') {
+      // TODO: Probably I'm doing something wrong, but using only the
+      // reranker seems to not yield any substantial improvements overs
+      // similarity search with Chroma. Seems this user uses it more for
+      // the metrics, and they may be useful
+      // (https://www.reddit.com/r/LangChain/comments/1f3h9vk/comment/lkgfs4g/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)
+      // but this is a prototype and in production it should be implemented
+      // differently if the value lies in the data. I should dive deeper
+      // into this someday, but for now, I'm not implementing a reranker.
+      // I've ran my tests using the file in
+      // src/__tests__/api/llm/reranker.ts.
+      throw new Error(
+        "DEPRECATED: Cohere reranker 3.0 seems not useful enough, results aren't substantially better than simple similarity search."
+      );
+
       const cohereRerank = new CohereRerank({
         apiKey:
           process.env.NODE_ENV === 'test'
