@@ -65,7 +65,7 @@ DOCUMENT FRAGMENTS:
   });
 
   const systemMessage = new SystemMessage(
-    "You're a helpful AI assistant expert in explaining documents. Answer based only on the supplied context. Provide accurate, clear answers. Cite references in the context. Do not include external information, assumptions, opinions, or interpretations. If you can't find the answer, say 'I couldn't find the answer in the provided document.'"
+    "You're a helpful AI assistant expert in explaining documents. Answer based only on the supplied context. Provide accurate, clear answers. Cite references in the context. Do not include external information, assumptions, opinions, or interpretations (unless the user requests it). If you can't find the answer, say 'I couldn't find the answer in the provided document.'"
   );
 
   console.log('Sending message to LLM...');
