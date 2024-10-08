@@ -67,12 +67,12 @@ async function queryLLM(
   reranker: 'cohere' | null
 ): Promise<string> {
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
-  const retrievedContext = await retrieveContext(
-    prompt.trim(),
+  const retrievedContext = await retrieveContext({
+    prompt: prompt.trim(),
     collectionName,
-    sectionPrefix,
-    reranker
-  );
+    sectionHeaderPrefix: sectionPrefix,
+    reranker,
+  });
 
   const chatText = `From the following fragments of text extracted from the original document, use the relevant fragments as context to answer the user's question to the best of your ability.
   

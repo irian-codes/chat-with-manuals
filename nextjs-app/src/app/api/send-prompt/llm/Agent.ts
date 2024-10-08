@@ -32,12 +32,11 @@ export async function sendPrompt(
   console.log('Retrieving context...');
 
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
-  const retrievedContext = await retrieveContext(
+  const retrievedContext = await retrieveContext({
     prompt,
     collectionName,
-    sectionPrefix,
-    null
-  );
+    sectionHeaderPrefix: sectionPrefix,
+  });
 
   const chatText = `{documentDescription}
 From the following fragments of text extracted from the original document, use the relevant fragments as context to answer the user's question to the best of your ability.
@@ -115,12 +114,17 @@ DOCUMENT FRAGMENTS:
   return finalHtml;
 }
 
-export async function retrieveContext(
-  prompt: string,
-  collectionName: string,
-  sectionHeaderPrefix: string,
-  reranker: 'cohere' | null
-): Promise<string> {
+export async function retrieveContext({
+  prompt,
+  collectionName,
+  sectionHeaderPrefix = '',
+  reranker = null,
+}: {
+  prompt: string;
+  collectionName: string;
+  sectionHeaderPrefix?: string;
+  reranker?: 'cohere' | null;
+}): Promise<string> {
   const similarChunks = await getSimilarChunks(20);
   let leftTotalTokens = 1000;
 
@@ -142,12 +146,12 @@ export async function retrieveContext(
 
       console.log('Reconstructing section: ', chunk.metadata.headerRoute);
 
-      const reconstructedSection = await reconstructSection(
+      const reconstructedSection = await reconstructSection({
         prompt,
         chunk,
         collectionName,
-        200
-      );
+        maxSectionTokens: 200,
+      });
 
       seenSectionsIds.add(chunk.metadata.sectionId);
       leftTotalTokens = leftTotalTokens - reconstructedSection.metadata.tokens;
@@ -238,12 +242,17 @@ export async function retrieveContext(
   }
 }
 
-async function reconstructSection(
-  prompt: string,
-  chunk: SectionChunkDoc,
-  collectionName: string,
-  maxSectionTokens: number
-): Promise<ReconstructedSectionDoc> {
+async function reconstructSection({
+  prompt,
+  chunk,
+  collectionName,
+  maxSectionTokens,
+}: {
+  prompt: string;
+  chunk: SectionChunkDoc;
+  collectionName: string;
+  maxSectionTokens: number;
+}): Promise<ReconstructedSectionDoc> {
   const {headerRoute, headerRouteLevels, order} = chunk.metadata;
 
   // Query all chunks for the given section using the headerRoute filter.
