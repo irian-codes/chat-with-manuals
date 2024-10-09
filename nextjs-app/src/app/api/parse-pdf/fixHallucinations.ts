@@ -1,3 +1,4 @@
+import {getEnvVars} from '@/app/common/env';
 import {MultipleRegexTextSplitter} from '@/app/common/types/MultipleRegexTextSplitter';
 import {ReconciledChunkDoc} from '@/app/common/types/ReconciledChunkDoc';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
@@ -537,10 +538,7 @@ async function getSimilarityScores<T extends Document, K extends Document>(
 ): Promise<{chunk: K; score: number}[]> {
   const vectorStore = new MemoryVectorStore(
     new OpenAIEmbeddings({
-      apiKey:
-        process.env.NODE_ENV === 'test'
-          ? process.env.VITE_OPENAI_API_KEY
-          : process.env.OPENAI_API_KEY,
+      apiKey: getEnvVars().OPENAI_API_KEY,
       model: 'text-embedding-3-small',
       dimensions: 1536,
     })
@@ -823,10 +821,7 @@ async function tryReconcileSectionChunk({
   const chat = new ChatOpenAI({
     model: 'gpt-4o-mini',
     temperature: 0,
-    apiKey:
-      process.env.NODE_ENV === 'test'
-        ? process.env.VITE_OPENAI_API_KEY
-        : process.env.OPENAI_API_KEY,
+    apiKey: getEnvVars().OPENAI_API_KEY,
   });
 
   const systemMessage = new SystemMessage(

@@ -2,6 +2,7 @@ import {
   saveFileObjectToFileSystem,
   writeToTimestampedFile,
 } from '@/app/api/utils/fileUtils';
+import {getEnvVars} from '@/app/common/env';
 import {PdfParsingOutput} from '@/app/common/types/PdfParsingOutput';
 import {isBlankString} from '@/app/common/utils/stringUtils';
 import DocumentIntelligence, {
@@ -284,7 +285,7 @@ async function pdfParseWithUnstructured(file: File) {
   // Before calling the API, replace filename and ensure sdk is installed: "npm install unstructured-client"
   // See https://docs.unstructured.io/api-reference/api-services/sdk for more details
 
-  const key = process.env.UNSTRUCTURED_API_KEY;
+  const key = getEnvVars().UNSTRUCTURED_API_KEY;
 
   if (!key) {
     throw new Error('UNSTRUCTURED_API_KEY is not set');
@@ -331,7 +332,7 @@ async function pdfParseWithUnstructured(file: File) {
   }
 }
 async function pdfParseWithLLMWhisperer(file: File) {
-  const key = process.env.LLMWHISPERER_API_KEY;
+  const key = getEnvVars().LLMWHISPERER_API_KEY;
 
   if (!key) {
     throw new Error('LLMWHISPERER_API_KEY is not set');
@@ -378,7 +379,7 @@ async function pdfParseWithLLMWhisperer(file: File) {
 async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
   // DOCS: https://docs.cloud.llamaindex.ai/llamaparse/getting_started/typescript
 
-  const key = process.env.LLAMA_CLOUD_API_KEY;
+  const key = getEnvVars().LLAMA_CLOUD_API_KEY;
 
   if (!key) {
     throw new Error('LLAMA_CLOUD_API_KEY is not set');
@@ -435,9 +436,7 @@ async function pdfParseWithLlamaparse(file: File, textOnly: boolean) {
 export async function pdfParseWithAzureDocumentIntelligence(file: File) {
   const client = DocumentIntelligence(
     'https://chat-with-manuals-document-parser.cognitiveservices.azure.com/',
-    new AzureKeyCredential(
-      process.env.AZURE_DOCUMENT_INTELLIGENCE_API_KEY ?? ''
-    )
+    new AzureKeyCredential(getEnvVars().AZURE_DOCUMENT_INTELLIGENCE_API_KEY)
   );
 
   const initialResponse = await client

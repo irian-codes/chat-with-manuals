@@ -1,3 +1,4 @@
+import {getEnvVars} from '@/app/common/env';
 import {
   ReconstructedSectionDoc,
   reconstructedSectionMetadataSchema,
@@ -60,7 +61,7 @@ DOCUMENT FRAGMENTS:
   const llm = new ChatOpenAI({
     model: 'gpt-4o-mini',
     temperature: 0,
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: getEnvVars().OPENAI_API_KEY,
   });
 
   const systemMessage = new SystemMessage(
@@ -213,10 +214,7 @@ export async function retrieveContext({
       );
 
       const cohereRerank = new CohereRerank({
-        apiKey:
-          process.env.NODE_ENV === 'test'
-            ? process.env.VITE_COHERE_API_KEY
-            : process.env.COHERE_API_KEY,
+        apiKey: getEnvVars().COHERE_API_KEY,
         model: 'rerank-english-v3.0',
       });
 

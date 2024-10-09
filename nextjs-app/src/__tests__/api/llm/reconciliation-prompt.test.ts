@@ -1,4 +1,5 @@
 // Import necessary modules
+import {getEnvVars} from '@/app/common/env';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptValueInterface} from '@langchain/core/prompt_values';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
@@ -7,9 +8,8 @@ import {loadEvaluator} from 'langchain/evaluation';
 import {afterAll, describe, it} from 'vitest';
 
 // Set up OpenAI API key (ensure you have your API key set in your environment variables)
-const OPENAI_API_KEY = process.env.VITE_OPENAI_API_KEY;
 const embeddingModel = new OpenAIEmbeddings({
-  apiKey: OPENAI_API_KEY,
+  apiKey: getEnvVars().OPENAI_API_KEY,
   model: 'text-embedding-3-small',
   dimensions: 1536,
 });
@@ -319,7 +319,7 @@ These texts are part of the following nested section titles: {sectionTitle}
       const chat = new ChatOpenAI({
         model: 'gpt-4o-mini',
         temperature: 0,
-        apiKey: OPENAI_API_KEY,
+        apiKey: getEnvVars().OPENAI_API_KEY,
       });
 
       const response = await chat.invoke([

@@ -1,11 +1,10 @@
 import {retrieveContext} from '@/app/api/send-prompt/llm/Agent';
+import {getEnvVars} from '@/app/common/env';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI, OpenAIEmbeddings} from '@langchain/openai';
 import {loadEvaluator} from 'langchain/evaluation';
 import {z} from 'zod';
-
-const OPENAI_API_KEY = process.env.VITE_OPENAI_API_KEY;
 
 type PromptReference = {
   prompt: string;
@@ -33,11 +32,11 @@ const documents = {
 const llm = new ChatOpenAI({
   model: 'gpt-4o-mini',
   temperature: 0,
-  apiKey: OPENAI_API_KEY,
+  apiKey: getEnvVars().OPENAI_API_KEY,
 });
 
 const embeddingModel = new OpenAIEmbeddings({
-  apiKey: OPENAI_API_KEY,
+  apiKey: getEnvVars().OPENAI_API_KEY,
   model: 'text-embedding-3-small',
   dimensions: 1536,
 });

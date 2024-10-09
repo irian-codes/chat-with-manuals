@@ -1,10 +1,10 @@
+import {getEnvVars} from '@/app/common/env';
 import {Chroma, ChromaLibArgs} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
 import {ChromaClient} from 'chromadb';
 import {Document} from 'langchain/document';
 import {v4 as uuidv4} from 'uuid';
-
-const chromaDbHost = process.env.CHROMA_DB_HOST;
+import {z} from 'zod';
 
 function createEmbedder() {
   return new OpenAIEmbeddings({
@@ -35,7 +35,7 @@ async function createVectorStore(
   // Create vector store and index the docs
   const vectorStore = await Chroma.fromDocuments(docs, createEmbedder(), {
     collectionName: uuidv4(),
-    url: chromaDbHost,
+    url: getEnvVars().CHROMA_DB_HOST,
     ...options,
   });
 
@@ -54,7 +54,7 @@ export async function queryCollection(
 
   const vectorStore = await Chroma.fromExistingCollection(createEmbedder(), {
     collectionName,
-    url: chromaDbHost,
+    url: getEnvVars().CHROMA_DB_HOST,
     ...options,
   });
 
@@ -70,7 +70,7 @@ export async function doesCollectionExists(
   // Double checking
   const chromaClient = new Chroma(createEmbedder(), {
     collectionName,
-    url: chromaDbHost,
+    url: getEnvVars().CHROMA_DB_HOST,
     ...options,
   });
 
@@ -80,7 +80,7 @@ export async function doesCollectionExists(
 }
 
 export async function deleteCollection(collectionName: string) {
-  const client = new ChromaClient({path: chromaDbHost});
+  const client = new ChromaClient({path: getEnvVars().CHROMA_DB_HOST});
 
   try {
     await client.deleteCollection({name: collectionName});
@@ -99,7 +99,7 @@ export async function deleteCollection(collectionName: string) {
 }
 
 export async function clearDatabase() {
-  const client = new ChromaClient({path: chromaDbHost});
+  const client = new ChromaClient({path: getEnvVars().CHROMA_DB_HOST});
 
   try {
     await client.reset();
