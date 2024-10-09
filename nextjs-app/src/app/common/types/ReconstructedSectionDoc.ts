@@ -12,4 +12,10 @@ export type ReconstructedSectionMetadata = z.infer<
   typeof reconstructedSectionMetadataSchema
 >;
 
-export type ReconstructedSectionDoc = Document<ReconstructedSectionMetadata>;
+export const reconstructedSectionDocSchema = z.instanceof(
+  Document<ReconstructedSectionMetadata>
+);
+
+export type ReconstructedSectionDoc = z.infer<
+  typeof reconstructedSectionDocSchema
+>;
