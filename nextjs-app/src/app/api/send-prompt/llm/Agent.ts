@@ -58,6 +58,7 @@ DOCUMENT FRAGMENTS:
     model: 'gpt-4o-mini',
     temperature: 0,
     apiKey: getEnvVars().OPENAI_API_KEY,
+    timeout: 10 * 1000,
   });
 
   const systemMessage = new SystemMessage(
