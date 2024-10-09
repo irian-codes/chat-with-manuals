@@ -1,8 +1,5 @@
 import {getEnvVars} from '@/app/common/env';
-import {
-  ReconstructedSectionDoc,
-  reconstructedSectionMetadataSchema,
-} from '@/app/common/types/ReconstructedSectionDoc';
+import {ReconstructedSectionDoc} from '@/app/common/types/ReconstructedSectionDoc';
 import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {CohereRerank} from '@langchain/cohere';
 import {SystemMessage} from '@langchain/core/messages';
@@ -10,7 +7,6 @@ import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {Document} from 'langchain/document';
 import {marked} from 'marked';
-import assert from 'node:assert';
 import sanitizeHtml from 'sanitize-html';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
@@ -69,7 +65,6 @@ DOCUMENT FRAGMENTS:
   );
 
   console.log('Sending message to LLM...');
-
   const response = await llm.invoke([
     systemMessage,
     ...chatTemplate.toChatMessages(),
@@ -126,49 +121,17 @@ export async function retrieveContext({
   sectionHeaderPrefix?: string;
   reranker?: 'cohere' | null;
 }): Promise<string> {
+  console.log('Getting similar chunks...');
   const similarChunks = await getSimilarChunks(20);
-  let leftTotalTokens = 1000;
 
-  // This is to avoid reconstructing the same section twice. Although it
-  // needs refining (check reconstructSection() TODO comment)
-  const seenSectionsIds = new Set();
-
-  const reconstructedSections = await (async function () {
-    const result: ReconstructedSectionDoc[] = [];
-
-    for (const chunk of similarChunks) {
-      if (leftTotalTokens <= 0) {
-        break;
-      }
-
-      if (seenSectionsIds.has(chunk.metadata.sectionId)) {
-        continue;
-      }
-
-      console.log('Reconstructing section: ', chunk.metadata.headerRoute);
-
-      const reconstructedSection = await reconstructSection({
-        prompt,
-        chunk,
-        collectionName,
-        maxSectionTokens: 200,
-      });
-
-      seenSectionsIds.add(chunk.metadata.sectionId);
-      leftTotalTokens = leftTotalTokens - reconstructedSection.metadata.tokens;
-
-      result.push(reconstructedSection);
-    }
-
-    assert(
-      result
-        .map((s) => reconstructedSectionMetadataSchema.safeParse(s.metadata))
-        .every((r) => r.success),
-      'Invalid reconstructed section metadata'
-    );
-
-    return result;
-  })();
+  console.log('Reconstructing sections...');
+  const reconstructedSections = await reconstructSections({
+    prompt,
+    similarChunks,
+    collectionName,
+    leftTotalTokens: 1000,
+    maxSectionTokens: 200,
+  });
 
   const sortedSections = sortReconstructedSectionsByHeaderRoute(
     reconstructedSections
@@ -184,17 +147,22 @@ export async function retrieveContext({
   // HELPER FUNCTIONS
 
   async function getSimilarChunks(
-    maxChunks: number
+    maxChunks: number,
+    dbCallTimeoutInMs = getEnvVars().CHROMA_DB_TIMEOUT
   ): Promise<SectionChunkDoc[]> {
     z.number().int().min(1).parse(maxChunks);
 
-    console.log('Getting similar chunks...');
-
-    const chunks = (await queryCollection(
+    const chunks = (await queryCollection({
       collectionName,
       prompt,
-      100
-    )) as SectionChunkDoc[];
+      topK: 100,
+      throwOnEmptyReturn: true,
+      options: {
+        clientParams: {
+          fetchOptions: {signal: AbortSignal.timeout(dbCallTimeoutInMs)},
+        },
+      },
+    })) as SectionChunkDoc[];
 
     if (!reranker) {
       return chunks.slice(0, maxChunks);
@@ -240,25 +208,121 @@ export async function retrieveContext({
   }
 }
 
+async function reconstructSections({
+  prompt,
+  similarChunks,
+  collectionName,
+  leftTotalTokens,
+  maxSectionTokens,
+  dbCallTimeoutInMs = getEnvVars().CHROMA_DB_TIMEOUT,
+}: {
+  prompt: string;
+  similarChunks: SectionChunkDoc[];
+  collectionName: string;
+  leftTotalTokens: number;
+  maxSectionTokens: number;
+  dbCallTimeoutInMs?: number;
+}): Promise<ReconstructedSectionDoc[]> {
+  // Calling the db queries in parallel to speed up operations
+  const sectionChunks = await (async function () {
+    const promises = similarChunks.map(async (chunk) => {
+      // console.time(
+      //   `queryCollection(${collectionName}:${chunk.metadata.headerRouteLevels}:${chunk.metadata.order})`
+      // );
+      const chunksInSection = await queryCollection({
+        collectionName,
+        prompt,
+        // Query all chunks for the given section using the headerRoute filter.
+        // Well, 100 is Chroma limit so maybe we aren't retrieving all of them
+        // but 100 should be way more than what we need.
+        topK: 100,
+        throwOnEmptyReturn: true,
+        options: {
+          filter: {headerRouteLevels: chunk.metadata.headerRouteLevels},
+          clientParams: {
+            fetchOptions: {signal: AbortSignal.timeout(dbCallTimeoutInMs)},
+          },
+        },
+      });
+      // console.timeEnd(
+      //   `queryCollection(${collectionName}:${chunk.metadata.headerRouteLevels}:${chunk.metadata.order})`
+      // );
+
+      return [chunk, chunksInSection] as [SectionChunkDoc, SectionChunkDoc[]];
+    });
+
+    const promiseResults = await Promise.allSettled(promises);
+    const values = promiseResults
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value);
+
+    if (z.array(z.any()).nonempty().safeParse(values).success === false) {
+      const firstFailedPromise = promiseResults.find(
+        (r) => r.status === 'rejected'
+      );
+
+      if (firstFailedPromise?.reason != null) {
+        throw new Error('ChromaDB returned no valid chunks due to an error.', {
+          cause: firstFailedPromise.reason,
+        });
+      } else {
+        throw new Error(
+          'ChromaDB returned no valid chunks due to an unknown error.'
+        );
+      }
+    }
+
+    return values;
+  })();
+
+  // This is to avoid reconstructing the same section twice. Although it
+  // needs refining (check reconstructSection() TODO comment)
+  const seenSectionsIds = new Set();
+  let _leftTotalTokens = leftTotalTokens;
+  const result: ReconstructedSectionDoc[] = [];
+
+  for (const [chunk, chunksInSection] of sectionChunks) {
+    if (_leftTotalTokens <= 0) {
+      break;
+    }
+
+    if (seenSectionsIds.has(chunk.metadata.sectionId)) {
+      continue;
+    }
+
+    console.log('Reconstructing section: ', chunk.metadata.headerRoute);
+    const reconstructedSection = await reconstructSection({
+      prompt,
+      chunk,
+      chunksInSection,
+      maxSectionTokens,
+    });
+
+    if (reconstructedSection == null) {
+      debugger;
+    }
+
+    seenSectionsIds.add(chunk.metadata.sectionId);
+    _leftTotalTokens = _leftTotalTokens - reconstructedSection.metadata.tokens;
+
+    result.push(reconstructedSection);
+  }
+
+  return result;
+}
+
 async function reconstructSection({
   prompt,
   chunk,
-  collectionName,
+  chunksInSection,
   maxSectionTokens,
 }: {
   prompt: string;
   chunk: SectionChunkDoc;
-  collectionName: string;
+  chunksInSection: SectionChunkDoc[];
   maxSectionTokens: number;
 }): Promise<ReconstructedSectionDoc> {
   const {headerRoute, headerRouteLevels, order} = chunk.metadata;
-
-  // Query all chunks for the given section using the headerRoute filter.
-  // Well, 100 is Chroma limit so maybe we aren't retrieving all of them
-  // but 100 should be way more than what we need.
-  const chunksInSection = await queryCollection(collectionName, prompt, 100, {
-    filter: {headerRouteLevels},
-  });
 
   // Sort the chunks based on their order in the document
   const sortedChunks = chunksInSection.sort(

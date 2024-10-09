@@ -42,12 +42,19 @@ async function createVectorStore(
   return vectorStore;
 }
 
-export async function queryCollection(
-  collectionName: string,
-  prompt: string,
-  topK: number = 4,
-  options?: Omit<ChromaLibArgs, 'collectionName'>
-) {
+export async function queryCollection({
+  collectionName,
+  prompt,
+  topK = 4,
+  throwOnEmptyReturn,
+  options,
+}: {
+  collectionName: string;
+  prompt: string;
+  topK: number;
+  throwOnEmptyReturn: boolean;
+  options?: Omit<ChromaLibArgs, 'collectionName'>;
+}) {
   if (!(await doesCollectionExists(collectionName))) {
     throw new Error('Document not found in vector store');
   }
@@ -59,6 +66,17 @@ export async function queryCollection(
   });
 
   const result = await vectorStore.similaritySearch(prompt, topK);
+
+  if (
+    throwOnEmptyReturn &&
+    !z.array(z.instanceof(Document)).nonempty().safeParse(result).success
+  ) {
+    // Sometimes instead of crashing with an error it just returns empty,
+    // so we have to add an extra error here.
+    throw new Error(
+      "ChromaDB returned no valid chunks due to an unknown error. Ensure you're not passing an AbortSignal.timeout() that is too short and the DB is reachable."
+    );
+  }
 
   return result;
 }

@@ -8,14 +8,12 @@ import {
   markdownToSectionsJson,
 } from '@/app/api/parse-pdf/chunking';
 import {reconcileTexts} from '@/app/api/parse-pdf/fixHallucinations';
-import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
-import {TextChunkDoc} from '@/app/common/types/TextChunkDoc';
+import {getEnvVars} from '@/app/common/env';
 import {diffWords} from 'diff';
 import {decodeHTML} from 'entities';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {marked} from 'marked';
 import markedPlaintify from 'marked-plaintify';
-import {LevenshteinDistance} from 'natural';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -106,37 +104,9 @@ wins the game, the Vagabond also wins.`;
 }
 
 export async function function1() {
-  const parsedPdfJson = readFile(
-    'tmp/matchedChunks/crypto-whitepaper-bitcoin.pdf_202409231907.json'
-  );
+  console.log('Function 1 called');
 
-  const parsedPdf: {
-    matchedChunks: {
-      id: string;
-      sectionTitle: string;
-      sectionChunk: SectionChunkDoc;
-      candidate: string;
-    }[];
-    layoutChunks: TextChunkDoc[];
-  } = JSON.parse(parsedPdfJson);
-
-  return parsedPdf.matchedChunks.filter((m) => {
-    if (m.candidate === 'N/A') {
-      return false;
-    }
-
-    const lDistance = LevenshteinDistance(
-      m.sectionChunk.pageContent,
-      m.candidate,
-      {
-        insertion_cost: 1,
-        deletion_cost: 1,
-        substitution_cost: 1,
-      }
-    );
-
-    return lDistance > 8;
-  });
+  return getEnvVars();
 }
 
 export async function function2() {
