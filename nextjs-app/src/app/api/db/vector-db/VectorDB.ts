@@ -13,6 +13,25 @@ function createEmbedder() {
   });
 }
 
+function cacheClient() {
+  const vectorStores = new Map<string, Chroma>();
+
+  return function (params: ChromaLibArgs) {
+    const serializedParams = JSON.stringify(params);
+
+    if (vectorStores.has(serializedParams)) {
+      return vectorStores.get(serializedParams)!;
+    } else {
+      const vectorStore = new Chroma(createEmbedder(), params);
+      vectorStores.set(serializedParams, vectorStore);
+
+      return vectorStore;
+    }
+  };
+}
+
+const getChromaCachedClient = cacheClient();
+
 export async function embedPDF(fileHash: string, docs: Document[]) {
   const vectorStore = await createVectorStore(docs, {
     collectionMetadata: {
@@ -59,7 +78,7 @@ export async function queryCollection({
     throw new Error('Document not found in vector store');
   }
 
-  const vectorStore = await Chroma.fromExistingCollection(createEmbedder(), {
+  const vectorStore = getChromaCachedClient({
     collectionName,
     url: getEnvVars().CHROMA_DB_HOST,
     ...options,
@@ -86,7 +105,7 @@ export async function doesCollectionExists(
   options?: Omit<ChromaLibArgs, 'collectionName'>
 ): Promise<boolean> {
   // Double checking
-  const chromaClient = new Chroma(createEmbedder(), {
+  const chromaClient = getChromaCachedClient({
     collectionName,
     url: getEnvVars().CHROMA_DB_HOST,
     ...options,
