@@ -1,7 +1,8 @@
 import {getEnvVars} from '@/app/common/env';
+import {SectionChunkDoc} from '@/app/common/types/SectionChunkDoc';
 import {Chroma, ChromaLibArgs} from '@langchain/community/vectorstores/chroma';
 import {OpenAIEmbeddings} from '@langchain/openai';
-import {ChromaClient} from 'chromadb';
+import {ChromaClient, GetParams, IncludeEnum} from 'chromadb';
 import {Document} from 'langchain/document';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
@@ -59,6 +60,63 @@ async function createVectorStore(
   });
 
   return vectorStore;
+}
+
+export async function getDocs({
+  collectionName,
+  options,
+  dbQuery,
+  throwOnEmptyReturn,
+}: {
+  collectionName: string;
+  dbQuery: GetParams;
+  options?: Omit<ChromaLibArgs, 'collectionName' | 'filter'>;
+  throwOnEmptyReturn: boolean;
+}) {
+  if (dbQuery == null || typeof dbQuery !== 'object') {
+    throw new Error("'dbQuery' parameter must be an object");
+  }
+
+  const vectorStore = getChromaCachedClient({
+    collectionName,
+    url: getEnvVars().CHROMA_DB_HOST,
+    ...options,
+  });
+
+  const collection = await vectorStore.ensureCollection();
+
+  if ((await collection.count()) === 0) {
+    throw new Error('Document not found in vector store');
+  }
+
+  if (
+    dbQuery.include != null &&
+    !dbQuery.include?.includes(IncludeEnum.Documents)
+  ) {
+    throw new Error(
+      'You should request at least documents, otherwise this method will fail'
+    );
+  }
+
+  const res = await collection.get(dbQuery);
+
+  if (throwOnEmptyReturn && res.documents.length === 0) {
+    throw new Error(
+      "ChromaDB returned no valid chunks due to an unknown error. Ensure you're not passing an AbortSignal.timeout() that is too short and the DB is reachable."
+    );
+  }
+
+  const docs = res.documents
+    .filter((doc) => doc != null)
+    .map(
+      (doc, i) =>
+        new Document({
+          pageContent: doc,
+          metadata: res.metadatas[i] ?? {},
+        }) as SectionChunkDoc
+    );
+
+  return docs;
 }
 
 export async function queryCollection({

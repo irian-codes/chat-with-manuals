@@ -10,7 +10,7 @@ import {marked} from 'marked';
 import sanitizeHtml from 'sanitize-html';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
-import {queryCollection} from '../../db/vector-db/VectorDB';
+import {getDocs, queryCollection} from '../../db/vector-db/VectorDB';
 import {writeToTimestampedFile} from '../../utils/fileUtils';
 
 export async function sendPrompt(
@@ -245,13 +245,11 @@ async function reconstructSections({
 
       const values = await (async () => {
         const allSectionChunks = (await Promise.race([
-          queryCollection({
+          getDocs({
             collectionName,
-            prompt,
-            topK: Number.MAX_SAFE_INTEGER,
             throwOnEmptyReturn: true,
-            options: {
-              filter: {
+            dbQuery: {
+              where: {
                 $or: allHeaderRouteLevels.map((hr) => ({
                   headerRouteLevels: hr,
                 })),
@@ -261,10 +259,12 @@ async function reconstructSections({
           timeout,
         ])) as SectionChunkDoc[];
 
-        return Map.groupBy(
+        const groupedChunks = Map.groupBy(
           allSectionChunks,
           (s) => s.metadata.headerRouteLevels
         );
+
+        return groupedChunks;
       })();
 
       try {
