@@ -101,7 +101,7 @@ DOCUMENT FRAGMENTS:
         .join('\n\n') +
       '\n\n' +
       `[RESPONSE]: ${responseContent}\n`,
-    destinationFolderPath: 'tmp',
+    destinationFolderPath: 'tmp/answers',
     fileName: 'llmAnswer',
     fileExtension: 'txt',
   });
