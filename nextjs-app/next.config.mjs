@@ -10,7 +10,17 @@ const nextConfig = {
 
     return config;
   },
-  experimental: {},
+  experimental: {
+    // TODO: I hope this loader is compatible with Turbopack someday.
+    // For now it isn't. Check on:
+    // https://github.com/vercel/turborepo/issues/4265
+    //
+    // turbo: { rules: {
+    //   '*.node': { loaders: ['node-loader'],
+    //     },
+    //   },
+    // },
+  },
 };
 
 export default nextConfig;
