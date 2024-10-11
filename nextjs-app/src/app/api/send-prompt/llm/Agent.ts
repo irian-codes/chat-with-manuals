@@ -278,16 +278,13 @@ async function reconstructSections({
 
     const newPairs = [];
 
-    for (const [key, value] of sectionChunks) {
-      const pairIndex = pairs.findIndex((p) => p != null && p[1] === key);
-      const pair = pairs[pairIndex];
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i];
+      if (pair === null) continue;
 
-      if (pair == null) {
-        continue;
-      }
-
-      newPairs.push([pair[0], value] as const);
-      pairs[pairIndex] = null;
+      const arr = sectionChunks.get(pair[1])!;
+      newPairs.push([pair[0], arr] as const);
+      pairs[i] = null;
     }
 
     return newPairs;
