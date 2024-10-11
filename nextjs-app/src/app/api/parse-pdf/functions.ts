@@ -12,7 +12,6 @@ import DocumentIntelligence, {
 } from '@azure-rest/ai-document-intelligence';
 import {AzureKeyCredential} from '@azure/core-auth';
 import {PDFLoader} from '@langchain/community/document_loaders/fs/pdf';
-import pdf2md from '@opendocsg/pdf2md';
 import {LlamaParseReader} from 'llamaindex/readers/index';
 import {LLMWhispererClient} from 'llmwhisperer-client';
 import markdownlint from 'markdownlint';
@@ -199,24 +198,6 @@ export async function parsePdf({
         await pdfParseWithAzureDocumentIntelligence(file);
 
       const text = azureDocumentIntelligenceRes ?? '';
-
-      if (isBlankString(text)) {
-        throw new Error(`Parser ${output} produced an empty file`);
-      }
-
-      writeToTimestampedFile({
-        content: text,
-        destinationFolderPath: 'tmp',
-        fileName: `${file.name}_parser-${output}`,
-        fileExtension: 'md',
-        prefix: 'parsedPdf',
-      });
-
-      return {text, contentType: 'markdown', cachedTime: null};
-    }
-
-    case '@opendocsg-pdf2md': {
-      const text = await pdf2md(await file.arrayBuffer());
 
       if (isBlankString(text)) {
         throw new Error(`Parser ${output} produced an empty file`);

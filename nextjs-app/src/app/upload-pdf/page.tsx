@@ -112,7 +112,6 @@ export default function UploadPDFPage() {
         <option value="azure-document-intelligence">
           Azure Document Intelligence
         </option>
-        <option value="@opendocsg-pdf2md">@opendocsg/pdf2md</option>
         <option value="pdfreader">PDFReader</option>
       </select>
 
