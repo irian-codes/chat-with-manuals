@@ -130,8 +130,8 @@ export async function retrieveContext({
     prompt,
     similarChunks,
     collectionName,
-    leftTotalTokens: 1000,
-    maxSectionTokens: 200,
+    leftTotalTokens: 600,
+    maxSectionTokens: 100,
   });
 
   const sortedSections = sortReconstructedSectionsByHeaderRoute(
@@ -162,10 +162,10 @@ export async function retrieveContext({
 
     const chunks = (await Promise.race([
       queryCollection({
-      collectionName,
-      prompt,
-      topK: 100,
-      throwOnEmptyReturn: true,
+        collectionName,
+        prompt,
+        topK: 100,
+        throwOnEmptyReturn: true,
       }),
       timeout,
     ])) as SectionChunkDoc[];
@@ -246,16 +246,16 @@ async function reconstructSections({
       const values = await (async () => {
         const allSectionChunks = (await Promise.race([
           queryCollection({
-          collectionName,
-          prompt,
-          topK: Number.MAX_SAFE_INTEGER,
-          throwOnEmptyReturn: true,
-          options: {
-            filter: {
+            collectionName,
+            prompt,
+            topK: Number.MAX_SAFE_INTEGER,
+            throwOnEmptyReturn: true,
+            options: {
+              filter: {
                 $or: allHeaderRouteLevels.map((hr) => ({
                   headerRouteLevels: hr,
                 })),
-            },
+              },
             },
           }),
           timeout,
