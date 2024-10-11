@@ -127,7 +127,6 @@ export async function retrieveContext({
 
   console.log('Reconstructing sections...');
   const reconstructedSections = await reconstructSections({
-    prompt,
     similarChunks,
     collectionName,
     leftTotalTokens: 600,
@@ -215,14 +214,12 @@ export async function retrieveContext({
 }
 
 async function reconstructSections({
-  prompt,
   similarChunks,
   collectionName,
   leftTotalTokens,
   maxSectionTokens,
   dbCallTimeoutInMs = getEnvVars().CHROMA_DB_TIMEOUT,
 }: {
-  prompt: string;
   similarChunks: SectionChunkDoc[];
   collectionName: string;
   leftTotalTokens: number;
