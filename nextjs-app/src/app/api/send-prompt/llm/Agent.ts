@@ -307,7 +307,6 @@ async function reconstructSections({
 
     console.log('Reconstructing section: ', chunk.metadata.headerRoute);
     const reconstructedSection = await reconstructSection({
-      prompt,
       chunk,
       chunksInSection,
       maxSectionTokens,
@@ -323,12 +322,10 @@ async function reconstructSections({
 }
 
 async function reconstructSection({
-  prompt,
   chunk,
   chunksInSection,
   maxSectionTokens,
 }: {
-  prompt: string;
   chunk: SectionChunkDoc;
   chunksInSection: SectionChunkDoc[];
   maxSectionTokens: number;
