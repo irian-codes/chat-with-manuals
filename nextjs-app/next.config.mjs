@@ -13,6 +13,7 @@ const nextConfig = {
   },
   experimental: {
     turbo: {
+      // See https://nextjs.org/docs/app/api-reference/next-config-js/turbo#resolve-aliases
       resolveAlias: {
         'onnxruntime-node': {browser: ''},
       },
