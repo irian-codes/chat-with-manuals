@@ -224,56 +224,73 @@ async function reconstructSections({
   maxSectionTokens: number;
   dbCallTimeoutInMs?: number;
 }): Promise<ReconstructedSectionDoc[]> {
-  // Calling the db queries in parallel to speed up operations
-  const sectionChunks = await (async function () {
-    const promises = similarChunks.map(async (chunk) => {
-      // console.time(
-      //   `queryCollection(${collectionName}:${chunk.metadata.headerRouteLevels}:${chunk.metadata.order})`
-      // );
-      const chunksInSection = await queryCollection({
-        collectionName,
-        prompt,
-        // Query all chunks for the given section using the headerRoute filter.
-        // Well, 100 is Chroma limit so maybe we aren't retrieving all of them
-        // but 100 should be way more than what we need.
-        topK: 100,
-        throwOnEmptyReturn: true,
-        options: {
-          filter: {headerRouteLevels: chunk.metadata.headerRouteLevels},
-          clientParams: {
-            fetchOptions: {signal: AbortSignal.timeout(dbCallTimeoutInMs)},
-          },
-        },
-      });
-      // console.timeEnd(
-      //   `queryCollection(${collectionName}:${chunk.metadata.headerRouteLevels}:${chunk.metadata.order})`
-      // );
-
-      return [chunk, chunksInSection] as [SectionChunkDoc, SectionChunkDoc[]];
-    });
-
-    const promiseResults = await Promise.allSettled(promises);
-    const values = promiseResults
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => r.value);
-
-    if (z.array(z.any()).nonempty().safeParse(values).success === false) {
-      const firstFailedPromise = promiseResults.find(
-        (r) => r.status === 'rejected'
+  // Getting all the chunks from all the sections referenced by similarChunks
+  const sectionChunks: Map<string, SectionChunkDoc[]> =
+    await (async function () {
+      const allHeaderRouteLevels = Array.from(
+        new Set(similarChunks.map((c) => c.metadata.headerRouteLevels))
       );
 
-      if (firstFailedPromise?.reason != null) {
-        throw new Error('ChromaDB returned no valid chunks due to an error.', {
-          cause: firstFailedPromise.reason,
-        });
-      } else {
+      const values = await (async () => {
+        const allSectionChunks = (await queryCollection({
+          collectionName,
+          prompt,
+          topK: Number.MAX_SAFE_INTEGER,
+          throwOnEmptyReturn: true,
+          options: {
+            filter: {
+              $or: allHeaderRouteLevels.map((hr) => ({headerRouteLevels: hr})),
+            },
+            clientParams: {
+              fetchOptions: {signal: AbortSignal.timeout(dbCallTimeoutInMs)},
+            },
+          },
+        })) as SectionChunkDoc[];
+
+        return Map.groupBy(
+          allSectionChunks,
+          (s) => s.metadata.headerRouteLevels
+        );
+      })();
+
+      try {
+        z.map(z.string().min(1), z.array(z.instanceof(Document))).parse(values);
+      } catch (error) {
         throw new Error(
-          'ChromaDB returned no valid chunks due to an unknown error.'
+          'ChromaDB returned no valid chunks due to an unknown error.',
+          {
+            cause: error,
+          }
         );
       }
+
+      return values;
+    })();
+
+  // Preparing now the pairs that we will need to reconstruct sections.
+  // Transforming each Map entry from [string, SectionChunkDoc[]] to
+  // [SectionChunkDoc, SectionChunkDoc[]] being the chunk the first chunk
+  // in similarity order not yet processed.
+  const chunkPairs = (() => {
+    const pairs: ([SectionChunkDoc, string] | null)[] = similarChunks.map(
+      (c) => [c, c.metadata.headerRouteLevels] as const
+    );
+
+    const newPairs = [];
+
+    for (const [key, value] of sectionChunks) {
+      const pairIndex = pairs.findIndex((p) => p != null && p[1] === key);
+      const pair = pairs[pairIndex];
+
+      if (pair == null) {
+        continue;
+      }
+
+      newPairs.push([pair[0], value] as const);
+      pairs[pairIndex] = null;
     }
 
-    return values;
+    return newPairs;
   })();
 
   // This is to avoid reconstructing the same section twice. Although it
@@ -282,7 +299,7 @@ async function reconstructSections({
   let _leftTotalTokens = leftTotalTokens;
   const result: ReconstructedSectionDoc[] = [];
 
-  for (const [chunk, chunksInSection] of sectionChunks) {
+  for (const [chunk, chunksInSection] of chunkPairs) {
     if (_leftTotalTokens <= 0) {
       break;
     }
@@ -298,10 +315,6 @@ async function reconstructSections({
       chunksInSection,
       maxSectionTokens,
     });
-
-    if (reconstructedSection == null) {
-      debugger;
-    }
 
     seenSectionsIds.add(chunk.metadata.sectionId);
     _leftTotalTokens = _leftTotalTokens - reconstructedSection.metadata.tokens;
