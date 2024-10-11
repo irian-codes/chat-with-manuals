@@ -153,17 +153,22 @@ export async function retrieveContext({
   ): Promise<SectionChunkDoc[]> {
     z.number().int().min(1).parse(maxChunks);
 
-    const chunks = (await queryCollection({
+    const timeout = new Promise<SectionChunkDoc[]>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Timeout while querying ChromaDB')),
+        dbCallTimeoutInMs
+      )
+    );
+
+    const chunks = (await Promise.race([
+      queryCollection({
       collectionName,
       prompt,
       topK: 100,
       throwOnEmptyReturn: true,
-      options: {
-        clientParams: {
-          fetchOptions: {signal: AbortSignal.timeout(dbCallTimeoutInMs)},
-        },
-      },
-    })) as SectionChunkDoc[];
+      }),
+      timeout,
+    ])) as SectionChunkDoc[];
 
     if (!reranker) {
       return chunks.slice(0, maxChunks);
@@ -231,21 +236,30 @@ async function reconstructSections({
         new Set(similarChunks.map((c) => c.metadata.headerRouteLevels))
       );
 
+      const timeout = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Timeout while querying ChromaDB')),
+          dbCallTimeoutInMs
+        )
+      );
+
       const values = await (async () => {
-        const allSectionChunks = (await queryCollection({
+        const allSectionChunks = (await Promise.race([
+          queryCollection({
           collectionName,
           prompt,
           topK: Number.MAX_SAFE_INTEGER,
           throwOnEmptyReturn: true,
           options: {
             filter: {
-              $or: allHeaderRouteLevels.map((hr) => ({headerRouteLevels: hr})),
+                $or: allHeaderRouteLevels.map((hr) => ({
+                  headerRouteLevels: hr,
+                })),
             },
-            clientParams: {
-              fetchOptions: {signal: AbortSignal.timeout(dbCallTimeoutInMs)},
             },
-          },
-        })) as SectionChunkDoc[];
+          }),
+          timeout,
+        ])) as SectionChunkDoc[];
 
         return Map.groupBy(
           allSectionChunks,
