@@ -42,9 +42,17 @@ export default function Home() {
               </div>
             </Link>
           </div>
+          <SignedIn>
           <p className="text-2xl text-white">
             {hello.data ? hello.data.greeting : 'Loading tRPC query...'}
           </p>
+            <div className="text-blue-500">
+              <SignOutButton />
+            </div>
+          </SignedIn>
+          <SignedOut>
+            <SignInButton />
+          </SignedOut>
         </div>
       </main>
     </>
