@@ -10,10 +10,15 @@ import type {GetServerSidePropsContext} from 'next';
 import superjson from 'superjson';
 
 export default function Home() {
-  const hello = api.post.hello.useQuery({text: 'from tRPC'});
-  const {data: latestPost, isLoading} = api.post.getLatest.useQuery();
+  const {
+    data: latestPost,
+    isLoading: isLatestPostLoading,
+    isError: isLatestPostError,
+    error,
+  } = api.post.getLatest.useQuery();
 
-  if (isLoading) return <div>Loading...</div>; // This should never be hit
+  if (isLatestPostLoading) return <div>Loading...</div>;
+  if (isLatestPostError) return <div>Error: {error?.message}</div>;
   if (latestPost == null) return <div>No post found</div>;
 
   return (
@@ -53,9 +58,17 @@ export default function Home() {
             </Link>
           </div>
           <SignedIn>
-            <p className="text-2xl text-white">
-              {hello.data ? hello.data.greeting : 'Loading tRPC query...'}
-            </p>
+            <div className="mt-8 rounded-xl bg-white/10 p-4 text-white">
+              <h2 className="text-2xl font-bold">Latest Post</h2>
+              {latestPost ? (
+                <>
+                  <p className="text-lg">{latestPost.name}</p>
+                  <p className="text-sm">{latestPost.content}</p>
+                </>
+              ) : (
+                <p className="text-lg italic">No last post found</p>
+              )}
+            </div>
             <div className="text-blue-500">
               <SignOutButton />
             </div>
@@ -63,11 +76,6 @@ export default function Home() {
           <SignedOut>
             <SignInButton />
           </SignedOut>
-          <div className="mt-8 rounded-xl bg-white/10 p-4 text-white">
-            <h2 className="text-2xl font-bold">Latest Post</h2>
-            <p className="text-lg">{latestPost.name}</p>
-            <p className="text-sm">{latestPost.content}</p>
-          </div>
         </div>
       </main>
     </>

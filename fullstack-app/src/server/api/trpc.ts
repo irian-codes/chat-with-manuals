@@ -13,6 +13,7 @@ import {ZodError} from 'zod';
 
 import {db} from '@/server/db';
 import {getAuth} from '@clerk/nextjs/server';
+import rateLimit from '../middleware/rateLimit';
 
 /**
  * 1. CONTEXT
@@ -22,7 +23,7 @@ import {getAuth} from '@clerk/nextjs/server';
  * These allow you to access things when processing a request, like the database, the session, etc.
  */
 
-interface CreateInnerContextOptions {
+interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
   userId: string | null;
 }
 
@@ -54,6 +55,7 @@ export const createTRPCContext = (opts: CreateNextContextOptions) => {
 
   const innerContext = createInnerTRPCContext({
     userId,
+    ...opts,
   });
 
   return {
@@ -69,7 +71,7 @@ export const createTRPCContext = (opts: CreateNextContextOptions) => {
  * errors on the backend.
  */
 
-const t = initTRPC.context<typeof createTRPCContext>().create({
+const t = initTRPC.context<typeof createInnerTRPCContext>().create({
   transformer: superjson,
   errorFormatter({shape, error}) {
     return {
@@ -128,10 +130,70 @@ const timingMiddleware = t.middleware(async ({next, path}) => {
 });
 
 /**
+ * Middleware to ensure that the request context is present.
+ * Meant to be used with client side only calls, not from ssg helpers.
+ */
+export const requestContextMiddleware = t.middleware(async (opts) => {
+  if (!opts.ctx.req || !opts.ctx.res) {
+    throw new Error('You are missing `req` or `res` in your call.');
+  }
+
+  return opts.next({
+    ctx: {
+      // We overwrite the context with the truthy `req` & `res`, which will also overwrite the types used in your procedure.
+      ...opts.ctx,
+    },
+  });
+});
+
+const rateLimiter = rateLimit({
+  interval: 60 * 1000, // 60 seconds
+  uniqueTokenPerInterval: 500, // Max 500 users per minute
+});
+
+/**
+ * Rate limiting middleware
+ *
+ * This middleware applies rate limiting to all procedures that use it.
+ * Default is 10 requests per minute per IP address.
+ */
+const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
+  // Skip rate limiting if not in production
+  // if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  //   return next();
+  // }
+
+  const identifier = ctx.userId;
+
+  if (
+    identifier == null ||
+    typeof identifier !== 'string' ||
+    identifier.trim().length === 0
+  ) {
+    // TODO: Use anonymous rate limiter for when we know if we have or not have DDOS protections on the server.
+    // await limiter.check({
+    //   res: ctx.res,
+    //   limit: 50,
+    //   token: 'anonymous',
+    // });
+  } else {
+    await rateLimiter.check({
+      res: ctx.res,
+      limit: 20,
+      token: identifier,
+    });
+  }
+
+  return next();
+});
+
+/**
  * Public (unauthenticated) procedure
  *
  * This is the base piece you use to build new queries and mutations on your tRPC API. It does not
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+export const publicProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(rateLimitMiddleware);
