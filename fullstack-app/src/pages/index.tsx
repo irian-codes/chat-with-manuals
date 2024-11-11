@@ -1,10 +1,20 @@
 import Head from 'next/head';
 import Link from 'next/link';
 
+import {appRouter} from '@/server/api/root';
+import {createInnerTRPCContext} from '@/server/api/trpc';
 import {api} from '@/utils/api';
+import {SignedIn, SignedOut, SignInButton, SignOutButton} from '@clerk/nextjs';
+import {createServerSideHelpers} from '@trpc/react-query/server';
+import type {GetServerSidePropsContext} from 'next';
+import superjson from 'superjson';
 
 export default function Home() {
   const hello = api.post.hello.useQuery({text: 'from tRPC'});
+  const {data: latestPost, isLoading} = api.post.getLatest.useQuery();
+
+  if (isLoading) return <div>Loading...</div>; // This should never be hit
+  if (latestPost == null) return <div>No post found</div>;
 
   return (
     <>
@@ -43,9 +53,9 @@ export default function Home() {
             </Link>
           </div>
           <SignedIn>
-          <p className="text-2xl text-white">
-            {hello.data ? hello.data.greeting : 'Loading tRPC query...'}
-          </p>
+            <p className="text-2xl text-white">
+              {hello.data ? hello.data.greeting : 'Loading tRPC query...'}
+            </p>
             <div className="text-blue-500">
               <SignOutButton />
             </div>
@@ -53,8 +63,32 @@ export default function Home() {
           <SignedOut>
             <SignInButton />
           </SignedOut>
+          <div className="mt-8 rounded-xl bg-white/10 p-4 text-white">
+            <h2 className="text-2xl font-bold">Latest Post</h2>
+            <p className="text-lg">{latestPost.name}</p>
+            <p className="text-sm">{latestPost.content}</p>
+          </div>
         </div>
       </main>
     </>
   );
+}
+
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const helpers = createServerSideHelpers({
+    router: appRouter,
+    ctx: createInnerTRPCContext({
+      userId: null,
+    }),
+    transformer: superjson,
+  });
+
+  await helpers.post.getLatest.prefetch();
+
+  // Make sure to return { props: { trpcState: helpers.dehydrate() } }
+  return {
+    props: {
+      trpcState: helpers.dehydrate(),
+    },
+  };
 }
