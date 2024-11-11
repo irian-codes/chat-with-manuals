@@ -19,6 +19,7 @@
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "commit": "cz",
     "commitlint": "commitlint --edit",
     "prepare": "cd .. && husky fullstack-app/.husky"
   },
