@@ -3,7 +3,7 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
-import {ExternalLink, Search, Upload, X} from 'lucide-react';
+import {ExternalLink, Plus, Search, Upload, X} from 'lucide-react';
 
 interface Conversation {
   id: string;
@@ -62,9 +62,12 @@ export function Dashboard() {
                   </span>
                 </Button>
               ))}
+              <Button className="w-full">
+                <Plus className="mr-1 h-4 w-4" />
+                New conversation
+              </Button>
             </div>
           </ScrollArea>
-          <Button className="w-full">+ New conversation</Button>
         </div>
       </div>
 
