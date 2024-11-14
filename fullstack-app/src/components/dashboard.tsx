@@ -19,10 +19,10 @@ interface Document {
 
 // Mock data - replace with actual data fetching
 const conversations: Conversation[] = [
-  {id: '1', title: 'How does Bitcoin se...'},
-  {id: '2', title: 'Troubleshooting vol...'},
-  {id: '3', title: 'Moving with a pawn'},
-  {id: '4', title: 'Configuring detector...'},
+  {id: '1', title: 'How does Bitcoin work and what are its implications?'},
+  {id: '2', title: 'Troubleshooting volume issues in audio systems.'},
+  {id: '3', title: 'Moving with a pawn in chess: strategies and tips.'},
+  {id: '4', title: 'Configuring a detector for optimal performance.'},
 ];
 
 const documents: Document[] = [
@@ -31,7 +31,11 @@ const documents: Document[] = [
   {id: '3', title: 'Bitcoin whitepaper', date: '2023-03-07'},
   {id: '4', title: 'Savage Worlds RPG', date: '2022-11-23'},
   {id: '5', title: 'Urban mobility report', date: '2022-10-05'},
-  {id: '6', title: 'Fridge manual', date: '2021-03-10'},
+  {
+    id: '6',
+    title: 'Fridge manual model X459 fasd sdad fasd  asdf asdf sa d',
+    date: '2021-03-10',
+  },
 ];
 
 export function Dashboard() {
@@ -51,9 +55,11 @@ export function Dashboard() {
                 <Button
                   key={conversation.id}
                   variant="ghost"
-                  className="w-full justify-start font-normal"
+                  className="w-full justify-start"
                 >
-                  {conversation.title}
+                  <span className="truncate font-normal">
+                    {conversation.title}
+                  </span>
                 </Button>
               ))}
             </div>
@@ -92,7 +98,9 @@ export function Dashboard() {
                   <div className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-medium">{doc.title}</h3>
+                        <h3 className="line-clamp-2 font-medium">
+                          {doc.title}
+                        </h3>
                         <p className="text-sm text-muted-foreground">
                           {doc.date}
                         </p>
