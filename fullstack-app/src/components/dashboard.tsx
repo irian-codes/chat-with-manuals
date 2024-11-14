@@ -74,7 +74,7 @@ export function Dashboard() {
       {/* Main Content */}
       <div className="flex-1">
         <header className="border-b">
-          <div className="flex items-center justify-between p-4">
+          <div className="flex items-center justify-between gap-4 p-4">
             <div className="relative max-w-md flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search file" className="pl-8" />
