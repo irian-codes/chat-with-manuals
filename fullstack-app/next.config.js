@@ -18,6 +18,9 @@ const config = {
     defaultLocale: 'en',
   },
   transpilePackages: ['geist'],
+  images: {
+    domains: ['picsum.photos'],
+  },
 };
 
 export default config;

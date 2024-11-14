@@ -4,6 +4,7 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {ExternalLink, Plus, Search, Upload, X} from 'lucide-react';
+import Image from 'next/image';
 
 interface Conversation {
   id: string;
@@ -97,7 +98,19 @@ export function Dashboard() {
             {documents.map((doc) => (
               <Card key={doc.id}>
                 <CardContent className="p-0">
-                  <div className="aspect-[3/4] bg-muted" />
+                  <Image
+                    src="https://picsum.photos/400"
+                    alt="Document preview"
+                    className="aspect-[1/1] w-full object-cover"
+                    width={400}
+                    height={400}
+                    placeholder="blur"
+                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO8Ww8AAj8BXkQ+xPEAAAAASUVORK5CYII="
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="auto"
+                    referrerPolicy="no-referrer"
+                  />
                   <div className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
