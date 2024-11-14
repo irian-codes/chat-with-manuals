@@ -13,7 +13,7 @@ export default function MainLayout({children}: {children: React.ReactNode}) {
         <link rel="icon" href="/favicon.ico" />
         {/* TODO issue #2: Add Open Graph tags and other important tags */}
       </Head>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
+      <main className="flex min-h-screen flex-col items-center justify-center">
         {children}
       </main>
     </React.Fragment>
