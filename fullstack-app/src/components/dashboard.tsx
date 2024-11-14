@@ -41,7 +41,7 @@ const documents: Document[] = [
 
 export function Dashboard() {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen w-full flex-row bg-background">
       {/* Sidebar */}
       <div className="w-80 border-r">
         <div className="space-y-4 p-4">
@@ -94,14 +94,14 @@ export function Dashboard() {
         </header>
 
         <main className="p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-row flex-wrap gap-4">
             {documents.map((doc) => (
-              <Card key={doc.id}>
+              <Card key={doc.id} className="max-w-[14rem]">
                 <CardContent className="p-0">
                   <Image
                     src="https://picsum.photos/400"
                     alt="Document preview"
-                    className="aspect-[1/1] w-full object-cover"
+                    className="aspect-[1/1] rounded-t-xl object-cover"
                     width={400}
                     height={400}
                     placeholder="blur"
