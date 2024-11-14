@@ -20,7 +20,7 @@
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "commit": "cz",
+    "commit": "git add . && cz",
     "commitlint": "commitlint --edit",
     "prepare": "cd .. && husky fullstack-app/.husky",
     "release": "commit-and-tag-version"
