@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import MainLayout from '@/components/shared/MainLayout';
+import MainLayout from '@/components/custom/MainLayout';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {api} from '@/utils/api';
