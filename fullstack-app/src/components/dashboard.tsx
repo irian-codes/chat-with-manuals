@@ -1,8 +1,8 @@
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
+import {UserButton} from '@clerk/nextjs';
 import {ExternalLink, Plus, Search, Upload, X} from 'lucide-react';
 import Image from 'next/image';
 
@@ -85,10 +85,7 @@ export function Dashboard() {
                 <Upload className="mr-2 h-4 w-4" />
                 Upload new file
               </Button>
-              <Avatar>
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>UN</AvatarFallback>
-              </Avatar>
+              <UserButton />
             </div>
           </div>
         </header>

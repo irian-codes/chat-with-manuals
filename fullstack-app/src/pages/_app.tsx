@@ -8,7 +8,9 @@ import '@/styles/globals.css';
 
 const MyApp: AppType = ({Component, pageProps}) => {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{variables: {fontFamily: GeistSans.style.fontFamily}}}
+    >
       <div className={GeistSans.className}>
         <Component {...pageProps} />
       </div>
