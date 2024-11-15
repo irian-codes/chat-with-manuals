@@ -80,7 +80,7 @@ export default function Component({conversation}: ConversationProps) {
               }`}
             >
               <div
-                className={`max-w-[70%] rounded-lg p-4 ${
+                className={`max-w-[70%] rounded-md p-4 ${
                   message.author === 'ai'
                     ? 'bg-muted'
                     : 'bg-primary text-primary-foreground'
@@ -97,7 +97,7 @@ export default function Component({conversation}: ConversationProps) {
           {/* Loading animation */}
           {isLoading && (
             <div className="w-24">
-              <div className="rounded-lg bg-muted p-4">
+              <div className="rounded-md bg-muted p-4">
                 <div className="flex items-center justify-evenly gap-2">
                   <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
                   <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
