@@ -4,6 +4,7 @@ import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import type {Conversation} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
+import {type UploadingDocument} from '@/types/UploadingDocument';
 import {UserButton} from '@clerk/nextjs';
 import {ExternalLink, Plus, Search, Upload, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
@@ -80,7 +81,7 @@ export function Dashboard({conversations, documents}: DashboardProps) {
                 title: tDocumentManager('uploading-document'),
                 date: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
                 isUploading: true,
-              },
+              } as UploadingDocument,
               ...documents,
             ].map((doc) => (
               <Card key={doc.id} className="max-w-[14rem]">
@@ -105,7 +106,7 @@ export function Dashboard({conversations, documents}: DashboardProps) {
                           {doc.title}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {doc.isUploading
+                          {'isUploading' in doc
                             ? format.relativeTime(
                                 new Date(doc.date),
                                 Date.now()
