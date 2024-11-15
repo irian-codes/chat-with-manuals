@@ -1,18 +1,19 @@
 {
   "app": {
-    "title": "Chat With Manuals",
-    "description": "Aplicación para chatear con documentos estructurados como manuales de productos mediante un chatbot de IA"
+    "description": "Aplicación para chatear con documentos estructurados como manuales de productos mediante un chatbot de IA",
+    "title": "Chat With Manuals"
+  },
+  "conversation-sidebar": {
+    "newConversation": "Nueva conversación",
+    "search": "Buscar",
+    "title": "Conversaciones"
   },
   "document-manager": {
     "header": {
       "search": "Buscar",
       "upload": "Subir documento"
     },
+    "image-alt": "Imagen de la portada del documento",
     "uploading-document": "Subiendo..."
-  },
-  "conversation-sidebar": {
-    "title": "Conversaciones",
-    "searchConversation": "Buscar",
-    "newConversation": "Nueva conversación"
   }
 }
