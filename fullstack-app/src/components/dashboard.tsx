@@ -78,10 +78,8 @@ export function Dashboard({conversations, documents}: DashboardProps) {
               {
                 id: '1',
                 title: tDocumentManager('uploading-document'),
-                date: format.relativeTime(
-                  new Date(Date.now() - 3 * 60 * 1000),
-                  Date.now()
-                ),
+                date: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+                isUploading: true,
               },
               ...documents,
             ].map((doc) => (
@@ -107,7 +105,12 @@ export function Dashboard({conversations, documents}: DashboardProps) {
                           {doc.title}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {doc.date}
+                          {doc.isUploading
+                            ? format.relativeTime(
+                                new Date(doc.date),
+                                Date.now()
+                              )
+                            : format.dateTime(new Date(doc.date), 'full')}
                         </p>
                       </div>
                       {doc.title === 'Uploading...' ? (

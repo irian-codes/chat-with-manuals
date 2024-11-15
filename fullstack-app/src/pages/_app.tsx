@@ -25,6 +25,17 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
             month: 'short',
             year: 'numeric',
           },
+          time: {
+            hour: '2-digit',
+            minute: '2-digit',
+          },
+          full: {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          },
         },
         number: {
           precise: {
