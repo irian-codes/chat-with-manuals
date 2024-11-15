@@ -1,0 +1,18 @@
+{
+  "app": {
+    "title": "Chat With Manuals",
+    "description": "App to chat via AI chatbot with structured documents like product manuals"
+  },
+  "document-manager": {
+    "header": {
+      "search": "Search",
+      "upload": "Upload new document"
+    },
+    "uploading-document": "Uploading..."
+  },
+  "conversation-sidebar": {
+    "title": "Conversations",
+    "searchConversation": "Search",
+    "newConversation": "New conversation"
+  }
+}

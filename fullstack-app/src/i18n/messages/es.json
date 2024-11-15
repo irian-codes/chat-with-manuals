@@ -1,0 +1,18 @@
+{
+  "app": {
+    "title": "Chat With Manuals",
+    "description": "Aplicación para chatear con documentos estructurados como manuales de productos mediante un chatbot de IA"
+  },
+  "document-manager": {
+    "header": {
+      "search": "Buscar",
+      "upload": "Subir documento"
+    },
+    "uploading-document": "Subiendo..."
+  },
+  "conversation-sidebar": {
+    "title": "Conversaciones",
+    "searchConversation": "Buscar",
+    "newConversation": "Nueva conversación"
+  }
+}
