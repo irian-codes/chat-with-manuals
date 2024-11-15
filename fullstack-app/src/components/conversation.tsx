@@ -96,8 +96,8 @@ export default function Component({conversation}: ConversationProps) {
 
           {/* Loading animation */}
           {isLoading && (
-            <div className="flex items-center justify-start">
-              <div className="max-w-[70%] rounded-lg bg-muted p-4">
+            <div className="w-24">
+              <div className="rounded-lg bg-muted p-4">
                 <div className="flex items-center justify-evenly gap-2">
                   <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
                   <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
