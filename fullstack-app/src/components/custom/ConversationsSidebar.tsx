@@ -1,12 +1,12 @@
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
-import type {Conversation} from '@/types/Conversation';
+import type {ConversationSimplified} from '@/types/Conversation';
 import {Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 
 interface ConversationSidebarProps {
-  conversations: Conversation[];
+  conversations: ConversationSimplified[];
 }
 
 export function ConversationsSidebar({
