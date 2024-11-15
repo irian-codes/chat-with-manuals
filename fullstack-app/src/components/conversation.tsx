@@ -17,6 +17,7 @@ export default function Component({conversation}: ConversationProps) {
   const [messages, setMessages] = useState<Message[]>(conversation.messages);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,6 +26,11 @@ export default function Component({conversation}: ConversationProps) {
       inputRef.current?.focus();
     }
   }, [isLoading, inputRef]);
+
+  useEffect(() => {
+    // Scroll to the bottom of the conversation when a new message is added
+    scrollAnchorRef.current?.scrollIntoView({behavior: 'smooth'});
+  }, [messages, scrollAnchorRef]);
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
@@ -87,6 +93,7 @@ export default function Component({conversation}: ConversationProps) {
               </div>
             </div>
           ))}
+
           {/* Loading animation */}
           {isLoading && (
             <div className="flex items-center justify-start">
@@ -99,6 +106,8 @@ export default function Component({conversation}: ConversationProps) {
               </div>
             </div>
           )}
+
+          <div className="invisible h-[1px] w-full" ref={scrollAnchorRef} />
         </div>
       </ScrollArea>
 
