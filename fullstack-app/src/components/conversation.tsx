@@ -4,7 +4,7 @@ import {ScrollArea} from '@/components/ui/scroll-area';
 import type {Conversation} from '@/types/Conversation';
 import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
-import {useFormatter} from 'next-intl';
+import {useFormatter, useTranslations} from 'next-intl';
 import {useEffect, useRef, useState} from 'react';
 import LanguageSwitcher from './custom/LanguageSwitcher';
 
@@ -13,6 +13,7 @@ interface ConversationProps {
 }
 
 export default function Component({conversation}: ConversationProps) {
+  const t = useTranslations('conversation');
   const format = useFormatter();
   const [messages, setMessages] = useState<Message[]>(conversation.messages);
   const [inputMessage, setInputMessage] = useState('');
@@ -66,7 +67,9 @@ export default function Component({conversation}: ConversationProps) {
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between border-b p-4">
-        <h1 className="text-2xl font-semibold">Chat with AI</h1>
+        <h1 className="text-2xl font-semibold">
+          {t('title', {documentTitle: conversation.document.title})}
+        </h1>
         <LanguageSwitcher />
       </header>
 
@@ -122,7 +125,7 @@ export default function Component({conversation}: ConversationProps) {
           <Input
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={t('input-placeholder')}
             className="flex-1"
             disabled={isLoading}
             autoFocus
@@ -130,14 +133,15 @@ export default function Component({conversation}: ConversationProps) {
           />
           <Button type="submit" disabled={isLoading}>
             <Send className="mr-2 h-4 w-4" />
-            Send
+            {t('send')}
           </Button>
         </form>
         {conversation.document && (
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-6 w-6" /> Please use{' '}
-            {conversation.document.languageCode} in this conversation as the
-            document is indexed in this language.
+            <AlertTriangle className="h-6 w-6" />{' '}
+            {t('language-alert', {
+              language: conversation.document.languageCode,
+            })}
           </p>
         )}
       </footer>

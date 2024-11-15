@@ -3,6 +3,12 @@
     "description": "App to chat via AI chatbot with structured documents like product manuals",
     "title": "Chat With Manuals"
   },
+  "conversation": {
+    "input-placeholder": "Type your message...",
+    "language-alert": "Please use {language, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
+    "send": "Send",
+    "title": "Chat: {documentTitle}"
+  },
   "conversation-sidebar": {
     "newConversation": "New conversation",
     "search": "Search",

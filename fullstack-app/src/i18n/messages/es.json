@@ -3,6 +3,12 @@
     "description": "Aplicación para chatear con documentos estructurados como manuales de productos mediante un chatbot de IA",
     "title": "Chat With Manuals"
   },
+  "conversation": {
+    "input-placeholder": "Escribe tu mensaje...",
+    "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {language, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
+    "send": "Enviar",
+    "title": "Chat: {documentTitle}"
+  },
   "conversation-sidebar": {
     "newConversation": "Nueva conversación",
     "search": "Buscar",
