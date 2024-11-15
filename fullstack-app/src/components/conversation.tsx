@@ -16,9 +16,12 @@ export default function Component({conversation}: ConversationProps) {
   const format = useFormatter();
   const [messages, setMessages] = useState<Message[]>(conversation.messages);
   const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
+      setIsLoading(true);
+
       const newMessage: Message = {
         id: String(messages.length + 1),
         author: 'userId',
@@ -41,6 +44,7 @@ export default function Component({conversation}: ConversationProps) {
         };
 
         setMessages((prevMessages) => [...prevMessages, aiResponse]);
+        setIsLoading(false);
       }, 1000);
     }
   };
@@ -75,6 +79,18 @@ export default function Component({conversation}: ConversationProps) {
               </div>
             </div>
           ))}
+          {/* Loading animation */}
+          {isLoading && (
+            <div className="flex items-center justify-start">
+              <div className="max-w-[70%] rounded-lg bg-muted p-4">
+                <div className="flex items-center justify-evenly gap-2">
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-300"></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
@@ -91,8 +107,9 @@ export default function Component({conversation}: ConversationProps) {
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Type your message..."
             className="flex-1"
+            disabled={isLoading}
           />
-          <Button type="submit">
+          <Button type="submit" disabled={isLoading}>
             <Send className="mr-2 h-4 w-4" />
             Send
           </Button>
