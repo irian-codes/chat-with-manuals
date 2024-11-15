@@ -15,5 +15,8 @@
     },
     "image-alt": "Imagen de la portada del documento",
     "uploading-document": "Subiendo..."
+  },
+  "locale-switcher": {
+    "locale": "{locale, select, es {Castellano} en {Inglés} other {Otro}}"
   }
 }

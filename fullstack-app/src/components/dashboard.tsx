@@ -9,6 +9,7 @@ import {UserButton} from '@clerk/nextjs';
 import {ExternalLink, Plus, Search, Upload, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
+import LocaleSwitcher from './custom/LanguageSwitcher';
 
 interface DashboardProps {
   conversations: Conversation[];
@@ -69,6 +70,7 @@ export function Dashboard({conversations, documents}: DashboardProps) {
                 {tDocumentManager('header.upload')}
               </Button>
               <UserButton />
+              <LocaleSwitcher />
             </div>
           </div>
         </header>

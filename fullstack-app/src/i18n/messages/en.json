@@ -13,7 +13,10 @@
       "search": "Search",
       "upload": "Upload new document"
     },
-    "uploading-document": "Uploading...",
-    "image-alt": "Document preview"
+    "image-alt": "Document preview",
+    "uploading-document": "Uploading..."
+  },
+  "locale-switcher": {
+    "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
   }
 }
