@@ -2,44 +2,18 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
+import type {Conversation} from '@/types/Conversation';
+import type {Document} from '@/types/Document';
 import {UserButton} from '@clerk/nextjs';
 import {ExternalLink, Plus, Search, Upload, X} from 'lucide-react';
 import Image from 'next/image';
 
-interface Conversation {
-  id: string;
-  title: string;
+interface DashboardProps {
+  conversations: Conversation[];
+  documents: Document[];
 }
 
-interface Document {
-  id: string;
-  title: string;
-  date: string;
-  thumbnail?: string;
-}
-
-// Mock data - replace with actual data fetching
-const conversations: Conversation[] = [
-  {id: '1', title: 'How does Bitcoin work and what are its implications?'},
-  {id: '2', title: 'Troubleshooting volume issues in audio systems.'},
-  {id: '3', title: 'Moving with a pawn in chess: strategies and tips.'},
-  {id: '4', title: 'Configuring a detector for optimal performance.'},
-];
-
-const documents: Document[] = [
-  {id: '1', title: 'Uploading...', date: '3 minutes ago'},
-  {id: '2', title: 'Business report', date: '2024-10-12'},
-  {id: '3', title: 'Bitcoin whitepaper', date: '2023-03-07'},
-  {id: '4', title: 'Savage Worlds RPG', date: '2022-11-23'},
-  {id: '5', title: 'Urban mobility report', date: '2022-10-05'},
-  {
-    id: '6',
-    title: 'Fridge manual model X459 fasd sdad fasd  asdf asdf sa d',
-    date: '2021-03-10',
-  },
-];
-
-export function Dashboard() {
+export function Dashboard({conversations, documents}: DashboardProps) {
   return (
     <div className="flex h-screen w-full flex-row bg-background">
       {/* Sidebar */}
