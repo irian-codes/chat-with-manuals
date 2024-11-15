@@ -32,7 +32,7 @@ export default function Component({conversation}: ConversationProps) {
     scrollAnchorRef.current?.scrollIntoView({behavior: 'smooth'});
   }, [messages, scrollAnchorRef]);
 
-  const handleSendMessage = () => {
+  function handleSendMessage() {
     if (inputMessage.trim()) {
       setIsLoading(true);
 
@@ -61,7 +61,7 @@ export default function Component({conversation}: ConversationProps) {
         setIsLoading(false);
       }, 1000);
     }
-  };
+  }
 
   return (
     <div className="flex flex-1 flex-col">
