@@ -14,6 +14,7 @@ const config = {
   },
   transpilePackages: ['geist'],
   images: {
+    // TODO Issue #4: Update this to the current API
     domains: ['picsum.photos'],
   },
 };
