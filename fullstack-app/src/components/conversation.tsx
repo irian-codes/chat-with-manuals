@@ -5,7 +5,7 @@ import type {Conversation} from '@/types/Conversation';
 import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter} from 'next-intl';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import LanguageSwitcher from './custom/LanguageSwitcher';
 
 interface ConversationProps {
@@ -17,6 +17,14 @@ export default function Component({conversation}: ConversationProps) {
   const [messages, setMessages] = useState<Message[]>(conversation.messages);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Focus the input when the loading state changes
+    if (!isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading, inputRef]);
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
@@ -108,6 +116,8 @@ export default function Component({conversation}: ConversationProps) {
             placeholder="Type your message..."
             className="flex-1"
             disabled={isLoading}
+            autoFocus
+            ref={inputRef}
           />
           <Button type="submit" disabled={isLoading}>
             <Send className="mr-2 h-4 w-4" />
