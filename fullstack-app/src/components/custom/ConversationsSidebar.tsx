@@ -4,6 +4,7 @@ import {ScrollArea} from '@/components/ui/scroll-area';
 import type {ConversationSimplified} from '@/types/Conversation';
 import {Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
+import Link from 'next/link';
 
 interface ConversationSidebarProps {
   conversations: ConversationSimplified[];
@@ -30,9 +31,12 @@ export function ConversationsSidebar({
                 variant="ghost"
                 className="w-full justify-start"
               >
-                <span className="truncate font-normal">
-                  {conversation.title}
-                </span>
+                {/* TODO: Add the conversation id to the url */}
+                <Link href={`/conversation`}>
+                  <span className="truncate font-normal">
+                    {conversation.title}
+                  </span>
+                </Link>
               </Button>
             ))}
             <Button className="w-full">
