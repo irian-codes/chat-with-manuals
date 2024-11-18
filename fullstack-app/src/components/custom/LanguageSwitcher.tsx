@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {cn} from '@/lib/utils';
+import {cn} from '@/lib/utils/ui/utils';
 import 'flag-icons/css/flag-icons.min.css';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
