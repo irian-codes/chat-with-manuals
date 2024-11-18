@@ -1,6 +1,6 @@
 import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
+import {Textarea} from '@/components/ui/textarea';
 import type {Conversation} from '@/types/Conversation';
 import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
@@ -19,7 +19,7 @@ export default function Component({conversation}: ConversationProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     // Focus the input when the loading state changes
@@ -114,36 +114,45 @@ export default function Component({conversation}: ConversationProps) {
         </div>
       </ScrollArea>
 
-      <footer className="flex flex-col gap-2 border-t p-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
-          className="flex items-center space-x-2"
-        >
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={t('input-placeholder')}
-            className="flex-1"
-            disabled={isLoading}
-            autoFocus
-            ref={inputRef}
-          />
-          <Button type="submit" disabled={isLoading}>
-            <Send className="mr-2 h-4 w-4" />
-            {t('send')}
-          </Button>
-        </form>
-        {conversation.document && (
+      <footer className="border-t p-4">
+        <div className="mx-auto flex min-w-[250px] max-w-[750px] flex-col gap-2 lg:w-[calc(100%-12rem)]">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="flex items-start space-x-2"
+          >
+            <Textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder={t('input-placeholder')}
+              className="flex-1 resize-none"
+              disabled={isLoading}
+              autoFocus
+              ref={inputRef}
+              draggable={false}
+              onKeyDown={(e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                  handleSendMessage();
+                }
+              }}
+            />
+            <div className="flex flex-col items-center justify-center gap-1">
+              <Button type="submit" disabled={isLoading}>
+                <Send className="mr-2 h-4 w-4" />
+                {t('send')}
+              </Button>
+              <div className="text-sm">Ctrl + Enter</div>
+            </div>
+          </form>
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert', {
               language: conversation.document.languageCode,
             })}
           </p>
-        )}
+        </div>
       </footer>
     </div>
   );
