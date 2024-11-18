@@ -1,6 +1,7 @@
 import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Textarea} from '@/components/ui/textarea';
+import {useIsMacOs, useIsTouchDevice} from '@/lib/hooks/os-utils';
 import type {Conversation} from '@/types/Conversation';
 import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
@@ -20,6 +21,8 @@ export default function Component({conversation}: ConversationProps) {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isTouchDevice = useIsTouchDevice();
+  const isMacOs = useIsMacOs();
 
   useEffect(() => {
     // Focus the input when the loading state changes
@@ -143,7 +146,11 @@ export default function Component({conversation}: ConversationProps) {
                 <Send className="mr-2 h-4 w-4" />
                 {t('send')}
               </Button>
-              <div className="text-sm">Ctrl + Enter</div>
+              {!isTouchDevice && (
+                <div className="text-sm">
+                  {isMacOs ? '⌘ + Enter' : 'Ctrl + Enter'}
+                </div>
+              )}
             </div>
           </form>
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
