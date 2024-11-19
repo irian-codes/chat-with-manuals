@@ -45,13 +45,7 @@ export function DocumentPickerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="max-w-2xl"
-        onPointerDownOutside={(ev) => {
-          // Prevent the dialog from closing when clicking on the backdrop
-          ev.preventDefault();
-        }}
-      >
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>{t('description')}</DialogDescription>

@@ -44,6 +44,10 @@ const DialogContent = React.forwardRef<
         'font-sans',
         className
       )}
+      onPointerDownOutside={(ev) => {
+        // Prevent the dialog from closing when clicking on the backdrop
+        ev.preventDefault();
+      }}
       {...props}
     >
       {children}
