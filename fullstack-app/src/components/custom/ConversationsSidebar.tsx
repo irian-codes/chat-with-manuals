@@ -5,6 +5,8 @@ import type {ConversationSimplified} from '@/types/Conversation';
 import {Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
+import {Fragment, useState} from 'react';
+import {DocumentPickerModal} from './DocumentListPickerModal';
 
 interface ConversationSidebarProps {
   conversations: ConversationSimplified[];
@@ -14,38 +16,49 @@ export function ConversationsSidebar({
   conversations,
 }: ConversationSidebarProps) {
   const t = useTranslations('conversation-sidebar');
+  const [isDocumentPickerModalOpen, setIsDocumentPickerModalOpen] =
+    useState<boolean>(false);
 
   return (
-    <div className="w-80 border-r">
-      <div className="space-y-4 p-4">
-        <h2 className="text-xl font-semibold">{t('title')}</h2>
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={t('search')} className="pl-8" />
-        </div>
-        <ScrollArea className="h-[calc(100vh-200px)]">
-          <div className="space-y-2">
-            {conversations.map((conversation) => (
-              <Button
-                key={conversation.id}
-                variant="ghost"
-                className="w-full justify-start"
-              >
-                {/* TODO: Add the conversation id to the url */}
-                <Link href={`/conversation`}>
-                  <span className="truncate font-normal">
-                    {conversation.title}
-                  </span>
-                </Link>
-              </Button>
-            ))}
-            <Button className="w-full">
-              <Plus className="mr-1 h-4 w-4" />
-              {t('newConversation')}
-            </Button>
+    <Fragment>
+      <div className="w-80 border-r">
+        <div className="space-y-4 p-4">
+          <h2 className="text-xl font-semibold">{t('title')}</h2>
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input placeholder={t('search')} className="pl-8" />
           </div>
-        </ScrollArea>
+          <ScrollArea className="h-[calc(100vh-200px)]">
+            <div className="space-y-2">
+              {conversations.map((conversation) => (
+                <Button
+                  key={conversation.id}
+                  variant="ghost"
+                  className="w-full justify-start"
+                >
+                  {/* TODO: Add the conversation id to the url */}
+                  <Link href={`/conversation`}>
+                    <span className="truncate font-normal">
+                      {conversation.title}
+                    </span>
+                  </Link>
+                </Button>
+              ))}
+              <Button
+                className="w-full"
+                onClick={() => setIsDocumentPickerModalOpen(true)}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                {t('newConversation')}
+              </Button>
+            </div>
+          </ScrollArea>
+        </div>
       </div>
-    </div>
+      <DocumentPickerModal
+        isOpen={isDocumentPickerModalOpen}
+        onClose={() => setIsDocumentPickerModalOpen(false)}
+      />
+    </Fragment>
   );
 }
