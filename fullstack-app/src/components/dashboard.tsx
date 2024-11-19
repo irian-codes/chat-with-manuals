@@ -7,6 +7,7 @@ import {UserButton} from '@clerk/nextjs';
 import {ExternalLink, Search, Upload, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
+import Link from 'next/link';
 import LocaleSwitcher from './custom/LanguageSwitcher';
 
 interface DashboardProps {
@@ -15,7 +16,6 @@ interface DashboardProps {
 
 export function Dashboard({documents}: DashboardProps) {
   const t = useTranslations('document-manager');
-  const format = useFormatter();
 
   return (
     <div className="flex-1">
@@ -46,48 +46,64 @@ export function Dashboard({documents}: DashboardProps) {
               isUploading: true,
             } as UploadingDocument,
             ...documents,
-          ].map((doc) => (
-            <Card key={doc.id} className="max-w-[14rem]">
-              <CardContent className="p-0">
-                <Image
-                  src="https://picsum.photos/400"
-                  alt={t('image-alt')}
-                  className="aspect-[1/1] rounded-t-xl object-cover"
-                  width={400}
-                  height={400}
-                  placeholder="blur"
-                  blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO8Ww8AAj8BXkQ+xPEAAAAASUVORK5CYII="
-                  loading="lazy"
-                  decoding="async"
-                  fetchPriority="auto"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="line-clamp-2 font-medium">{doc.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {'isUploading' in doc
-                          ? format.relativeTime(new Date(doc.date), Date.now())
-                          : format.dateTime(new Date(doc.date), 'full')}
-                      </p>
-                    </div>
-                    {doc.title === 'Uploading...' ? (
-                      <Button variant="ghost" size="icon">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" size="icon">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          ].map((doc) =>
+            // TODO: Add the conversation id to the url
+            'isUploading' in doc && doc.isUploading ? (
+              <DocumentCard doc={doc} key={doc.id} />
+            ) : (
+              <Link href={`/conversation`} key={doc.id}>
+                <DocumentCard doc={doc} />
+              </Link>
+            )
+          )}
         </div>
       </main>
     </div>
+  );
+}
+
+function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
+  const t = useTranslations('document-manager');
+  const format = useFormatter();
+
+  return (
+    <Card className="max-w-[14rem]">
+      <CardContent className="p-0">
+        <Image
+          src="https://picsum.photos/400"
+          alt={t('image-alt')}
+          className="aspect-[1/1] rounded-t-xl object-cover"
+          width={400}
+          height={400}
+          placeholder="blur"
+          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO8Ww8AAj8BXkQ+xPEAAAAASUVORK5CYII="
+          loading="lazy"
+          decoding="async"
+          fetchPriority="auto"
+          referrerPolicy="no-referrer"
+        />
+        <div className="p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="line-clamp-2 font-medium">{doc.title}</h3>
+              <p className="text-sm text-muted-foreground">
+                {'isUploading' in doc && doc.isUploading
+                  ? format.relativeTime(new Date(doc.date), Date.now())
+                  : format.dateTime(new Date(doc.date), 'full')}
+              </p>
+            </div>
+            {'isUploading' in doc && doc.isUploading ? (
+              <Button variant="ghost" size="icon">
+                <X className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon">
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
