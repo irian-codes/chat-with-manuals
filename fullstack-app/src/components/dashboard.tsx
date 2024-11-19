@@ -4,7 +4,7 @@ import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
 import {UserButton} from '@clerk/nextjs';
-import {ExternalLink, Search, Upload, X} from 'lucide-react';
+import {FilePenLine, Search, Upload, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -98,7 +98,7 @@ function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
               </Button>
             ) : (
               <Button variant="ghost" size="icon">
-                <ExternalLink className="h-4 w-4" />
+                <FilePenLine className="h-4 w-4" />
               </Button>
             )}
           </div>
