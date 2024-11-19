@@ -14,6 +14,11 @@
     "search": "Search",
     "title": "Conversations"
   },
+  "document-list-picker-modal": {
+    "description": "Select a document to open a new conversation with it.",
+    "search-placeholder": "Search document...",
+    "title": "Pick document"
+  },
   "document-manager": {
     "header": {
       "search": "Search",
@@ -24,10 +29,5 @@
   },
   "locale-switcher": {
     "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
-  },
-  "document-list-picker-modal": {
-    "title": "Pick document",
-    "description": "Select a document to open a new conversation with it.",
-    "search-placeholder": "Search document..."
   }
 }
