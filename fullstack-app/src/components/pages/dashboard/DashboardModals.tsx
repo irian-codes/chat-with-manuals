@@ -1,5 +1,5 @@
-import {EditDocumentModal} from '@/components/custom/EditDocumentModal';
-import {UploadNewDocumentModal} from '@/components/custom/UploadNewDocumentModal';
+import {EditDocumentModal} from '@/components/reusable/EditDocumentModal';
+import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
 import type {Document} from '@/types/Document';
 import {useRouter} from 'next/router';
 import {Fragment, useEffect, useState} from 'react';

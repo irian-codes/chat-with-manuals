@@ -11,7 +11,7 @@ import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
 
-export default function LocaleSwitcher() {
+export function LanguageSwitcher() {
   const t = useTranslations('locale-switcher');
   const {locale, locales, route} = useRouter();
 

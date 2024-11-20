@@ -1,7 +1,7 @@
-import {ConversationsSidebar} from '@/components/custom/ConversationsSidebar';
-import {DashboardModals} from '@/components/custom/DashboardModals';
-import MainLayout from '@/components/custom/MainLayout';
-import {Dashboard} from '@/components/dashboard';
+import {DashboardMain} from '@/components/pages/dashboard/DashboardMain';
+import {DashboardModals} from '@/components/pages/dashboard/DashboardModals';
+import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
+import MainLayout from '@/components/reusable/MainLayout';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
 import type {i18nMessages} from '@/types/i18nMessages';
@@ -79,7 +79,7 @@ export default function DashboardPage({
       <Fragment>
         <div className="flex h-screen w-full flex-row bg-background">
           <ConversationsSidebar conversations={conversations} />
-          <Dashboard documents={documents} />
+          <DashboardMain documents={documents} />
         </div>
 
         <DashboardModals documents={documents} />

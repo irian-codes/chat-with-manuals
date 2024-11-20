@@ -1,6 +1,6 @@
-import ConversationComponent from '@/components/conversation';
-import {ConversationsSidebar} from '@/components/custom/ConversationsSidebar';
-import MainLayout from '@/components/custom/MainLayout';
+import {ConversationMain} from '@/components/pages/conversation/ConversationMain';
+import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
+import MainLayout from '@/components/reusable/MainLayout';
 import type {Conversation, ConversationSimplified} from '@/types/Conversation';
 import type {i18nMessages} from '@/types/i18nMessages';
 import type {
@@ -76,7 +76,7 @@ export default function DashboardPage({
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
         <ConversationsSidebar conversations={conversations} />
-        <ConversationComponent conversation={conversation} />
+        <ConversationMain conversation={conversation} />
       </div>
     </MainLayout>
   );

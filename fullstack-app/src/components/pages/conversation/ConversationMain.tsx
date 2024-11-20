@@ -7,13 +7,13 @@ import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useEffect, useRef, useState} from 'react';
-import LanguageSwitcher from './custom/LanguageSwitcher';
+import {LanguageSwitcher} from '../../reusable/LanguageSwitcher';
 
 interface ConversationProps {
   conversation: Conversation;
 }
 
-export default function Component({conversation}: ConversationProps) {
+export function ConversationMain({conversation}: ConversationProps) {
   const t = useTranslations('conversation');
   const format = useFormatter();
   const [messages, setMessages] = useState<Message[]>(conversation.messages);
