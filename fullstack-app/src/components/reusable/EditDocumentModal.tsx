@@ -8,7 +8,6 @@ import {
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
 import {useTranslations} from 'next-intl';
-import {useEffect} from 'react';
 import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
@@ -39,13 +38,6 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
       description: props.document?.description ?? '',
     },
   });
-
-  useEffect(() => {
-    form.reset({
-      title: props.document?.title ?? '',
-      description: props.document?.description ?? '',
-    });
-  }, [form, props.document]);
 
   const onSubmit: SubmitHandler<EditDocumentFormInputs> = (data) => {
     if (!data || !props.document) {
@@ -78,7 +70,14 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   }
 
   return (
-    <Dialog open={props.isOpen} onOpenChange={handleCloseButtonClick}>
+    <Dialog
+      open={props.isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          handleCloseButtonClick();
+        }
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>

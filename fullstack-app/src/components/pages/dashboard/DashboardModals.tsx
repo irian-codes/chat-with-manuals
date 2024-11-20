@@ -2,38 +2,29 @@ import {EditDocumentModal} from '@/components/reusable/EditDocumentModal';
 import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
 import type {Document} from '@/types/Document';
 import {useRouter} from 'next/router';
-import {Fragment, useEffect, useState} from 'react';
+import {Fragment, useMemo} from 'react';
 
 interface DashboardModalsProps {
   documents: Document[];
 }
 
 export function DashboardModals({documents}: DashboardModalsProps) {
-  const [isUploadNewDocumentModalOpen, setIsUploadNewDocumentModalOpen] =
-    useState(false);
-  const [document, setDocument] = useState<Document | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const documentId = router.query.documentId as string;
-    const uploadingDocument = Boolean(router.query.uploadingDocument);
-
-    if (documentId) {
-      setDocument(documents.find((d) => d.id === documentId) ?? null);
-    } else {
-      setDocument(null);
-    }
-
-    if (uploadingDocument) {
-      setIsUploadNewDocumentModalOpen(true);
-    } else {
-      setIsUploadNewDocumentModalOpen(false);
-    }
-  }, [router.query.documentId, router.query.uploadingDocument, documents]);
+  const documentId = router.query.documentId as string;
+  // TODO: If we used a map instead of an array, we could prevent the useMemo hook because the performance would be negligible.
+  const document = useMemo(() => {
+    return documentId
+      ? (documents.find((d) => d.id === documentId) ?? null)
+      : null;
+  }, [documentId, documents]);
+  const uploadingDocument = router.query.uploadingDocument === 'true';
 
   return (
     <Fragment>
       <EditDocumentModal
+        // Each modal is for a different document, so we need a unique key to avoid a shared state.
+        key={document?.id}
         isOpen={document !== null}
         document={document}
         onSubmit={(payload) => {
@@ -48,7 +39,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
       />
 
       <UploadNewDocumentModal
-        isOpen={isUploadNewDocumentModalOpen}
+        isOpen={uploadingDocument}
         onClose={() => {
           void router.push('/');
         }}

@@ -9,7 +9,6 @@ import {Input} from '@/components/ui/input';
 import {truncateFilename} from '@/lib/utils/files';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
-import {useEffect} from 'react';
 import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
@@ -35,12 +34,6 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
   const t = useTranslations('upload-new-document-modal');
   const form = useForm<UploadFormInputs>();
 
-  useEffect(() => {
-    if (props.isOpen) {
-      form.reset();
-    }
-  }, [form, props.isOpen]);
-
   const onSubmit: SubmitHandler<UploadFormInputs> = (data) => {
     if (!data?.file?.[0]) {
       throw new Error('No file provided');
@@ -60,7 +53,14 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
   }
 
   return (
-    <Dialog open={props.isOpen} onOpenChange={handleCloseButtonClick}>
+    <Dialog
+      open={props.isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          handleCloseButtonClick();
+        }
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t('upload')}</DialogTitle>

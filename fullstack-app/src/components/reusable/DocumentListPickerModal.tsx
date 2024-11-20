@@ -12,7 +12,7 @@ import type {Document} from '@/types/Document';
 import {Search} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Link from 'next/link';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 
 interface DocumentPickerModalProps {
   isOpen: boolean;
@@ -30,14 +30,16 @@ export function DocumentPickerModal(props: DocumentPickerModalProps) {
   const filteredDocuments =
     props.searchFunction?.(searchQuery) ?? props.documents;
 
-  useEffect(() => {
-    if (props.isOpen) {
-      setSearchQuery('');
-    }
-  }, [props.isOpen]);
-
   return (
-    <Dialog open={props.isOpen} onOpenChange={props.onClose}>
+    <Dialog
+      open={props.isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setSearchQuery('');
+          props.onClose?.();
+        }
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
