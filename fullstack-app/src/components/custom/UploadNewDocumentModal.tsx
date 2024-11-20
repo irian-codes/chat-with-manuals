@@ -36,13 +36,7 @@ export function UploadNewDocumentModal({
   onUpload,
 }: UploadNewDocumentModalProps) {
   const t = useTranslations('upload-new-document-modal');
-  const {
-    register,
-    handleSubmit,
-    reset,
-    clearErrors,
-    formState: {errors},
-  } = useForm<UploadFormInputs>();
+  const form = useForm<UploadFormInputs>();
 
   const onSubmit: SubmitHandler<UploadFormInputs> = (data) => {
     if (!data?.file?.[0]) {
@@ -51,14 +45,14 @@ export function UploadNewDocumentModal({
 
     const file = {...data.file[0], name: truncateFilename(data.file[0].name)};
     onUpload({...data, file});
-    reset();
-    clearErrors();
+    form.reset();
+    form.clearErrors();
     onClose?.();
   };
 
   function handleCloseButtonClick() {
-    reset();
-    clearErrors();
+    form.reset();
+    form.clearErrors();
     onClose?.();
   }
 
@@ -70,13 +64,13 @@ export function UploadNewDocumentModal({
         </DialogHeader>
 
         {/* TODO: This could be even nicer if we create the form with the Shacn/ui integration: https://ui.shadcn.com/docs/components/form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="name">{t('name')}</Label>
               <Input
                 id="name"
-                {...register('name', {
+                {...form.register('name', {
                   required: {
                     value: true,
                     message: t('form-errors.name-required'),
@@ -92,8 +86,10 @@ export function UploadNewDocumentModal({
                 })}
                 placeholder={t('name')}
               />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
+              {form.formState.errors.name && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.name.message}
+                </p>
               )}
             </div>
 
@@ -101,16 +97,16 @@ export function UploadNewDocumentModal({
               <Label htmlFor="description">{t('description')}</Label>
               <Textarea
                 id="description"
-                {...register('description', {
+                {...form.register('description', {
                   required: false,
                   maxLength: 2000,
                 })}
                 placeholder={t('description')}
                 rows={3}
               />
-              {errors.description && (
+              {form.formState.errors.description && (
                 <p className="text-sm text-red-500">
-                  {errors.description.message}
+                  {form.formState.errors.description.message}
                 </p>
               )}
             </div>
@@ -119,7 +115,7 @@ export function UploadNewDocumentModal({
               <Label htmlFor="lang">{t('language-label')}</Label>
               <select
                 id="lang"
-                {...register('language', {
+                {...form.register('language', {
                   required: {
                     value: true,
                     message: t('form-errors.language-required'),
@@ -139,9 +135,9 @@ export function UploadNewDocumentModal({
                     </option>
                   ))}
               </select>
-              {errors.language && (
+              {form.formState.errors.language && (
                 <p className="text-sm text-red-500">
-                  {errors.language.message}
+                  {form.formState.errors.language.message}
                 </p>
               )}
             </div>
@@ -151,7 +147,7 @@ export function UploadNewDocumentModal({
               <Input
                 id="file"
                 type="file"
-                {...register('file', {
+                {...form.register('file', {
                   required: {
                     value: true,
                     message: t('form-errors.file-required'),
@@ -193,8 +189,10 @@ export function UploadNewDocumentModal({
                 accept=".pdf,application/pdf"
                 multiple={false}
               />
-              {errors.file && (
-                <p className="text-sm text-red-500">{errors.file.message}</p>
+              {form.formState.errors.file && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.file.message}
+                </p>
               )}
             </div>
           </div>
