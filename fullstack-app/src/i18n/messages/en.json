@@ -1,0 +1,64 @@
+{
+  "app": {
+    "description": "App to chat via AI chatbot with structured documents like product manuals",
+    "title": "Chat With Manuals"
+  },
+  "conversation": {
+    "input-placeholder": "Type your message...",
+    "language-alert": "Please use {language, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
+    "send": "Send",
+    "title": "Chat: {documentTitle}"
+  },
+  "conversation-sidebar": {
+    "newConversation": "New conversation",
+    "search": "Search",
+    "title": "Conversations"
+  },
+  "document-list-picker-modal": {
+    "description": "Select a document to open a new conversation with it.",
+    "search-placeholder": "Search document...",
+    "title": "Pick document"
+  },
+  "document-manager": {
+    "header": {
+      "search": "Search",
+      "upload": "Upload new document"
+    },
+    "image-alt": "Document preview",
+    "uploading-document": "Uploading..."
+  },
+  "edit-document-modal": {
+    "cancel": "Cancel",
+    "delete": "Delete document",
+    "delete-confirmation": "Are you sure you want to delete this document? This action cannot be undone.",
+    "description": "Description",
+    "form-errors": {
+      "name-max-length": "Name must be at most 255 characters long",
+      "name-min-length": "Name must be at least 3 characters long",
+      "name-required": "Name is required"
+    },
+    "name": "Name",
+    "save": "Save",
+    "title": "Edit document information"
+  },
+  "locale-switcher": {
+    "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
+  },
+  "upload-new-document-modal": {
+    "cancel": "Cancel",
+    "description": "Description",
+    "file-input-label": "PDF file",
+    "form-errors": {
+      "file-max-size": "File must be less than {maxSizeInMB}MB",
+      "file-must-be-pdf": "File must be a PDF",
+      "file-required": "File is required",
+      "language-required": "Language is required",
+      "name-max-length": "Name must be at most 255 characters long",
+      "name-min-length": "Name must be at least 3 characters long",
+      "name-required": "Name is required"
+    },
+    "language-label": "Document language",
+    "name": "Name",
+    "upload": "Upload new document"
+  }
+}

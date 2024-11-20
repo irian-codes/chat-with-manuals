@@ -1,0 +1,64 @@
+{
+  "app": {
+    "description": "Aplicación para chatear con documentos estructurados como manuales de productos mediante un chatbot de IA",
+    "title": "Chat With Manuals"
+  },
+  "conversation": {
+    "input-placeholder": "Escribe tu mensaje...",
+    "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {language, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
+    "send": "Enviar",
+    "title": "Chat: {documentTitle}"
+  },
+  "conversation-sidebar": {
+    "newConversation": "Nueva conversación",
+    "search": "Buscar",
+    "title": "Conversaciones"
+  },
+  "document-list-picker-modal": {
+    "description": "Seleccione un documento para abrir una nueva conversación.",
+    "search-placeholder": "Buscar documento...",
+    "title": "Seleccionar documento"
+  },
+  "document-manager": {
+    "header": {
+      "search": "Buscar",
+      "upload": "Subir documento"
+    },
+    "image-alt": "Imagen de la portada del documento",
+    "uploading-document": "Subiendo..."
+  },
+  "edit-document-modal": {
+    "cancel": "Cancelar",
+    "delete": "Eliminar documento",
+    "delete-confirmation": "¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.",
+    "description": "Descripción",
+    "form-errors": {
+      "name-max-length": "El nombre debe tener como máximo 255 caracteres.",
+      "name-min-length": "El nombre debe tener al menos 3 caracteres.",
+      "name-required": "El nombre es obligatorio"
+    },
+    "name": "Nombre",
+    "save": "Guardar",
+    "title": "Editar información del documento"
+  },
+  "locale-switcher": {
+    "locale": "{locale, select, es {Castellano} en {Inglés} other {Otro}}"
+  },
+  "upload-new-document-modal": {
+    "cancel": "Cancelar",
+    "description": "Descripción",
+    "file-input-label": "Archivo PDF",
+    "form-errors": {
+      "file-max-size": "El archivo debe pesar menos de {maxSizeInMB}MB",
+      "file-must-be-pdf": "El archivo debe ser de tipo PDF",
+      "file-required": "Se requiere el archivo",
+      "language-required": "Se requiere seleccionar un idioma",
+      "name-max-length": "El nombre debe tener como máximo 255 caracteres.",
+      "name-min-length": "El nombre debe tener al menos 3 caracteres de largo.",
+      "name-required": "El nombre del archivo es obligatorio"
+    },
+    "language-label": "Idioma del documento",
+    "name": "Nombre",
+    "upload": "Subir nuevo documento"
+  }
+}
