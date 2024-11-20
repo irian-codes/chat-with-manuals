@@ -8,6 +8,7 @@ import {FilePenLine, Search, Upload, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
+import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
 import LocaleSwitcher from './custom/LanguageSwitcher';
 import {UploadNewDocumentModal} from './custom/UploadNewDocumentModal';
@@ -78,6 +79,7 @@ export function Dashboard({documents}: DashboardProps) {
 function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
   const t = useTranslations('document-manager');
   const format = useFormatter();
+  const router = useRouter();
 
   return (
     <Card className="max-w-[14rem]">
@@ -110,7 +112,14 @@ function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
                 <X className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(ev) => {
+                  ev.preventDefault();
+                  void router.push(`/?documentId=${doc.id}`);
+                }}
+              >
                 <FilePenLine className="h-4 w-4" />
               </Button>
             )}

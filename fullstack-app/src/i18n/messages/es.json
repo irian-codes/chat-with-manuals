@@ -27,6 +27,20 @@
     "image-alt": "Imagen de la portada del documento",
     "uploading-document": "Subiendo..."
   },
+  "edit-document-modal": {
+    "cancel": "Cancelar",
+    "delete": "Eliminar documento",
+    "delete-confirmation": "¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.",
+    "description": "Descripción",
+    "form-errors": {
+      "name-max-length": "El nombre debe tener como máximo 255 caracteres.",
+      "name-min-length": "El nombre debe tener al menos 3 caracteres.",
+      "name-required": "El nombre es obligatorio"
+    },
+    "name": "Nombre",
+    "save": "Guardar",
+    "title": "Editar información del documento"
+  },
   "locale-switcher": {
     "locale": "{locale, select, es {Castellano} en {Inglés} other {Otro}}"
   },
