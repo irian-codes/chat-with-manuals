@@ -41,7 +41,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
         onClose={() => {
-          void router.push('/');
+          void router.push('/', undefined, {shallow: true});
         }}
         onSubmit={(data) => {
           console.log(data);
