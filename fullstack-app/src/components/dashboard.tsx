@@ -29,7 +29,11 @@ export function Dashboard({documents}: DashboardProps) {
           </div>
           <div className="flex items-center gap-4">
             <Button
-              onClick={() => void router.push('/?uploadingDocument=true')}
+              onClick={() =>
+                void router.push('/?uploadingDocument=true', undefined, {
+                  shallow: true,
+                })
+              }
             >
               <Upload className="mr-2 h-4 w-4" />
               {t('header.upload')}
@@ -107,7 +111,9 @@ function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
                 size="icon"
                 onClick={(ev) => {
                   ev.preventDefault();
-                  void router.push(`/?documentId=${doc.id}`);
+                  void router.push(`/?documentId=${doc.id}`, undefined, {
+                    shallow: true,
+                  });
                 }}
               >
                 <FilePenLine className="h-4 w-4" />

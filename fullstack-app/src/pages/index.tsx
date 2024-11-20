@@ -1,7 +1,6 @@
 import {ConversationsSidebar} from '@/components/custom/ConversationsSidebar';
-import {EditDocumentModal} from '@/components/custom/EditDocumentModal';
+import {DashboardModals} from '@/components/custom/DashboardModals';
 import MainLayout from '@/components/custom/MainLayout';
-import {UploadNewDocumentModal} from '@/components/custom/UploadNewDocumentModal';
 import {Dashboard} from '@/components/dashboard';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
@@ -11,8 +10,7 @@ import type {
   GetServerSidePropsContext,
   InferGetServerSidePropsType,
 } from 'next';
-import {useRouter, useSearchParams} from 'next/navigation';
-import {Fragment, useEffect, useState} from 'react';
+import {Fragment} from 'react';
 
 export const getServerSideProps = (async (ctx: GetServerSidePropsContext) => {
   // TODO: Replace with actual API calls
@@ -76,32 +74,6 @@ export default function DashboardPage({
   conversations,
   documents,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const [isEditDocumentModalOpen, setIsEditDocumentModalOpen] = useState(false);
-  const [isUploadNewDocumentModalOpen, setIsUploadNewDocumentModalOpen] =
-    useState(false);
-  const [document, setDocument] = useState<Document | null>(null);
-  const params = useSearchParams();
-  const router = useRouter();
-
-  useEffect(() => {
-    const documentId = params.get('documentId');
-    const uploadingDocument = params.get('uploadingDocument');
-
-    if (documentId) {
-      setIsEditDocumentModalOpen(true);
-      setDocument(documents.find((d) => d.id === documentId) ?? null);
-    } else {
-      setDocument(null);
-      setIsEditDocumentModalOpen(false);
-    }
-
-    if (uploadingDocument) {
-      setIsUploadNewDocumentModalOpen(true);
-    } else {
-      setIsUploadNewDocumentModalOpen(false);
-    }
-  }, [params, documents]);
-
   return (
     <MainLayout>
       <Fragment>
@@ -109,40 +81,8 @@ export default function DashboardPage({
           <ConversationsSidebar conversations={conversations} />
           <Dashboard documents={documents} />
         </div>
-        {document && (
-          <EditDocumentModal
-            isOpen={isEditDocumentModalOpen}
-            document={document}
-            onSave={(data) => {
-              console.log('document saved! with ID:', document.id, data);
-            }}
-            onDelete={() => {
-              console.log('document deleted! with ID:', document.id);
-            }}
-            onClose={() => {
-              setIsEditDocumentModalOpen(false);
 
-              // Allowing the close animation to finish before pushing the route
-              setTimeout(() => {
-                void router.push('/');
-              }, 0);
-            }}
-          />
-        )}
-        <UploadNewDocumentModal
-          isOpen={isUploadNewDocumentModalOpen}
-          onClose={() => {
-            setIsUploadNewDocumentModalOpen(false);
-
-            // Allowing the close animation to finish before pushing the route
-            setTimeout(() => {
-              void router.push('/');
-            }, 0);
-          }}
-          onUpload={(data) => {
-            console.log(data);
-          }}
-        />
+        <DashboardModals documents={documents} />
       </Fragment>
     </MainLayout>
   );
