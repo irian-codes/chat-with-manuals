@@ -201,7 +201,11 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCloseButtonClick}>
+            <Button
+              type="reset"
+              variant="outline"
+              onClick={handleCloseButtonClick}
+            >
               {t('cancel')}
             </Button>
             <Button type="submit">{t('upload')}</Button>
