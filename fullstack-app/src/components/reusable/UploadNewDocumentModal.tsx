@@ -9,6 +9,7 @@ import {Input} from '@/components/ui/input';
 import {truncateFilename} from '@/lib/utils/files';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
+import {useEffect} from 'react';
 import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
@@ -26,17 +27,19 @@ interface FormData extends Omit<UploadFormInputs, 'file'> {
 
 interface UploadNewDocumentModalProps {
   isOpen: boolean;
-  onUpload: (data: FormData) => void;
+  onSubmit: (data: FormData) => void;
   onClose?: () => void;
 }
 
-export function UploadNewDocumentModal({
-  isOpen,
-  onClose,
-  onUpload,
-}: UploadNewDocumentModalProps) {
+export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
   const t = useTranslations('upload-new-document-modal');
   const form = useForm<UploadFormInputs>();
+
+  useEffect(() => {
+    if (props.isOpen) {
+      form.reset();
+    }
+  }, [form, props.isOpen]);
 
   const onSubmit: SubmitHandler<UploadFormInputs> = (data) => {
     if (!data?.file?.[0]) {
@@ -44,20 +47,20 @@ export function UploadNewDocumentModal({
     }
 
     const file = {...data.file[0], name: truncateFilename(data.file[0].name)};
-    onUpload({...data, file});
+    props.onSubmit({...data, file});
     form.reset();
     form.clearErrors();
-    onClose?.();
+    props.onClose?.();
   };
 
   function handleCloseButtonClick() {
     form.reset();
     form.clearErrors();
-    onClose?.();
+    props.onClose?.();
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={props.isOpen} onOpenChange={handleCloseButtonClick}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t('upload')}</DialogTitle>

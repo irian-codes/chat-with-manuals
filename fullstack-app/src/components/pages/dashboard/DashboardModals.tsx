@@ -9,7 +9,6 @@ interface DashboardModalsProps {
 }
 
 export function DashboardModals({documents}: DashboardModalsProps) {
-  const [isEditDocumentModalOpen, setIsEditDocumentModalOpen] = useState(false);
   const [isUploadNewDocumentModalOpen, setIsUploadNewDocumentModalOpen] =
     useState(false);
   const [document, setDocument] = useState<Document | null>(null);
@@ -20,11 +19,9 @@ export function DashboardModals({documents}: DashboardModalsProps) {
     const uploadingDocument = Boolean(router.query.uploadingDocument);
 
     if (documentId) {
-      setIsEditDocumentModalOpen(true);
       setDocument(documents.find((d) => d.id === documentId) ?? null);
     } else {
       setDocument(null);
-      setIsEditDocumentModalOpen(false);
     }
 
     if (uploadingDocument) {
@@ -36,37 +33,26 @@ export function DashboardModals({documents}: DashboardModalsProps) {
 
   return (
     <Fragment>
-      {document && (
-        <EditDocumentModal
-          isOpen={isEditDocumentModalOpen}
-          document={document}
-          onSave={(data) => {
-            console.log('document saved! with ID:', document.id, data);
-          }}
-          onDelete={() => {
-            console.log('document deleted! with ID:', document.id);
-          }}
-          onClose={() => {
-            setIsEditDocumentModalOpen(false);
+      <EditDocumentModal
+        isOpen={document !== null}
+        document={document}
+        onSubmit={(payload) => {
+          console.log('document saved! with ID:', payload);
+        }}
+        onDelete={(doc) => {
+          console.log('document deleted! with ID:', doc.id);
+        }}
+        onClose={() => {
+          void router.push('/', undefined, {shallow: true});
+        }}
+      />
 
-            // Allowing the close animation to finish before pushing the route
-            setTimeout(() => {
-              void router.push('/', undefined, {shallow: true});
-            }, 0);
-          }}
-        />
-      )}
       <UploadNewDocumentModal
         isOpen={isUploadNewDocumentModalOpen}
         onClose={() => {
-          setIsUploadNewDocumentModalOpen(false);
-
-          // Allowing the close animation to finish before pushing the route
-          setTimeout(() => {
-            void router.push('/');
-          }, 0);
+          void router.push('/');
         }}
-        onUpload={(data) => {
+        onSubmit={(data) => {
           console.log(data);
         }}
       />

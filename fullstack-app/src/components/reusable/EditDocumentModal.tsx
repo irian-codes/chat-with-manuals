@@ -8,6 +8,7 @@ import {
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
 import {useTranslations} from 'next-intl';
+import {useEffect} from 'react';
 import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
@@ -17,13 +18,16 @@ interface EditDocumentFormInputs {
   description: string;
 }
 
-type FormData = EditDocumentFormInputs;
+type DocumentUpdatePayload = {
+  originalDocument: Document;
+  formData: EditDocumentFormInputs;
+};
 
 interface EditDocumentModalProps {
   isOpen: boolean;
-  document: Document;
-  onSave: (data: FormData) => void;
-  onDelete: () => void;
+  document?: Document | null;
+  onSubmit: (data: DocumentUpdatePayload) => void;
+  onDelete: (doc: Document) => void;
   onClose?: () => void;
 }
 
@@ -31,13 +35,24 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   const t = useTranslations('edit-document-modal');
   const form = useForm<EditDocumentFormInputs>({
     defaultValues: {
-      title: props.document.title,
-      description: props.document.description,
+      title: props.document?.title ?? '',
+      description: props.document?.description ?? '',
     },
   });
 
+  useEffect(() => {
+    form.reset({
+      title: props.document?.title ?? '',
+      description: props.document?.description ?? '',
+    });
+  }, [form, props.document]);
+
   const onSubmit: SubmitHandler<EditDocumentFormInputs> = (data) => {
-    props.onSave(data);
+    if (!data || !props.document) {
+      return;
+    }
+
+    props.onSubmit({originalDocument: props.document, formData: data});
     form.reset();
     form.clearErrors();
     props.onClose?.();
@@ -50,8 +65,12 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   }
 
   function handleDeleteButtonClick() {
+    if (!props.document) {
+      return;
+    }
+
     if (window.confirm(t('delete-confirmation'))) {
-      props.onDelete();
+      props.onDelete(props.document);
       form.reset();
       form.clearErrors();
       props.onClose?.();
@@ -59,7 +78,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   }
 
   return (
-    <Dialog open={props.isOpen} onOpenChange={props.onClose}>
+    <Dialog open={props.isOpen} onOpenChange={handleCloseButtonClick}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
@@ -87,7 +106,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
                   },
                 })}
                 placeholder={t('name')}
-                defaultValue={props.document.title}
+                defaultValue={props.document?.title ?? ''}
               />
               {form.formState.errors.title && (
                 <p className="text-sm text-red-500">
@@ -106,7 +125,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
                 })}
                 placeholder={t('description')}
                 rows={3}
-                defaultValue={props.document.description}
+                defaultValue={props.document?.description ?? ''}
               />
               {form.formState.errors.description && (
                 <p className="text-sm text-red-500">
