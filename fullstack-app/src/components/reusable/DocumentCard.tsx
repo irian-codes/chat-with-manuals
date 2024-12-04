@@ -30,9 +30,9 @@ export function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
         />
         <div className="p-4">
           <div className="flex items-start justify-between">
-            <div>
-              <h3 className="line-clamp-2 font-medium">{doc.title}</h3>
-              <p className="text-sm text-muted-foreground">
+            <div className="min-h-[4rem]">
+              <h3 className="line-clamp-1 font-medium">{doc.title}</h3>
+              <p className="line-clamp-2 text-sm text-muted-foreground">
                 {'isUploading' in doc && doc.isUploading
                   ? format.relativeTime(new Date(doc.date), Date.now())
                   : format.dateTime(new Date(doc.date), 'full')}
