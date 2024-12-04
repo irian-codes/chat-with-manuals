@@ -3,7 +3,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
-import {UserButton} from '@clerk/nextjs';
+import {SignedIn, SignedOut, SignInButton, UserButton} from '@clerk/nextjs';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
@@ -37,7 +37,12 @@ export function DashboardMain({documents}: DashboardProps) {
               <Upload className="mr-2 h-4 w-4" />
               {t('header.upload')}
             </Button>
-            <UserButton />
+            <SignedOut>
+              <SignInButton />
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
             <LanguageSwitcher />
           </div>
         </div>
