@@ -1,9 +1,10 @@
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
+import {cn} from '@/lib/utils/ui/utils';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
-import {Plus, Search} from 'lucide-react';
+import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
@@ -20,42 +21,65 @@ export function ConversationsSidebar({
   const t = useTranslations('conversation-sidebar');
   const [isDocumentPickerModalOpen, setIsDocumentPickerModalOpen] =
     useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const router = useRouter();
 
   return (
     <Fragment>
-      <div className="w-80 border-r">
+      <div
+        className={cn(
+          'border-r transition-all duration-300',
+          isCollapsed ? 'w-12' : 'w-80'
+        )}
+      >
         <div className="space-y-4 p-4">
-          <h2 className="text-xl font-semibold">{t('title')}</h2>
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t('search')} className="pl-8" />
+          <div className="flex items-center justify-between">
+            {!isCollapsed && (
+              <h2 className="text-xl font-semibold">{t('title')}</h2>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-8 w-8"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
           </div>
-          <ScrollArea className="h-[calc(100vh-200px)]">
-            <div className="space-y-2">
-              {conversations.map((conversation) => (
-                <Button
-                  key={conversation.id}
-                  variant="ghost"
-                  className="w-full justify-start"
-                >
-                  {/* TODO: Add the conversation id to the url */}
-                  <Link href={`/conversation`}>
-                    <span className="truncate font-normal">
-                      {conversation.title}
-                    </span>
-                  </Link>
-                </Button>
-              ))}
-              <Button
-                className="w-full"
-                onClick={() => setIsDocumentPickerModalOpen(true)}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                {t('newConversation')}
-              </Button>
-            </div>
-          </ScrollArea>
+
+          {!isCollapsed && (
+            <Fragment>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder={t('search')} className="pl-8" />
+              </div>
+              <ScrollArea className="h-[calc(100vh-200px)]">
+                <div className="space-y-2">
+                  {conversations.map((conversation) => (
+                    <Button
+                      key={conversation.id}
+                      variant="ghost"
+                      className="w-full justify-start"
+                    >
+                      {/* TODO: Add the conversation id to the url */}
+                      <Link href={`/conversation`}>
+                        <span className="truncate font-normal">
+                          {conversation.title}
+                        </span>
+                      </Link>
+                    </Button>
+                  ))}
+                  <Button
+                    className="w-full"
+                    onClick={() => setIsDocumentPickerModalOpen(true)}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    {t('newConversation')}
+                  </Button>
+                </div>
+              </ScrollArea>
+            </Fragment>
+          )}
         </div>
       </div>
 
