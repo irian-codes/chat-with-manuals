@@ -1,3 +1,4 @@
+import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Textarea} from '@/components/ui/textarea';
@@ -7,7 +8,6 @@ import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useEffect, useRef, useState} from 'react';
-import {LanguageSwitcher} from '../../reusable/LanguageSwitcher';
 
 interface ConversationProps {
   conversation: Conversation;
@@ -69,12 +69,11 @@ export function ConversationMain({conversation}: ConversationProps) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b p-4">
+      <Header>
         <h1 className="text-2xl font-semibold">
           {t('title', {documentTitle: conversation.document.title})}
         </h1>
-        <LanguageSwitcher />
-      </header>
+      </Header>
 
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">

@@ -1,4 +1,5 @@
 import {DocumentCard} from '@/components/reusable/DocumentCard';
+import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
@@ -8,7 +9,6 @@ import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
-import {LanguageSwitcher} from '../../reusable/LanguageSwitcher';
 
 interface DashboardProps {
   documents: Document[];
@@ -20,33 +20,31 @@ export function DashboardMain({documents}: DashboardProps) {
 
   return (
     <div className="flex-1">
-      <header className="border-b">
-        <div className="flex items-center justify-between gap-4 p-4">
-          <div className="relative max-w-md flex-1">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t('header.search')} className="pl-8" />
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() =>
-                void router.push('/?uploadingDocument=true', undefined, {
-                  shallow: true,
-                })
-              }
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {t('header.upload')}
-            </Button>
-            <SignedOut>
-              <SignInButton />
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-            <LanguageSwitcher />
-          </div>
+      <Header>
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder={t('header.search')} className="pl-8" />
         </div>
-      </header>
+
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={() =>
+              void router.push('/?uploadingDocument=true', undefined, {
+                shallow: true,
+              })
+            }
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {t('header.upload')}
+          </Button>
+          <SignedOut>
+            <SignInButton />
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+        </div>
+      </Header>
 
       <main className="p-4">
         <div className="flex flex-row flex-wrap gap-4">
