@@ -40,7 +40,7 @@ export function DocumentPickerModal(props: DocumentPickerModalProps) {
         }
       }}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[90vw] max-w-2xl sm:w-full">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>{t('description')}</DialogDescription>

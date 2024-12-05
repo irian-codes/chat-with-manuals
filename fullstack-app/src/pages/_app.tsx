@@ -5,8 +5,10 @@ import type {AppProps, AppType} from 'next/app';
 
 import {api} from '@/utils/api';
 
+import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
 import '@/styles/globals.css';
 import type {i18nMessages} from '@/types/i18nMessages';
+import {cn} from '@/utils/ui/utils';
 import {useRouter} from 'next/router';
 
 const MyApp: AppType = ({Component, pageProps}: AppProps) => {
@@ -53,9 +55,11 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
       <ClerkProvider
         appearance={{variables: {fontFamily: GeistSans.style.fontFamily}}}
       >
-        <div className={GeistSans.className}>
-          <Component {...pageProps} />
-        </div>
+        <SidebarProvider>
+          <div className={cn(GeistSans.className, 'overflow-x-hidden')}>
+            <Component {...pageProps} />
+          </div>
+        </SidebarProvider>
       </ClerkProvider>
     </NextIntlClientProvider>
   );

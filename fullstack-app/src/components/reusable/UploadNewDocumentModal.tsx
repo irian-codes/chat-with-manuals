@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {Input} from '@/components/ui/input';
-import {truncateFilename} from '@/lib/utils/files';
+import {truncateFilename} from '@/utils/files';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
 import {type SubmitHandler, useForm} from 'react-hook-form';
@@ -61,7 +61,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
         }
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[90vw] max-w-md sm:w-full">
         <DialogHeader>
           <DialogTitle>{t('upload')}</DialogTitle>
         </DialogHeader>

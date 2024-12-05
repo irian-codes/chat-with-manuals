@@ -78,7 +78,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
         }
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[90vw] max-w-md sm:w-full">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
