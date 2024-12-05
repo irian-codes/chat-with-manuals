@@ -11,6 +11,7 @@ import {type CreateNextContextOptions} from '@trpc/server/adapters/next';
 import superjson from 'superjson';
 import {ZodError} from 'zod';
 
+import {env} from '@/env';
 import {db} from '@/server/db';
 import {getAuth} from '@clerk/nextjs/server';
 import rateLimit from '../middleware/rateLimit';
@@ -179,7 +180,7 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
   } else {
     await rateLimiter.check({
       res: ctx.res,
-      limit: 20,
+      limit: env.NODE_ENV === 'production' ? 20 : 1e12,
       token: identifier,
     });
   }
