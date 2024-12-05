@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 * **dashboard:** fixed inconsistent document card height ([c428e61](https://github.com/irian-codes/chat-with-manuals/commit/c428e610652241203f66a51b3cda86470e6c69f8))
 * **dashboard:** support for user logged out state ([75aa1d1](https://github.com/irian-codes/chat-with-manuals/commit/75aa1d1f82f9a1d38aecc0ac73b72ddc88e534a6))
-* **deps:** pin radix-ui scroll area version for now ([7ca3ede](https://github.com/irian-codes/chat-with-manuals/commit/7ca3ede5d2b47cba7ddb30ac9697649b618d70ae)), closes [/github.com/radix-ui/primitives/pull/2945#issuecomment-2471995205](https://github.com/irian-codes//github.com/radix-ui/primitives/pull/2945/issues/issuecomment-2471995205)
+* **deps:** pin radix-ui scroll area version for now ([7ca3ede](https://github.com/irian-codes/chat-with-manuals/commit/7ca3ede5d2b47cba7ddb30ac9697649b618d70ae))
 * **header:** only hiding language switcher on mobile screens ([c362c5e](https://github.com/irian-codes/chat-with-manuals/commit/c362c5ec645c8fcf48f2062c588739f49a7339ad))
 * **lang:** flag not overlapping anymore with other elements ([b5984b7](https://github.com/irian-codes/chat-with-manuals/commit/b5984b78f6a9f063da619b3f6a3e9cbd8aedfca0))
 * **modals:** made modals correctly responsive ([0673be0](https://github.com/irian-codes/chat-with-manuals/commit/0673be002e1c0153e825ea5da10393d70f199357))
