@@ -6,6 +6,7 @@ import {clerkMiddleware, createRouteMatcher} from '@clerk/nextjs/server';
  * @see https://clerk.com/docs/references/nextjs/clerk-middleware#protect-routes-based-on-user-authentication-status
  */
 const isProtectedRoute = createRouteMatcher([
+  // TODO #11: Fill protected routes
   // '/',
   // '/conversation(.*)',
 ]);
