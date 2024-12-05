@@ -4,92 +4,64 @@ import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
-import type {ConversationSimplified} from '@/types/Conversation';
-import type {Document} from '@/types/Document';
-import type {i18nMessages} from '@/types/i18nMessages';
-import type {
-  GetServerSideProps,
-  GetServerSidePropsContext,
-  InferGetServerSidePropsType,
-} from 'next';
+import {appRouter} from '@/server/api/root';
+import {createInnerTRPCContext} from '@/server/api/trpc';
+import {api} from '@/utils/api';
+import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
+import {createServerSideHelpers} from '@trpc/react-query/server';
+import type {GetServerSidePropsContext} from 'next';
 import {Fragment} from 'react';
+import superjson from 'superjson';
 
-export const getServerSideProps = (async (ctx: GetServerSidePropsContext) => {
-  // TODO: Replace with actual API calls
-  const conversations: ConversationSimplified[] = [
-    {id: '1', title: 'How does Bitcoin work and what are its implications?'},
-    {id: '2', title: 'Troubleshooting volume issues in audio systems.'},
-    {id: '3', title: 'Moving with a pawn in chess: strategies and tips.'},
-    {id: '4', title: 'Configuring a detector for optimal performance.'},
-  ];
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  const helpers = createServerSideHelpers({
+    router: appRouter,
+    ctx: createInnerTRPCContext({
+      userId: getAuth(ctx.req).userId ?? null,
+    }),
+    transformer: superjson,
+  });
 
-  const documents: Document[] = [
-    {
-      id: '2',
-      title: 'Business report',
-      date: '2024-10-12T21:21:00.000Z',
-      languageCode: 'en',
-    },
-    {
-      id: '3',
-      title: 'Bitcoin whitepaper',
-      date: '2023-03-07T10:14:00.000Z',
-      languageCode: 'en',
-    },
-    {
-      id: '4',
-      title: 'Savage Worlds RPG',
-      date: '2022-11-23T00:20:54.000Z',
-      languageCode: 'en',
-    },
-    {
-      id: '5',
-      title: 'Urban mobility report',
-      date: '2022-10-05T02:08:00.000Z',
-      languageCode: 'en',
-    },
-    {
-      id: '6',
-      title: 'Fridge manual model X459 fasd sdad fasd  asdf asdf sa d',
-      date: '2021-03-10T00:24:00Z',
-      languageCode: 'en',
-    },
-  ];
+  // Prefetch both queries
+  await Promise.all([
+    helpers.documents.getDocuments.prefetch(),
+    helpers.documents.getConversations.prefetch({simplify: true}),
+  ]);
 
   const locale = ctx.locale;
 
   return {
     props: {
-      conversations,
-      documents,
+      trpcState: helpers.dehydrate(),
+      ...buildClerkProps(ctx.req),
       // eslint-disable-next-line
       messages: (await import(`../i18n/messages/${locale}.json`)).default,
     },
   };
-}) satisfies GetServerSideProps<{
-  conversations: ConversationSimplified[];
-  documents: Document[];
-  messages: i18nMessages;
-}>;
+};
 
-export default function DashboardPage({
-  conversations,
-  documents,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function DashboardPage() {
+  const conversationsCall = api.documents.getConversations.useQuery({
+    simplify: true,
+  });
+  const documentsCall = api.documents.getDocuments.useQuery();
+
   const {isCollapsed} = useSidebar();
   const isNotMobile = useTailwindBreakpoint('sm');
+
+  // TODO: Redirect user to error page if there's an error on the calls.
 
   return (
     <MainLayout>
       <Fragment>
         <div className="flex h-screen w-full flex-row bg-background">
-          <ConversationsSidebar conversations={conversations} />
+          <ConversationsSidebar conversations={conversationsCall.data ?? []} />
           {(isCollapsed || isNotMobile) && (
-            <DashboardMain documents={documents} />
+            <DashboardMain documents={documentsCall.data ?? []} />
           )}
         </div>
 
-        <DashboardModals documents={documents} />
+        <DashboardModals documents={documentsCall.data ?? []} />
       </Fragment>
     </MainLayout>
   );
