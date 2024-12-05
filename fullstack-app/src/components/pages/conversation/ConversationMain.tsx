@@ -2,7 +2,7 @@ import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Textarea} from '@/components/ui/textarea';
-import {useIsMacOs, useIsTouchDevice} from '@/lib/hooks/os-utils';
+import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import type {Conversation} from '@/types/Conversation';
 import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';

@@ -3,7 +3,7 @@ import {GeistSans} from 'geist/font/sans';
 import {X} from 'lucide-react';
 import * as React from 'react';
 
-import {cn} from '@/lib/utils/ui/utils';
+import {cn} from '@/utils/ui/utils';
 
 const Dialog = DialogPrimitive.Root;
 
