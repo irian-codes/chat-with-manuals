@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.3](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.2...v0.1.3) (2024-12-05)
+
+
+### Features
+
+* **sidebar:** created ConversationsSidebarContext and hiding language switcher when opened ([980e2d8](https://github.com/irian-codes/chat-with-manuals/commit/980e2d83117a83b66ec26bd6dad7e98d050eeae5))
+* **sidebar:** made sidebar collapse with a button ([e3e828b](https://github.com/irian-codes/chat-with-manuals/commit/e3e828b04aa180af630955c14aafb77399f9c839))
+
+
+### Bug Fixes
+
+* **dashboard:** fixed inconsistent document card height ([c428e61](https://github.com/irian-codes/chat-with-manuals/commit/c428e610652241203f66a51b3cda86470e6c69f8))
+* **dashboard:** support for user logged out state ([75aa1d1](https://github.com/irian-codes/chat-with-manuals/commit/75aa1d1f82f9a1d38aecc0ac73b72ddc88e534a6))
+* **deps:** pin radix-ui scroll area version for now ([7ca3ede](https://github.com/irian-codes/chat-with-manuals/commit/7ca3ede5d2b47cba7ddb30ac9697649b618d70ae)), closes [/github.com/radix-ui/primitives/pull/2945#issuecomment-2471995205](https://github.com/irian-codes//github.com/radix-ui/primitives/pull/2945/issues/issuecomment-2471995205)
+* **header:** only hiding language switcher on mobile screens ([c362c5e](https://github.com/irian-codes/chat-with-manuals/commit/c362c5ec645c8fcf48f2062c588739f49a7339ad))
+* **lang:** flag not overlapping anymore with other elements ([b5984b7](https://github.com/irian-codes/chat-with-manuals/commit/b5984b78f6a9f063da619b3f6a3e9cbd8aedfca0))
+* **modals:** made modals correctly responsive ([0673be0](https://github.com/irian-codes/chat-with-manuals/commit/0673be002e1c0153e825ea5da10393d70f199357))
+* **sidebar:** properly hiding the main content on mobile when sidebar is open ([028c8f3](https://github.com/irian-codes/chat-with-manuals/commit/028c8f3470910435ecee81d84efe5a96ec72e4f4)), closes [#7](https://github.com/irian-codes/chat-with-manuals/issues/7)
+
 ## [0.1.2](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.1...v0.1.2) (2024-11-20)
 
 
