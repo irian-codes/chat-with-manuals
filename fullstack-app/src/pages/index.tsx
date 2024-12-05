@@ -25,7 +25,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   // Prefetch both queries
   await Promise.all([
     helpers.documents.getDocuments.prefetch(),
-    helpers.documents.getConversations.prefetch({simplify: true}),
+    helpers.conversations.getConversations.prefetch({simplify: true}),
   ]);
 
   const locale = ctx.locale;
@@ -41,7 +41,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function DashboardPage() {
-  const conversationsCall = api.documents.getConversations.useQuery({
+  const conversationsCall = api.conversations.getConversations.useQuery({
     simplify: true,
   });
   const documentsCall = api.documents.getDocuments.useQuery();

@@ -6,11 +6,9 @@ import {clerkMiddleware, createRouteMatcher} from '@clerk/nextjs/server';
  * @see https://clerk.com/docs/references/nextjs/clerk-middleware#protect-routes-based-on-user-authentication-status
  */
 const isProtectedRoute = createRouteMatcher([
-  // '/dashboard(.*)'
+  // '/',
+  // '/conversation(.*)',
 ]);
-
-// Add here the pages you need auth on getServerSideProps
-const getServerSidePropsAuthRoutes = ['/'];
 
 export default clerkMiddleware(
   async (auth, req) => {
@@ -27,6 +25,8 @@ export const config = {
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     // Always run for API routes
     '/(api|trpc)(.*)',
-    ...getServerSidePropsAuthRoutes,
+    // Add here the pages you need auth on getServerSideProps
+    '/',
+    '/conversation(.*)',
   ],
 };

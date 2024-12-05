@@ -1,7 +1,5 @@
 import {createTRPCRouter, publicProcedure} from '@/server/api/trpc';
-import {Conversation, ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
-import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
   // TODO #10: This should be an authed procedure: https://clerk.com/docs/references/nextjs/trpc
@@ -43,27 +41,4 @@ export const documentsRouter = createTRPCRouter({
 
     return documents;
   }),
-
-  getConversations: publicProcedure
-    .input(
-      z.object({
-        simplify: z.boolean().optional(),
-      })
-    )
-    .query(async ({ctx, input}) => {
-      const simplifiedConversations: ConversationSimplified[] = [
-        {
-          id: '1',
-          title: 'How does Bitcoin work and what are its implications?',
-        },
-        {id: '2', title: 'Troubleshooting volume issues in audio systems.'},
-        {id: '3', title: 'Moving with a pawn in chess: strategies and tips.'},
-        {id: '4', title: 'Configuring a detector for optimal performance.'},
-      ];
-
-      // TODO: Populate with more defined mock converstions.
-      const conversations: Conversation[] = [];
-
-      return input.simplify ? simplifiedConversations : conversations;
-    }),
 });

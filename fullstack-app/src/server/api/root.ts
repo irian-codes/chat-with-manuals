@@ -1,4 +1,5 @@
 import {createCallerFactory, createTRPCRouter} from '@/server/api/trpc';
+import {conversationsRouter} from './routers/conversations';
 import {documentsRouter} from './routers/documents';
 
 /**
@@ -8,6 +9,7 @@ import {documentsRouter} from './routers/documents';
  */
 export const appRouter = createTRPCRouter({
   documents: documentsRouter,
+  conversations: conversationsRouter,
 });
 
 // export type definition of API
