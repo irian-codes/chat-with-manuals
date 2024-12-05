@@ -2,7 +2,9 @@ import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Textarea} from '@/components/ui/textarea';
+import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
+import useTailwindBreakpoint from '@/hooks/useTailwindBreakpoint';
 import type {Conversation} from '@/types/Conversation';
 import type {Message} from '@/types/Message';
 import {AlertTriangle, Send} from 'lucide-react';
@@ -23,6 +25,8 @@ export function ConversationMain({conversation}: ConversationProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isTouchDevice = useIsTouchDevice();
   const isMacOs = useIsMacOs();
+  const {isCollapsed} = useSidebar();
+  const isNotMobile = useTailwindBreakpoint('sm');
 
   useEffect(() => {
     // Focus the input when the loading state changes
@@ -69,7 +73,7 @@ export function ConversationMain({conversation}: ConversationProps) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <Header>
+      <Header hideLanguageSwitcher={!isCollapsed && !isNotMobile}>
         <h1 className="text-2xl font-semibold">
           {t('title', {documentTitle: conversation.document.title})}
         </h1>
