@@ -2,8 +2,6 @@ import {DocumentCard} from '@/components/reusable/DocumentCard';
 import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {useSidebar} from '@/contexts/ConversationsSidebarContext';
-import useTailwindBreakpoint from '@/hooks/useTailwindBreakpoint';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
 import {SignedIn, SignedOut, SignInButton, UserButton} from '@clerk/nextjs';
@@ -19,12 +17,10 @@ interface DashboardProps {
 export function DashboardMain({documents}: DashboardProps) {
   const t = useTranslations('document-manager');
   const router = useRouter();
-  const {isCollapsed} = useSidebar();
-  const isNotMobile = useTailwindBreakpoint('sm');
 
   return (
     <div className="flex-1">
-      <Header hideLanguageSwitcher={!isCollapsed && !isNotMobile}>
+      <Header>
         <div className="relative max-w-md flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder={t('header.search')} className="pl-8" />
