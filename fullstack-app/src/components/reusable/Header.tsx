@@ -1,5 +1,5 @@
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
-import useTailwindBreakpoint from '@/hooks/useTailwindBreakpoint';
+import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import {type ReactNode} from 'react';
 import {LanguageSwitcher} from './LanguageSwitcher';
 

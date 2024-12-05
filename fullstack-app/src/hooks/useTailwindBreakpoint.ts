@@ -8,7 +8,7 @@ const {
   theme: {screens},
 } = fullConfig;
 
-const useTailwindBreakpoint = (query: keyof typeof screens): boolean => {
+export const useTailwindBreakpoint = (query: keyof typeof screens): boolean => {
   // SSR check to ensure it only runs on the client
   if (typeof window === 'undefined') return false;
 
@@ -25,5 +25,3 @@ const useTailwindBreakpoint = (query: keyof typeof screens): boolean => {
 
   return isMatch;
 };
-
-export default useTailwindBreakpoint;

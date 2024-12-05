@@ -1,7 +1,8 @@
 import {ConversationMain} from '@/components/pages/conversation/ConversationMain';
 import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
-import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
+import {useSidebar} from '@/contexts/ConversationsSidebarContext';
+import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import type {Conversation, ConversationSimplified} from '@/types/Conversation';
 import type {i18nMessages} from '@/types/i18nMessages';
 import type {
@@ -73,14 +74,17 @@ export default function DashboardPage({
   conversations,
   conversation,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const {isCollapsed} = useSidebar();
+  const isNotMobile = useTailwindBreakpoint('sm');
+
   return (
     <MainLayout>
-      <SidebarProvider>
-        <div className="flex h-screen w-full flex-row bg-background">
-          <ConversationsSidebar conversations={conversations} />
+      <div className="flex h-screen w-full flex-row bg-background">
+        <ConversationsSidebar conversations={conversations} />
+        {(isCollapsed || isNotMobile) && (
           <ConversationMain conversation={conversation} />
-        </div>
-      </SidebarProvider>
+        )}
+      </div>
     </MainLayout>
   );
 }

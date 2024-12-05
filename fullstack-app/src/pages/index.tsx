@@ -2,7 +2,8 @@ import {DashboardMain} from '@/components/pages/dashboard/DashboardMain';
 import {DashboardModals} from '@/components/pages/dashboard/DashboardModals';
 import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
-import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
+import {useSidebar} from '@/contexts/ConversationsSidebarContext';
+import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
 import type {i18nMessages} from '@/types/i18nMessages';
@@ -75,15 +76,18 @@ export default function DashboardPage({
   conversations,
   documents,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const {isCollapsed} = useSidebar();
+  const isNotMobile = useTailwindBreakpoint('sm');
+
   return (
     <MainLayout>
       <Fragment>
-        <SidebarProvider>
-          <div className="flex h-screen w-full flex-row bg-background">
-            <ConversationsSidebar conversations={conversations} />
+        <div className="flex h-screen w-full flex-row bg-background">
+          <ConversationsSidebar conversations={conversations} />
+          {(isCollapsed || isNotMobile) && (
             <DashboardMain documents={documents} />
-          </div>
-        </SidebarProvider>
+          )}
+        </div>
 
         <DashboardModals documents={documents} />
       </Fragment>
