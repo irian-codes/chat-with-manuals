@@ -1,6 +1,7 @@
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {ScrollArea} from '@/components/ui/scroll-area';
+import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {cn} from '@/lib/utils/ui/utils';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
@@ -21,7 +22,7 @@ export function ConversationsSidebar({
   const t = useTranslations('conversation-sidebar');
   const [isDocumentPickerModalOpen, setIsDocumentPickerModalOpen] =
     useState<boolean>(false);
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
 
   return (
