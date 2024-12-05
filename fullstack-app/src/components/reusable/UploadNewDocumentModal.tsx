@@ -61,7 +61,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
         }
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[90vw] max-w-md sm:w-full">
         <DialogHeader>
           <DialogTitle>{t('upload')}</DialogTitle>
         </DialogHeader>

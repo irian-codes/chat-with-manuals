@@ -8,6 +8,7 @@ import {api} from '@/utils/api';
 import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
 import '@/styles/globals.css';
 import type {i18nMessages} from '@/types/i18nMessages';
+import {cn} from '@/utils/ui/utils';
 import {useRouter} from 'next/router';
 
 const MyApp: AppType = ({Component, pageProps}: AppProps) => {
@@ -55,7 +56,7 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
         appearance={{variables: {fontFamily: GeistSans.style.fontFamily}}}
       >
         <SidebarProvider>
-          <div className={GeistSans.className}>
+          <div className={cn(GeistSans.className, 'overflow-x-hidden')}>
             <Component {...pageProps} />
           </div>
         </SidebarProvider>
