@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {Input} from '@/components/ui/input';
+import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
 import {truncateFilename} from '@/utils/files';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
@@ -13,20 +14,15 @@ import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
 
-interface UploadFormInputs {
-  name: string;
-  description: string;
-  language: string;
+// Seems that on the frontend the type for the file picker must be
+// FileList, while on the backend we want to use File.
+type UploadFormInputs = Omit<UploadDocumentPayload, 'file'> & {
   file: FileList;
-}
-
-interface FormData extends Omit<UploadFormInputs, 'file'> {
-  file: File;
-}
+};
 
 interface UploadNewDocumentModalProps {
   isOpen: boolean;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: UploadDocumentPayload) => void;
   onClose?: () => void;
 }
 
@@ -39,7 +35,11 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
       throw new Error('No file provided');
     }
 
-    const file = {...data.file[0], name: truncateFilename(data.file[0].name)};
+    const originalFile = data.file[0];
+    const file = new File([originalFile], truncateFilename(originalFile.name), {
+      type: originalFile.type,
+    });
+
     props.onSubmit({...data, file});
     form.reset();
     form.clearErrors();

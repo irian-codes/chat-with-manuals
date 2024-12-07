@@ -1,5 +1,7 @@
 import {createTRPCRouter, publicProcedure} from '@/server/api/trpc';
 import type {Document} from '@/types/Document';
+import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
+import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
   // TODO #10: This should be an authed procedure: https://clerk.com/docs/references/nextjs/trpc
@@ -41,4 +43,20 @@ export const documentsRouter = createTRPCRouter({
 
     return documents;
   }),
+
+  uploadDocument: publicProcedure
+    .input(
+      z
+        .instanceof(FormData)
+        .transform((formData) => Object.fromEntries(formData.entries()))
+        .pipe(UploadDocumentPayloadSchema)
+    )
+    .mutation(async ({ctx, input}) => {
+      // Now input is properly typed with all our fields
+      console.log('Received payload: ', input);
+
+      return {
+        success: input.file instanceof File,
+      };
+    }),
 });
