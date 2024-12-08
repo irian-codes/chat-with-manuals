@@ -4,6 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
+import {api} from '@/utils/api';
 import {SignedIn, SignedOut, SignInButton, UserButton} from '@clerk/nextjs';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
@@ -17,6 +18,16 @@ interface DashboardProps {
 export function DashboardMain({documents}: DashboardProps) {
   const t = useTranslations('document-manager');
   const router = useRouter();
+  const cancelDocumentParsingMutation =
+    api.documents.cancelDocumentParsing.useMutation();
+
+  function handleCancelDocumentParsing(doc: Document) {
+    cancelDocumentParsingMutation.mutate({
+      id: doc.id,
+    });
+
+    // TODO: Show notification (error and success) to the user
+  }
 
   return (
     <div className="flex-1">
@@ -59,7 +70,11 @@ export function DashboardMain({documents}: DashboardProps) {
           ].map((doc) =>
             // TODO: Add the conversation id to the url
             'isUploading' in doc && doc.isUploading ? (
-              <DocumentCard doc={doc} key={doc.id} />
+              <DocumentCard
+                doc={doc}
+                key={doc.id}
+                onCancelButtonClick={() => handleCancelDocumentParsing(doc)}
+              />
             ) : (
               <Link href={`/conversation`} key={doc.id}>
                 <DocumentCard doc={doc} />

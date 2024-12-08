@@ -7,7 +7,12 @@ import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
 import {useRouter} from 'next/router';
 
-export function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
+type DocumentCardProps = {
+  doc: Document | UploadingDocument;
+  onCancelButtonClick?: () => void;
+};
+
+export function DocumentCard(props: DocumentCardProps) {
   const t = useTranslations('document-manager');
   const format = useFormatter();
   const router = useRouter();
@@ -31,15 +36,19 @@ export function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
         <div className="p-4">
           <div className="flex items-start justify-between">
             <div className="min-h-[4rem]">
-              <h3 className="line-clamp-1 font-medium">{doc.title}</h3>
+              <h3 className="line-clamp-1 font-medium">{props.doc.title}</h3>
               <p className="line-clamp-2 text-sm text-muted-foreground">
-                {'isUploading' in doc && doc.isUploading
-                  ? format.relativeTime(new Date(doc.date), Date.now())
-                  : format.dateTime(new Date(doc.date), 'full')}
+                {'isUploading' in props.doc && props.doc.isUploading
+                  ? format.relativeTime(new Date(props.doc.date), Date.now())
+                  : format.dateTime(new Date(props.doc.date), 'full')}
               </p>
             </div>
-            {'isUploading' in doc && doc.isUploading ? (
-              <Button variant="ghost" size="icon">
+            {'isUploading' in props.doc && props.doc.isUploading ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={props.onCancelButtonClick}
+              >
                 <X className="h-4 w-4" />
               </Button>
             ) : (
@@ -48,7 +57,7 @@ export function DocumentCard({doc}: {doc: Document | UploadingDocument}) {
                 size="icon"
                 onClick={(ev) => {
                   ev.preventDefault();
-                  void router.push(`/?documentId=${doc.id}`, undefined, {
+                  void router.push(`/?documentId=${props.doc.id}`, undefined, {
                     shallow: true,
                   });
                 }}
