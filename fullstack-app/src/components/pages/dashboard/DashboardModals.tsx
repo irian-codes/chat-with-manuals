@@ -17,6 +17,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
   const router = useRouter();
   const uploadDocumentMutation = api.documents.uploadDocument.useMutation();
   const updateDocumentMutation = api.documents.updateDocument.useMutation();
+  const deleteDocumentMutation = api.documents.deleteDocument.useMutation();
 
   const documentId = router.query.documentId as string;
   // TODO: If we used a map instead of an array, we could prevent the useMemo hook because the performance would be negligible.
@@ -51,6 +52,14 @@ export function DashboardModals({documents}: DashboardModalsProps) {
     // TODO: Show notification (error and success) to the user
   }
 
+  function handleDeleteDocument() {
+    deleteDocumentMutation.mutate({
+      id: document!.id,
+    });
+
+    // TODO: Show notification (error and success) to the user
+  }
+
   return (
     <Fragment>
       <EditDocumentModal
@@ -59,9 +68,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
         isOpen={document !== null}
         document={document}
         onSubmit={handleUpdateDocument}
-        onDelete={() => {
-          console.log('document deleted! with ID:', document!.id);
-        }}
+        onDelete={handleDeleteDocument}
         onClose={() => {
           void router.push('/', undefined, {shallow: true});
         }}

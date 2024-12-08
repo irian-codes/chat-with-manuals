@@ -83,4 +83,15 @@ export const documentsRouter = createTRPCRouter({
     .mutation(({ctx, input}) => {
       console.log('Document parsing cancelled for ID: ', input.id);
     }),
+
+  deleteDocument: publicProcedure
+    .input(
+      z.object({
+        // TODO: This should be whatever we end up using for IDs in the DB
+        id: z.string().min(1),
+      })
+    )
+    .mutation(({ctx, input}) => {
+      console.log('Document deleted for ID: ', input.id);
+    }),
 });
