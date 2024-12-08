@@ -7,26 +7,22 @@ import {
 } from '@/components/ui/dialog';
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
+import {type RouterInputs} from '@/utils/api';
 import {useTranslations} from 'next-intl';
 import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
 
-interface EditDocumentFormInputs {
-  title: string;
-  description: string;
-}
-
-type DocumentUpdatePayload = {
-  originalDocument: Document;
-  formData: EditDocumentFormInputs;
-};
+export type EditDocumentFormInputs = Omit<
+  RouterInputs['documents']['updateDocument'],
+  'id'
+>;
 
 interface EditDocumentModalProps {
   isOpen: boolean;
   document?: Document | null;
-  onSubmit: (data: DocumentUpdatePayload) => void;
-  onDelete: (doc: Document) => void;
+  onSubmit: (formData: EditDocumentFormInputs) => void;
+  onDelete: () => void;
   onClose?: () => void;
 }
 
@@ -40,11 +36,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   });
 
   const onSubmit: SubmitHandler<EditDocumentFormInputs> = (data) => {
-    if (!data || !props.document) {
-      return;
-    }
-
-    props.onSubmit({originalDocument: props.document, formData: data});
+    props.onSubmit(data);
     form.reset();
     form.clearErrors();
     props.onClose?.();
@@ -62,7 +54,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
     }
 
     if (window.confirm(t('delete-confirmation'))) {
-      props.onDelete(props.document);
+      props.onDelete();
       form.reset();
       form.clearErrors();
       props.onClose?.();

@@ -1,4 +1,7 @@
-import {EditDocumentModal} from '@/components/reusable/EditDocumentModal';
+import {
+  type EditDocumentFormInputs,
+  EditDocumentModal,
+} from '@/components/reusable/EditDocumentModal';
 import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
 import type {Document} from '@/types/Document';
 import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
@@ -13,6 +16,7 @@ interface DashboardModalsProps {
 export function DashboardModals({documents}: DashboardModalsProps) {
   const router = useRouter();
   const uploadDocumentMutation = api.documents.uploadDocument.useMutation();
+  const updateDocumentMutation = api.documents.updateDocument.useMutation();
 
   const documentId = router.query.documentId as string;
   // TODO: If we used a map instead of an array, we could prevent the useMemo hook because the performance would be negligible.
@@ -38,6 +42,15 @@ export function DashboardModals({documents}: DashboardModalsProps) {
     uploadDocumentMutation.mutate(formData);
   }
 
+  function handleUpdateDocument(formData: EditDocumentFormInputs) {
+    updateDocumentMutation.mutate({
+      ...formData,
+      id: document!.id,
+    });
+
+    // TODO: Show notification (error and success) to the user
+  }
+
   return (
     <Fragment>
       <EditDocumentModal
@@ -45,11 +58,9 @@ export function DashboardModals({documents}: DashboardModalsProps) {
         key={document?.id}
         isOpen={document !== null}
         document={document}
-        onSubmit={(payload) => {
-          console.log('document saved! with ID:', payload);
-        }}
-        onDelete={(doc) => {
-          console.log('document deleted! with ID:', doc.id);
+        onSubmit={handleUpdateDocument}
+        onDelete={() => {
+          console.log('document deleted! with ID:', document!.id);
         }}
         onClose={() => {
           void router.push('/', undefined, {shallow: true});

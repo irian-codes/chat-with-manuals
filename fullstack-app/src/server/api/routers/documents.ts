@@ -59,4 +59,17 @@ export const documentsRouter = createTRPCRouter({
         success: input.file instanceof File,
       };
     }),
+
+  updateDocument: publicProcedure
+    .input(
+      z.object({
+        // TODO: This should be whatever we end up using for IDs in the DB
+        id: z.string().min(1),
+        title: z.string().trim().min(2).max(255),
+        description: z.string().trim().max(2000),
+      })
+    )
+    .mutation(({ctx, input}) => {
+      console.log('Received payload: ', input);
+    }),
 });
