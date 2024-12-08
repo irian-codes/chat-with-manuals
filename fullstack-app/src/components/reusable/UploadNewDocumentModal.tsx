@@ -70,28 +70,28 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="name">{t('name')}</Label>
+              <Label htmlFor="title">{t('document-title')}</Label>
               <Input
-                id="name"
-                {...form.register('name', {
+                id="title"
+                {...form.register('title', {
                   required: {
                     value: true,
-                    message: t('form-errors.name-required'),
+                    message: t('form-errors.title-required'),
                   },
                   minLength: {
                     value: 3,
-                    message: t('form-errors.name-min-length'),
+                    message: t('form-errors.title-min-length'),
                   },
                   maxLength: {
                     value: 255,
-                    message: t('form-errors.name-max-length'),
+                    message: t('form-errors.title-max-length'),
                   },
                 })}
-                placeholder={t('name')}
+                placeholder={t('document-title')}
               />
-              {form.formState.errors.name && (
+              {form.formState.errors.title && (
                 <p className="text-sm text-red-500">
-                  {form.formState.errors.name.message}
+                  {form.formState.errors.title.message}
                 </p>
               )}
             </div>

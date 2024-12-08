@@ -28,7 +28,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
     const formData = new FormData();
 
     // Add all fields to FormData to send it to TRPC (only supported way to send files)
-    formData.set('name', data.name);
+    formData.set('title', data.title);
     formData.set('language', data.language);
     if (data.description) {
       formData.set('description', data.description);

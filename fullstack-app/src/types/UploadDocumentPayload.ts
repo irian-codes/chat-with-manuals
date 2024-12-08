@@ -3,7 +3,7 @@ import {z} from 'zod';
 
 export const UploadDocumentPayloadSchema = z
   .object({
-    name: z.string().trim().min(2).max(255),
+    title: z.string().trim().min(2).max(255),
     description: z.string().trim().max(2000).optional(),
     language: z
       .string()
