@@ -4,6 +4,7 @@ import {ScrollArea} from '@/components/ui/scroll-area';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
+import {api} from '@/utils/api';
 import {cn} from '@/utils/ui/utils';
 import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
@@ -24,6 +25,16 @@ export function ConversationsSidebar({
     useState<boolean>(false);
   const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
+  const documentsCall = api.documents.getDocuments.useQuery();
+  const addConversationCall = api.conversations.addConversation.useMutation();
+
+  async function createNewConversation(doc: Document) {
+    const conversationId = await addConversationCall.mutateAsync({
+      documentId: doc.id,
+    });
+
+    void router.push(`/conversation/${conversationId}`);
+  }
 
   return (
     <Fragment>
@@ -62,8 +73,7 @@ export function ConversationsSidebar({
                       variant="ghost"
                       className="w-full justify-start"
                     >
-                      {/* TODO: Add the conversation id to the url */}
-                      <Link href={`/conversation`}>
+                      <Link href={`/conversation/${conversation.id}`}>
                         <span className="truncate font-normal">
                           {conversation.title}
                         </span>
@@ -85,14 +95,18 @@ export function ConversationsSidebar({
       </div>
 
       <DocumentPickerModal
-        documents={mockDocuments}
+        documents={documentsCall.data ?? []}
         isOpen={isDocumentPickerModalOpen}
-        onSelect={(document) => {
-          console.log('document selected!', document);
-          void router.push(`/conversation`);
+        onSelect={async (document) => {
+          console.log('NEW conversation started with document: ', document);
+          await createNewConversation(document);
         }}
         searchFunction={(searchQuery) => {
-          return mockDocuments.filter((doc) =>
+          if (documentsCall.data == null) {
+            return [];
+          }
+
+          return documentsCall.data.filter((doc) =>
             doc.title.toLowerCase().includes(searchQuery.toLowerCase())
           );
         }}
@@ -101,54 +115,3 @@ export function ConversationsSidebar({
     </Fragment>
   );
 }
-
-const mockDocuments: Document[] = [
-  {
-    id: '2',
-    title: 'Business report',
-    date: '2024-10-12T21:21:00.000Z',
-    languageCode: 'en',
-  },
-  {
-    id: '3',
-    title: 'Bitcoin whitepaper',
-    date: '2023-03-07T10:14:00.000Z',
-    languageCode: 'en',
-  },
-  {
-    id: '4',
-    title: 'Savage Worlds RPG',
-    date: '2022-11-23T00:20:54.000Z',
-    languageCode: 'en',
-  },
-  {
-    id: '5',
-    title: 'Urban mobility report',
-    date: '2022-10-05T02:08:00.000Z',
-    languageCode: 'en',
-  },
-  {
-    id: '6',
-    title: 'Fridge manual model X459 fasd sdad fasd asdf asdf sa d',
-    date: '2021-03-10T00:24:00Z',
-    languageCode: 'en',
-  },
-  {
-    id: '7',
-    title: 'Car manual model Ferrari F8 Tributo',
-    date: '2020-01-04T13:45:00Z',
-    languageCode: 'en',
-  },
-  {
-    id: '8',
-    title: 'Annual Financial Overview 2023',
-    date: '2023-12-15T09:00:00.000Z',
-    languageCode: 'en',
-  },
-  {
-    id: '9',
-    title: 'AI in Healthcare: Trends and Predictions',
-    date: '2023-05-20T14:30:00.000Z',
-    languageCode: 'en',
-  },
-];

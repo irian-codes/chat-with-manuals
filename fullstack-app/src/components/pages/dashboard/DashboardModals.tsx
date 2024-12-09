@@ -1,6 +1,11 @@
-import {EditDocumentModal} from '@/components/reusable/EditDocumentModal';
+import {
+  type EditDocumentFormInputs,
+  EditDocumentModal,
+} from '@/components/reusable/EditDocumentModal';
 import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
 import type {Document} from '@/types/Document';
+import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
+import {api} from '@/utils/api';
 import {useRouter} from 'next/router';
 import {Fragment, useMemo} from 'react';
 
@@ -10,6 +15,9 @@ interface DashboardModalsProps {
 
 export function DashboardModals({documents}: DashboardModalsProps) {
   const router = useRouter();
+  const uploadDocumentMutation = api.documents.uploadDocument.useMutation();
+  const updateDocumentMutation = api.documents.updateDocument.useMutation();
+  const deleteDocumentMutation = api.documents.deleteDocument.useMutation();
 
   const documentId = router.query.documentId as string;
   // TODO: If we used a map instead of an array, we could prevent the useMemo hook because the performance would be negligible.
@@ -18,7 +26,39 @@ export function DashboardModals({documents}: DashboardModalsProps) {
       ? (documents.find((d) => d.id === documentId) ?? null)
       : null;
   }, [documentId, documents]);
+
   const uploadingDocument = router.query.uploadingDocument === 'true';
+
+  function handleUploadDocument(data: UploadDocumentPayload) {
+    const formData = new FormData();
+
+    // Add all fields to FormData to send it to TRPC (only supported way to send files)
+    formData.set('title', data.title);
+    formData.set('language', data.language);
+    if (data.description) {
+      formData.set('description', data.description);
+    }
+    formData.set('file', data.file);
+
+    uploadDocumentMutation.mutate(formData);
+  }
+
+  function handleUpdateDocument(formData: EditDocumentFormInputs) {
+    updateDocumentMutation.mutate({
+      ...formData,
+      id: document!.id,
+    });
+
+    // TODO: Show notification (error and success) to the user
+  }
+
+  function handleDeleteDocument() {
+    deleteDocumentMutation.mutate({
+      id: document!.id,
+    });
+
+    // TODO: Show notification (error and success) to the user
+  }
 
   return (
     <Fragment>
@@ -27,12 +67,8 @@ export function DashboardModals({documents}: DashboardModalsProps) {
         key={document?.id}
         isOpen={document !== null}
         document={document}
-        onSubmit={(payload) => {
-          console.log('document saved! with ID:', payload);
-        }}
-        onDelete={(doc) => {
-          console.log('document deleted! with ID:', doc.id);
-        }}
+        onSubmit={handleUpdateDocument}
+        onDelete={handleDeleteDocument}
         onClose={() => {
           void router.push('/', undefined, {shallow: true});
         }}
@@ -43,9 +79,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
         onClose={() => {
           void router.push('/', undefined, {shallow: true});
         }}
-        onSubmit={(data) => {
-          console.log(data);
-        }}
+        onSubmit={handleUploadDocument}
       />
     </Fragment>
   );

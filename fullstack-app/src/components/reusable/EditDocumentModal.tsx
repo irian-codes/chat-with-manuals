@@ -7,26 +7,22 @@ import {
 } from '@/components/ui/dialog';
 import {Input} from '@/components/ui/input';
 import type {Document} from '@/types/Document';
+import {type RouterInputs} from '@/utils/api';
 import {useTranslations} from 'next-intl';
 import {type SubmitHandler, useForm} from 'react-hook-form';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
 
-interface EditDocumentFormInputs {
-  title: string;
-  description: string;
-}
-
-type DocumentUpdatePayload = {
-  originalDocument: Document;
-  formData: EditDocumentFormInputs;
-};
+export type EditDocumentFormInputs = Omit<
+  RouterInputs['documents']['updateDocument'],
+  'id'
+>;
 
 interface EditDocumentModalProps {
   isOpen: boolean;
   document?: Document | null;
-  onSubmit: (data: DocumentUpdatePayload) => void;
-  onDelete: (doc: Document) => void;
+  onSubmit: (formData: EditDocumentFormInputs) => void;
+  onDelete: () => void;
   onClose?: () => void;
 }
 
@@ -40,11 +36,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   });
 
   const onSubmit: SubmitHandler<EditDocumentFormInputs> = (data) => {
-    if (!data || !props.document) {
-      return;
-    }
-
-    props.onSubmit({originalDocument: props.document, formData: data});
+    props.onSubmit(data);
     form.reset();
     form.clearErrors();
     props.onClose?.();
@@ -62,7 +54,7 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
     }
 
     if (window.confirm(t('delete-confirmation'))) {
-      props.onDelete(props.document);
+      props.onDelete();
       form.reset();
       form.clearErrors();
       props.onClose?.();
@@ -87,24 +79,24 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="title">{t('name')}</Label>
+              <Label htmlFor="title">{t('document-title')}</Label>
               <Input
                 id="title"
                 {...form.register('title', {
                   required: {
                     value: true,
-                    message: t('form-errors.name-required'),
+                    message: t('form-errors.title-required'),
                   },
                   minLength: {
                     value: 3,
-                    message: t('form-errors.name-min-length'),
+                    message: t('form-errors.title-min-length'),
                   },
                   maxLength: {
                     value: 255,
-                    message: t('form-errors.name-max-length'),
+                    message: t('form-errors.title-max-length'),
                   },
                 })}
-                placeholder={t('name')}
+                placeholder={t('document-title')}
                 defaultValue={props.document?.title ?? ''}
               />
               {form.formState.errors.title && (

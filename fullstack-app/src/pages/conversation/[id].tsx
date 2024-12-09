@@ -1,5 +1,4 @@
-import {DashboardMain} from '@/components/pages/dashboard/DashboardMain';
-import {DashboardModals} from '@/components/pages/dashboard/DashboardModals';
+import {ConversationMain} from '@/components/pages/conversation/ConversationMain';
 import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
@@ -10,7 +9,6 @@ import {api} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
-import {Fragment} from 'react';
 import superjson from 'superjson';
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
@@ -22,47 +20,37 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     transformer: superjson,
   });
 
-  // Prefetch both queries
-  await Promise.all([
-    helpers.documents.getDocuments.prefetch(),
-    helpers.conversations.getConversations.prefetch({simplify: true}),
-  ]);
+  const conversationId = ctx.params?.id as string;
 
-  const locale = ctx.locale;
+  await Promise.all([
+    helpers.conversations.getConversations.prefetch({simplify: true}),
+    helpers.conversations.getConversation.prefetch({id: conversationId}),
+  ]);
 
   return {
     props: {
       trpcState: helpers.dehydrate(),
       ...buildClerkProps(ctx.req),
       // eslint-disable-next-line
-      messages: (await import(`../i18n/messages/${locale}.json`)).default,
+      messages: (await import(`@/i18n/messages/${ctx.locale}.json`)).default,
     },
   };
 };
 
-export default function DashboardPage() {
+export default function ConversationPage() {
   const conversationsCall = api.conversations.getConversations.useQuery({
     simplify: true,
   });
-  const documentsCall = api.documents.getDocuments.useQuery();
 
   const {isCollapsed} = useSidebar();
   const isNotMobile = useTailwindBreakpoint('sm');
 
-  // TODO: Redirect user to error page if there's an error on the calls.
-
   return (
     <MainLayout>
-      <Fragment>
-        <div className="flex h-screen w-full flex-row bg-background">
-          <ConversationsSidebar conversations={conversationsCall.data ?? []} />
-          {(isCollapsed || isNotMobile) && (
-            <DashboardMain documents={documentsCall.data ?? []} />
-          )}
-        </div>
-
-        <DashboardModals documents={documentsCall.data ?? []} />
-      </Fragment>
+      <div className="flex h-screen w-full flex-row bg-background">
+        <ConversationsSidebar conversations={conversationsCall.data ?? []} />
+        {(isCollapsed || isNotMobile) && <ConversationMain />}
+      </div>
     </MainLayout>
   );
 }

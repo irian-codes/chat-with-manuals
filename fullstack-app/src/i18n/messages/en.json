@@ -32,12 +32,12 @@
     "delete": "Delete document",
     "delete-confirmation": "Are you sure you want to delete this document? This action cannot be undone.",
     "description": "Description",
+    "document-title": "Title",
     "form-errors": {
-      "name-max-length": "Name must be at most 255 characters long",
-      "name-min-length": "Name must be at least 3 characters long",
-      "name-required": "Name is required"
+      "title-max-length": "Title must be at most 255 characters long",
+      "title-min-length": "Title must be at least 3 characters long",
+      "title-required": "Title is required"
     },
-    "name": "Name",
     "save": "Save",
     "title": "Edit document information"
   },
@@ -47,18 +47,18 @@
   "upload-new-document-modal": {
     "cancel": "Cancel",
     "description": "Description",
+    "document-title": "Title",
     "file-input-label": "PDF file",
     "form-errors": {
       "file-max-size": "File must be less than {maxSizeInMB}MB",
       "file-must-be-pdf": "File must be a PDF",
       "file-required": "File is required",
       "language-required": "Language is required",
-      "name-max-length": "Name must be at most 255 characters long",
-      "name-min-length": "Name must be at least 3 characters long",
-      "name-required": "Name is required"
+      "title-max-length": "Title must be at most 255 characters long",
+      "title-min-length": "Title must be at least 3 characters long",
+      "title-required": "Title is required"
     },
     "language-label": "Document language",
-    "name": "Name",
     "upload": "Upload new document"
   }
 }

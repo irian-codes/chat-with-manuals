@@ -3,26 +3,38 @@ import {Button} from '@/components/ui/button';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Textarea} from '@/components/ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
-import type {Conversation} from '@/types/Conversation';
-import type {Message} from '@/types/Message';
+import {api} from '@/utils/api';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
+import {useRouter} from 'next/router';
 import {useEffect, useRef, useState} from 'react';
 
-interface ConversationProps {
-  conversation: Conversation;
-}
-
-export function ConversationMain({conversation}: ConversationProps) {
+export function ConversationMain() {
   const t = useTranslations('conversation');
   const format = useFormatter();
-  const [messages, setMessages] = useState<Message[]>(conversation.messages);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [messageInput, setMessageInput] = useState('');
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isTouchDevice = useIsTouchDevice();
   const isMacOs = useIsMacOs();
+  const router = useRouter();
+  const conversationQuery = api.conversations.getConversation.useQuery({
+    id: router.query.id as string,
+  });
+  const utils = api.useUtils();
+  const sendMessageMutation = api.conversations.sendMessage.useMutation({
+    // New way of Tanstack Query of doing optimistic updates
+    // @see https://tanstack.com/query/v5/docs/framework/react/guides/optimistic-updates
+    onSettled: async () => {
+      return await utils.conversations.getConversation.invalidate({
+        id: conversationQuery.data?.id ?? '',
+      });
+    },
+  });
+  const isLoading =
+    sendMessageMutation.isPending || conversationQuery.isPending;
+  const conversation = conversationQuery.data!;
+  const messages = conversation.messages ?? [];
 
   useEffect(() => {
     // Focus the input when the loading state changes
@@ -34,36 +46,30 @@ export function ConversationMain({conversation}: ConversationProps) {
   useEffect(() => {
     // Scroll to the bottom of the conversation when a new message is added
     scrollAnchorRef.current?.scrollIntoView({behavior: 'smooth'});
-  }, [messages, scrollAnchorRef]);
+  }, [
+    sendMessageMutation.variables?.message,
+    messages.length,
+    scrollAnchorRef,
+  ]);
 
-  function handleSendMessage() {
-    if (inputMessage.trim()) {
-      setIsLoading(true);
+  async function handleSendMessage() {
+    const _inputMessage = messageInput.trim();
 
-      const newMessage: Message = {
-        id: String(messages.length + 1),
-        author: 'userId',
-        content: inputMessage.trim(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    if (_inputMessage) {
+      setMessageInput('');
 
-      setMessages([...messages, newMessage]);
-      setInputMessage('');
+      try {
+        await sendMessageMutation.mutateAsync({
+          conversationId: conversation.id,
+          message: _inputMessage,
+        });
+      } catch (error) {
+        console.error('Could not send message', error);
+        setMessageInput(_inputMessage);
+        return;
+      }
 
-      // Simulate AI response (replace with actual API call)
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: String(messages.length + 2),
-          author: 'ai',
-          content: "Thank you for your message. I'm processing your request.",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        setMessages((prevMessages) => [...prevMessages, aiResponse]);
-        setIsLoading(false);
-      }, 1000);
+      await conversationQuery.refetch();
     }
   }
 
@@ -71,13 +77,29 @@ export function ConversationMain({conversation}: ConversationProps) {
     <div className="flex flex-1 flex-col">
       <Header>
         <h1 className="text-2xl font-semibold">
-          {t('title', {documentTitle: conversation.document.title})}
+          {t('title', {
+            documentTitle: conversation.document.title,
+          })}
         </h1>
       </Header>
 
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
+          {(sendMessageMutation.isPending
+            ? [
+                ...messages,
+                // Optimistic update message
+                {
+                  id: String(messages.length + 1),
+                  // TODO: Replace with actual user ID
+                  author: 'userId',
+                  content: sendMessageMutation.variables?.message,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                },
+              ]
+            : messages
+          ).map((message) => (
             <div
               key={message.id}
               className={`flex ${
@@ -121,13 +143,13 @@ export function ConversationMain({conversation}: ConversationProps) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleSendMessage();
+              void handleSendMessage();
             }}
             className="flex items-start space-x-2"
           >
             <Textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
               placeholder={t('input-placeholder')}
               className="flex-1 resize-none"
               disabled={isLoading}
@@ -136,7 +158,7 @@ export function ConversationMain({conversation}: ConversationProps) {
               draggable={false}
               onKeyDown={(e) => {
                 if (e.ctrlKey && e.key === 'Enter') {
-                  handleSendMessage();
+                  void handleSendMessage();
                 }
               }}
             />
@@ -155,7 +177,7 @@ export function ConversationMain({conversation}: ConversationProps) {
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert', {
-              language: conversation.document.languageCode,
+              language: conversationQuery.data?.document.languageCode,
             })}
           </p>
         </div>
