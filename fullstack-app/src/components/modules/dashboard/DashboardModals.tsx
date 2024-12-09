@@ -2,9 +2,12 @@ import {
   type EditDocumentFormInputs,
   EditDocumentModal,
 } from '@/components/reusable/EditDocumentModal';
-import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
-import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
+import {
+  type UploadFormInputs,
+  UploadNewDocumentModal,
+} from '@/components/reusable/UploadNewDocumentModal';
 import {api} from '@/utils/api';
+import {truncateFilename} from '@/utils/files';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {Fragment} from 'react';
@@ -28,20 +31,29 @@ export function DashboardModals() {
   const uploadingDocument = router.query.uploadingDocument === 'true';
   const tEditDocModal = useTranslations('edit-document-modal');
 
-  async function handleUploadDocument(data: UploadDocumentPayload) {
-    const formData = new FormData();
+  async function handleUploadNewDocument(
+    data: UploadFormInputs,
+    form: UseFormReturn<UploadFormInputs>
+  ) {
+    if (!data?.file?.[0]) {
+      throw new Error('No file provided');
+    }
 
-    // Add all fields to FormData to send it to TRPC (only supported way to send files)
+    const originalFile = data.file[0];
+    const file = new File([originalFile], truncateFilename(originalFile.name), {
+      type: originalFile.type,
+    });
+
+    const formData = new FormData();
     formData.set('title', data.title);
     formData.set('language', data.language);
     if (data.description) {
       formData.set('description', data.description);
     }
-    formData.set('file', data.file);
+    formData.set('file', file);
 
     await uploadDocumentMutation.mutateAsync(formData);
-
-    // TODO: Show notification (error and success) to the user
+    await handleCloseDocumentModal(form);
   }
 
   async function handleUpdateDocument(
@@ -78,9 +90,8 @@ export function DashboardModals() {
     // TODO: Show notification (error and success) to the user
   }
 
-  async function handleCloseDocumentModal(
-    form: UseFormReturn<EditDocumentFormInputs>
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function handleCloseDocumentModal(form: UseFormReturn<any>) {
     form.reset();
     form.clearErrors();
     void router.push('/', undefined, {shallow: true});
@@ -100,10 +111,8 @@ export function DashboardModals() {
 
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
-        onClose={() => {
-          void router.push('/', undefined, {shallow: true});
-        }}
-        onSubmit={handleUploadDocument}
+        onClose={handleCloseDocumentModal}
+        onSubmit={handleUploadNewDocument}
       />
     </Fragment>
   );
