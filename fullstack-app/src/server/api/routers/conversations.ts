@@ -74,4 +74,30 @@ export const conversationsRouter = createTRPCRouter({
 
       return conversation;
     }),
+
+  addConversation: publicProcedure
+    .input(
+      z.object({
+        // TODO: This should be whatever we end up using for IDs in the DB
+        documentId: z.string().min(1),
+      })
+    )
+    .mutation(({ctx, input}) => {
+      console.log('Conversation added for ID: ', input.documentId);
+
+      // TODO: Replace with actual DB call
+      const conversation: Conversation = {
+        id: '2',
+        title: 'How to play chess',
+        messages: [],
+        document: {
+          id: input.documentId,
+          title: 'How to play chess',
+          date: '2023-03-07T10:14:00.000Z',
+          languageCode: 'en',
+        },
+      };
+
+      return conversation.id;
+    }),
 });

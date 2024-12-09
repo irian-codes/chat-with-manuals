@@ -13,10 +13,12 @@ interface ConversationProps {
   conversation: Conversation;
 }
 
-export function ConversationMain({conversation}: ConversationProps) {
+export function ConversationMain(props: ConversationProps) {
   const t = useTranslations('conversation');
   const format = useFormatter();
-  const [messages, setMessages] = useState<Message[]>(conversation.messages);
+  const [messages, setMessages] = useState<Message[]>(
+    props.conversation.messages ?? []
+  );
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
@@ -37,13 +39,15 @@ export function ConversationMain({conversation}: ConversationProps) {
   }, [messages, scrollAnchorRef]);
 
   function handleSendMessage() {
-    if (inputMessage.trim()) {
+    const _inputMessage = inputMessage.trim();
+
+    if (_inputMessage) {
       setIsLoading(true);
 
       const newMessage: Message = {
         id: String(messages.length + 1),
         author: 'userId',
-        content: inputMessage.trim(),
+        content: _inputMessage,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -51,6 +55,7 @@ export function ConversationMain({conversation}: ConversationProps) {
       setMessages([...messages, newMessage]);
       setInputMessage('');
 
+      // TODO: Replace with actual API call on the parent component
       // Simulate AI response (replace with actual API call)
       setTimeout(() => {
         const aiResponse: Message = {
@@ -71,7 +76,9 @@ export function ConversationMain({conversation}: ConversationProps) {
     <div className="flex flex-1 flex-col">
       <Header>
         <h1 className="text-2xl font-semibold">
-          {t('title', {documentTitle: conversation.document.title})}
+          {t('title', {
+            documentTitle: props.conversation.document.title,
+          })}
         </h1>
       </Header>
 
@@ -155,7 +162,7 @@ export function ConversationMain({conversation}: ConversationProps) {
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert', {
-              language: conversation.document.languageCode,
+              language: props.conversation.document.languageCode,
             })}
           </p>
         </div>

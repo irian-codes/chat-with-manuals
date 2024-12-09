@@ -76,7 +76,7 @@ export function DashboardMain({documents}: DashboardProps) {
                 onCancelButtonClick={() => handleCancelDocumentParsing(doc)}
               />
             ) : (
-              <Link href={`/conversation`} key={doc.id}>
+              <Link href={`/conversation/${doc.id}`} key={doc.id}>
                 <DocumentCard doc={doc} />
               </Link>
             )

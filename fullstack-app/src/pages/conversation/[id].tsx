@@ -9,6 +9,7 @@ import {api} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
+import {useRouter} from 'next/router';
 import superjson from 'superjson';
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
@@ -20,13 +21,11 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     transformer: superjson,
   });
 
-  const conversationId = ctx.query.id as string;
+  const conversationId = ctx.params?.id as string;
 
-  // Prefetch both the conversations list and the specific conversation
   await Promise.all([
     helpers.conversations.getConversations.prefetch({simplify: true}),
-    // TODO: Prefetch the conversation by ID when implemented.
-    helpers.conversations.getConversation.prefetch({id: ''}),
+    helpers.conversations.getConversation.prefetch({id: conversationId}),
   ]);
 
   return {
@@ -34,19 +33,19 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
       trpcState: helpers.dehydrate(),
       ...buildClerkProps(ctx.req),
       // eslint-disable-next-line
-      messages: (await import(`../i18n/messages/${ctx.locale}.json`)).default,
+      messages: (await import(`@/i18n/messages/${ctx.locale}.json`)).default,
     },
   };
 };
 
 export default function ConversationPage() {
+  const router = useRouter();
+  const conversationId = router.query.id as string;
+
   const conversationsCall = api.conversations.getConversations.useQuery({
     simplify: true,
   });
-  const conversationId =
-    typeof window !== 'undefined'
-      ? (new URLSearchParams(window.location.search).get('id') ?? '')
-      : '';
+
   const conversationCall = api.conversations.getConversation.useQuery({
     id: conversationId,
   });
@@ -55,7 +54,6 @@ export default function ConversationPage() {
   const isNotMobile = useTailwindBreakpoint('sm');
 
   // TODO: Redirect user to error page if there's an error on the calls.
-
   if (conversationCall.isError || !conversationCall.data) {
     return <div>Error</div>;
   }

@@ -44,6 +44,19 @@ export const documentsRouter = createTRPCRouter({
     return documents;
   }),
 
+  getDocument: publicProcedure
+    .input(z.object({id: z.string()}))
+    .query(({ctx, input}) => {
+      // TODO: Get the document for the specific user.
+
+      return {
+        id: '2',
+        title: 'Business report',
+        date: '2024-10-12T21:21:00.000Z',
+        languageCode: 'en',
+      };
+    }),
+
   uploadDocument: publicProcedure
     .input(
       z
