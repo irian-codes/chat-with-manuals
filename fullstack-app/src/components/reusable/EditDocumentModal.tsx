@@ -9,7 +9,7 @@ import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
 import {type RouterInputs} from '@/utils/api';
 import {useTranslations} from 'next-intl';
-import {type SubmitHandler, useForm} from 'react-hook-form';
+import {type SubmitHandler, useForm, type UseFormReturn} from 'react-hook-form';
 import {Label} from '../shadcn-ui/label';
 import {Textarea} from '../shadcn-ui/textarea';
 
@@ -21,9 +21,12 @@ export type EditDocumentFormInputs = Omit<
 interface EditDocumentModalProps {
   isOpen: boolean;
   document?: Document | null;
-  onSubmit: (formData: EditDocumentFormInputs) => void;
-  onDelete: () => void;
-  onClose?: () => void;
+  onSubmit: (
+    formData: EditDocumentFormInputs,
+    form: UseFormReturn<EditDocumentFormInputs>
+  ) => Promise<void>;
+  onDelete: (form: UseFormReturn<EditDocumentFormInputs>) => Promise<void>;
+  onClose?: (form: UseFormReturn<EditDocumentFormInputs>) => Promise<void>;
 }
 
 export function EditDocumentModal(props: EditDocumentModalProps) {
@@ -36,29 +39,15 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
   });
 
   const onSubmit: SubmitHandler<EditDocumentFormInputs> = (data) => {
-    props.onSubmit(data);
-    form.reset();
-    form.clearErrors();
-    props.onClose?.();
+    void props.onSubmit(data, form);
   };
 
   function handleCloseButtonClick() {
-    form.reset();
-    form.clearErrors();
-    props.onClose?.();
+    void props.onClose?.(form);
   }
 
   function handleDeleteButtonClick() {
-    if (!props.document) {
-      return;
-    }
-
-    if (window.confirm(t('delete-confirmation'))) {
-      props.onDelete();
-      form.reset();
-      form.clearErrors();
-      props.onClose?.();
-    }
+    void props.onDelete(form);
   }
 
   return (
