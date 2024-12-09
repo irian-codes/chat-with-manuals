@@ -22,7 +22,7 @@ interface DocumentPickerModalProps {
   searchFunction?: (searchQuery: string) => Document[];
 }
 
-export function DocumentPickerModal(props: DocumentPickerModalProps) {
+export function DocumentListPickerModal(props: DocumentPickerModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const format = useFormatter();
   const t = useTranslations('document-list-picker-modal');

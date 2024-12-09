@@ -10,7 +10,7 @@ import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
-import {DocumentPickerModal} from '../../reusable/DocumentListPickerModal';
+import {DocumentListPickerModal} from '../../reusable/DocumentListPickerModal';
 
 export function ConversationsSidebar() {
   const t = useTranslations('conversation-sidebar');
@@ -92,7 +92,7 @@ export function ConversationsSidebar() {
         </div>
       </div>
 
-      <DocumentPickerModal
+      <DocumentListPickerModal
         documents={documentsQuery.data ?? []}
         isOpen={isDocumentPickerModalOpen}
         onSelect={async (document) => {
