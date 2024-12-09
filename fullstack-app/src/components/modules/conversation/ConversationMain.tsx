@@ -1,7 +1,7 @@
 import {Header} from '@/components/reusable/Header';
-import {Button} from '@/components/ui/button';
-import {ScrollArea} from '@/components/ui/scroll-area';
-import {Textarea} from '@/components/ui/textarea';
+import {Button} from '@/components/shadcn-ui/button';
+import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
+import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {api} from '@/utils/api';
 import {AlertTriangle, Send} from 'lucide-react';

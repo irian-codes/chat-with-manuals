@@ -1,5 +1,5 @@
-import {ConversationMain} from '@/components/pages/conversation/ConversationMain';
-import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
+import {ConversationMain} from '@/components/modules/conversation/ConversationMain';
+import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';

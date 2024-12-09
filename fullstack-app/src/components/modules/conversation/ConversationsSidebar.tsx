@@ -1,6 +1,6 @@
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {ScrollArea} from '@/components/ui/scroll-area';
+import {Button} from '@/components/shadcn-ui/button';
+import {Input} from '@/components/shadcn-ui/input';
+import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
@@ -11,7 +11,7 @@ import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
-import {DocumentPickerModal} from './DocumentListPickerModal';
+import {DocumentPickerModal} from '../../reusable/DocumentListPickerModal';
 
 interface ConversationSidebarProps {
   conversations: ConversationSimplified[];

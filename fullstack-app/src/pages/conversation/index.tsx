@@ -1,4 +1,4 @@
-import {ConversationsSidebar} from '@/components/reusable/ConversationsSidebar';
+import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
 import {DocumentPickerModal} from '@/components/reusable/DocumentListPickerModal';
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';

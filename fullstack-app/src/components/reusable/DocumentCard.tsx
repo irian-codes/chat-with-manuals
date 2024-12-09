@@ -1,5 +1,5 @@
-import {Button} from '@/components/ui/button';
-import {Card, CardContent} from '@/components/ui/card';
+import {Button} from '@/components/shadcn-ui/button';
+import {Card, CardContent} from '@/components/shadcn-ui/card';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
 import {FilePenLine, X} from 'lucide-react';

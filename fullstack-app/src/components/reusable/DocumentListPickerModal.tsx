@@ -1,13 +1,13 @@
-import {Button} from '@/components/ui/button';
+import {Button} from '@/components/shadcn-ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import {Input} from '@/components/ui/input';
-import {ScrollArea} from '@/components/ui/scroll-area';
+} from '@/components/shadcn-ui/dialog';
+import {Input} from '@/components/shadcn-ui/input';
+import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import type {Document} from '@/types/Document';
 import {Search} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';

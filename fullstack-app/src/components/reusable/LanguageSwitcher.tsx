@@ -1,10 +1,10 @@
-import {Button} from '@/components/ui/button';
+import {Button} from '@/components/shadcn-ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/shadcn-ui/dropdown-menu';
 import {cn} from '@/utils/ui/utils';
 import 'flag-icons/css/flag-icons.min.css';
 import {useTranslations} from 'next-intl';

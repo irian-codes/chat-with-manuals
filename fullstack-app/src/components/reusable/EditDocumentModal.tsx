@@ -1,17 +1,17 @@
-import {Button} from '@/components/ui/button';
+import {Button} from '@/components/shadcn-ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import {Input} from '@/components/ui/input';
+} from '@/components/shadcn-ui/dialog';
+import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
 import {type RouterInputs} from '@/utils/api';
 import {useTranslations} from 'next-intl';
 import {type SubmitHandler, useForm} from 'react-hook-form';
-import {Label} from '../ui/label';
-import {Textarea} from '../ui/textarea';
+import {Label} from '../shadcn-ui/label';
+import {Textarea} from '../shadcn-ui/textarea';
 
 export type EditDocumentFormInputs = Omit<
   RouterInputs['documents']['updateDocument'],

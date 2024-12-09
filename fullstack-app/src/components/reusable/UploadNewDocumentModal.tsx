@@ -1,18 +1,18 @@
-import {Button} from '@/components/ui/button';
+import {Button} from '@/components/shadcn-ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import {Input} from '@/components/ui/input';
+} from '@/components/shadcn-ui/dialog';
+import {Input} from '@/components/shadcn-ui/input';
 import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
 import {truncateFilename} from '@/utils/files';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
 import {type SubmitHandler, useForm} from 'react-hook-form';
-import {Label} from '../ui/label';
-import {Textarea} from '../ui/textarea';
+import {Label} from '../shadcn-ui/label';
+import {Textarea} from '../shadcn-ui/textarea';
 
 // Seems that on the frontend the type for the file picker must be
 // FileList, while on the backend we want to use File.

@@ -1,7 +1,7 @@
 import {DocumentCard} from '@/components/reusable/DocumentCard';
 import {Header} from '@/components/reusable/Header';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
+import {Button} from '@/components/shadcn-ui/button';
+import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
 import {api} from '@/utils/api';
