@@ -1,5 +1,5 @@
 import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
-import {DocumentPickerModal} from '@/components/reusable/DocumentListPickerModal';
+import {DocumentListPickerModal} from '@/components/reusable/DocumentListPickerModal';
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
@@ -53,7 +53,7 @@ export default function NewConversationPage() {
         <ConversationsSidebar />
       </div>
 
-      <DocumentPickerModal
+      <DocumentListPickerModal
         documents={documentsQuery.data ?? []}
         isOpen={true}
         onSelect={async (document) => {

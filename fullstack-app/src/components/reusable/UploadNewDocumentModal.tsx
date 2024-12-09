@@ -7,23 +7,25 @@ import {
 } from '@/components/shadcn-ui/dialog';
 import {Input} from '@/components/shadcn-ui/input';
 import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
-import {truncateFilename} from '@/utils/files';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
-import {type SubmitHandler, useForm} from 'react-hook-form';
+import {type SubmitHandler, useForm, type UseFormReturn} from 'react-hook-form';
 import {Label} from '../shadcn-ui/label';
 import {Textarea} from '../shadcn-ui/textarea';
 
 // Seems that on the frontend the type for the file picker must be
 // FileList, while on the backend we want to use File.
-type UploadFormInputs = Omit<UploadDocumentPayload, 'file'> & {
+export type UploadFormInputs = Omit<UploadDocumentPayload, 'file'> & {
   file: FileList;
 };
 
 interface UploadNewDocumentModalProps {
   isOpen: boolean;
-  onSubmit: (data: UploadDocumentPayload) => void;
-  onClose?: () => void;
+  onSubmit: (
+    data: UploadFormInputs,
+    form: UseFormReturn<UploadFormInputs>
+  ) => Promise<void>;
+  onClose?: (form: UseFormReturn<UploadFormInputs>) => Promise<void>;
 }
 
 export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
@@ -31,25 +33,11 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
   const form = useForm<UploadFormInputs>();
 
   const onSubmit: SubmitHandler<UploadFormInputs> = (data) => {
-    if (!data?.file?.[0]) {
-      throw new Error('No file provided');
-    }
-
-    const originalFile = data.file[0];
-    const file = new File([originalFile], truncateFilename(originalFile.name), {
-      type: originalFile.type,
-    });
-
-    props.onSubmit({...data, file});
-    form.reset();
-    form.clearErrors();
-    props.onClose?.();
+    void props.onSubmit(data, form);
   };
 
   function handleCloseButtonClick() {
-    form.reset();
-    form.clearErrors();
-    props.onClose?.();
+    void props.onClose?.(form);
   }
 
   return (

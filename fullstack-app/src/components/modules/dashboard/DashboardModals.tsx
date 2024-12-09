@@ -2,11 +2,16 @@ import {
   type EditDocumentFormInputs,
   EditDocumentModal,
 } from '@/components/reusable/EditDocumentModal';
-import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
-import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
+import {
+  type UploadFormInputs,
+  UploadNewDocumentModal,
+} from '@/components/reusable/UploadNewDocumentModal';
 import {api} from '@/utils/api';
+import {truncateFilename} from '@/utils/files';
+import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {Fragment} from 'react';
+import {type UseFormReturn} from 'react-hook-form';
 
 export function DashboardModals() {
   const router = useRouter();
@@ -24,36 +29,72 @@ export function DashboardModals() {
 
   const document = documentQuery.data;
   const uploadingDocument = router.query.uploadingDocument === 'true';
+  const tEditDocModal = useTranslations('edit-document-modal');
 
-  function handleUploadDocument(data: UploadDocumentPayload) {
+  async function handleUploadNewDocument(
+    data: UploadFormInputs,
+    form: UseFormReturn<UploadFormInputs>
+  ) {
+    if (!data?.file?.[0]) {
+      throw new Error('No file provided');
+    }
+
+    const originalFile = data.file[0];
+    const file = new File([originalFile], truncateFilename(originalFile.name), {
+      type: originalFile.type,
+    });
+
     const formData = new FormData();
-
-    // Add all fields to FormData to send it to TRPC (only supported way to send files)
     formData.set('title', data.title);
     formData.set('language', data.language);
     if (data.description) {
       formData.set('description', data.description);
     }
-    formData.set('file', data.file);
+    formData.set('file', file);
 
-    uploadDocumentMutation.mutate(formData);
+    await uploadDocumentMutation.mutateAsync(formData);
+    await handleCloseDocumentModal(form);
   }
 
-  function handleUpdateDocument(formData: EditDocumentFormInputs) {
-    updateDocumentMutation.mutate({
+  async function handleUpdateDocument(
+    formData: EditDocumentFormInputs,
+    form: UseFormReturn<EditDocumentFormInputs>
+  ) {
+    await updateDocumentMutation.mutateAsync({
       ...formData,
       id: document!.id,
     });
 
+    await handleCloseDocumentModal(form);
+
     // TODO: Show notification (error and success) to the user
   }
 
-  function handleDeleteDocument() {
-    deleteDocumentMutation.mutate({
-      id: document!.id,
+  async function handleDeleteDocument(
+    form: UseFormReturn<EditDocumentFormInputs>
+  ) {
+    if (!document) {
+      return;
+    }
+
+    if (!window.confirm(tEditDocModal('delete-confirmation'))) {
+      return;
+    }
+
+    await deleteDocumentMutation.mutateAsync({
+      id: document.id,
     });
 
+    await handleCloseDocumentModal(form);
+
     // TODO: Show notification (error and success) to the user
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function handleCloseDocumentModal(form: UseFormReturn<any>) {
+    form.reset();
+    form.clearErrors();
+    void router.push('/', undefined, {shallow: true});
   }
 
   return (
@@ -65,17 +106,13 @@ export function DashboardModals() {
         document={document}
         onSubmit={handleUpdateDocument}
         onDelete={handleDeleteDocument}
-        onClose={() => {
-          void router.push('/', undefined, {shallow: true});
-        }}
+        onClose={handleCloseDocumentModal}
       />
 
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
-        onClose={() => {
-          void router.push('/', undefined, {shallow: true});
-        }}
-        onSubmit={handleUploadDocument}
+        onClose={handleCloseDocumentModal}
+        onSubmit={handleUploadNewDocument}
       />
     </Fragment>
   );
