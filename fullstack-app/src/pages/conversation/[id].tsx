@@ -38,7 +38,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function ConversationPage() {
-  const conversationsCall = api.conversations.getConversations.useQuery({
+  const conversationsQuery = api.conversations.getConversations.useQuery({
     simplify: true,
   });
 
@@ -48,7 +48,7 @@ export default function ConversationPage() {
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
-        <ConversationsSidebar conversations={conversationsCall.data ?? []} />
+        <ConversationsSidebar conversations={conversationsQuery.data ?? []} />
         {(isCollapsed || isNotMobile) && <ConversationMain />}
       </div>
     </MainLayout>

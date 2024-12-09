@@ -41,10 +41,10 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function DashboardPage() {
-  const conversationsCall = api.conversations.getConversations.useQuery({
+  const conversationsQuery = api.conversations.getConversations.useQuery({
     simplify: true,
   });
-  const documentsCall = api.documents.getDocuments.useQuery();
+  const documentsQuery = api.documents.getDocuments.useQuery();
 
   const {isCollapsed} = useSidebar();
   const isNotMobile = useTailwindBreakpoint('sm');
@@ -55,13 +55,13 @@ export default function DashboardPage() {
     <MainLayout>
       <Fragment>
         <div className="flex h-screen w-full flex-row bg-background">
-          <ConversationsSidebar conversations={conversationsCall.data ?? []} />
+          <ConversationsSidebar conversations={conversationsQuery.data ?? []} />
           {(isCollapsed || isNotMobile) && (
-            <DashboardMain documents={documentsCall.data ?? []} />
+            <DashboardMain documents={documentsQuery.data ?? []} />
           )}
         </div>
 
-        <DashboardModals documents={documentsCall.data ?? []} />
+        <DashboardModals documents={documentsQuery.data ?? []} />
       </Fragment>
     </MainLayout>
   );

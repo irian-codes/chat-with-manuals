@@ -34,21 +34,22 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function NewConversationPage() {
-  const conversationsCall = api.conversations.getConversations.useQuery({
+  const conversationsQuery = api.conversations.getConversations.useQuery({
     simplify: true,
   });
-  const addConversationCall = api.conversations.addConversation.useMutation();
-  const documentsCall = api.documents.getDocuments.useQuery();
+  const addConversationMutation =
+    api.conversations.addConversation.useMutation();
+  const documentsQuery = api.documents.getDocuments.useQuery();
   const router = useRouter();
 
-  if (conversationsCall.data == null || conversationsCall.isError) {
+  if (conversationsQuery.data == null || conversationsQuery.isError) {
     // TODO: Properly redirect to the error page, or better, just show the
     // error on the specific component that couldn't be loaded.
     return <div>Error</div>;
   }
 
   async function createNewConversation(doc: Document) {
-    const conversationId = await addConversationCall.mutateAsync({
+    const conversationId = await addConversationMutation.mutateAsync({
       documentId: doc.id,
     });
 
@@ -58,22 +59,22 @@ export default function NewConversationPage() {
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
-        <ConversationsSidebar conversations={conversationsCall.data ?? []} />
+        <ConversationsSidebar conversations={conversationsQuery.data ?? []} />
       </div>
 
       <DocumentPickerModal
-        documents={documentsCall.data ?? []}
+        documents={documentsQuery.data ?? []}
         isOpen={true}
         onSelect={async (document) => {
           console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
         searchFunction={(searchQuery) => {
-          if (documentsCall.data == null) {
+          if (documentsQuery.data == null) {
             return [];
           }
 
-          return documentsCall.data.filter((doc) =>
+          return documentsQuery.data.filter((doc) =>
             doc.title.toLowerCase().includes(searchQuery.toLowerCase())
           );
         }}

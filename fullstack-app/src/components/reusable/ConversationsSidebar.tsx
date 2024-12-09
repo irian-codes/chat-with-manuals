@@ -25,11 +25,12 @@ export function ConversationsSidebar({
     useState<boolean>(false);
   const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
-  const documentsCall = api.documents.getDocuments.useQuery();
-  const addConversationCall = api.conversations.addConversation.useMutation();
+  const documentsQuery = api.documents.getDocuments.useQuery();
+  const addConversationMutation =
+    api.conversations.addConversation.useMutation();
 
   async function createNewConversation(doc: Document) {
-    const conversationId = await addConversationCall.mutateAsync({
+    const conversationId = await addConversationMutation.mutateAsync({
       documentId: doc.id,
     });
 
@@ -95,18 +96,18 @@ export function ConversationsSidebar({
       </div>
 
       <DocumentPickerModal
-        documents={documentsCall.data ?? []}
+        documents={documentsQuery.data ?? []}
         isOpen={isDocumentPickerModalOpen}
         onSelect={async (document) => {
           console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
         searchFunction={(searchQuery) => {
-          if (documentsCall.data == null) {
+          if (documentsQuery.data == null) {
             return [];
           }
 
-          return documentsCall.data.filter((doc) =>
+          return documentsQuery.data.filter((doc) =>
             doc.title.toLowerCase().includes(searchQuery.toLowerCase())
           );
         }}
