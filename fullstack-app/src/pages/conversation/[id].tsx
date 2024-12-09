@@ -9,7 +9,6 @@ import {api} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
-import {useRouter} from 'next/router';
 import superjson from 'superjson';
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
@@ -39,32 +38,18 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function ConversationPage() {
-  const router = useRouter();
-  const conversationId = router.query.id as string;
-
   const conversationsCall = api.conversations.getConversations.useQuery({
     simplify: true,
-  });
-
-  const conversationCall = api.conversations.getConversation.useQuery({
-    id: conversationId,
   });
 
   const {isCollapsed} = useSidebar();
   const isNotMobile = useTailwindBreakpoint('sm');
 
-  // TODO: Redirect user to error page if there's an error on the calls.
-  if (conversationCall.isError || !conversationCall.data) {
-    return <div>Error</div>;
-  }
-
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
         <ConversationsSidebar conversations={conversationsCall.data ?? []} />
-        {(isCollapsed || isNotMobile) && (
-          <ConversationMain conversation={conversationCall.data} />
-        )}
+        {(isCollapsed || isNotMobile) && <ConversationMain />}
       </div>
     </MainLayout>
   );
