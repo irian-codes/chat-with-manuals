@@ -77,7 +77,15 @@ export function DashboardMain({documents}: DashboardProps) {
               />
             ) : (
               <Link href={`/conversation/${doc.id}`} key={doc.id}>
-                <DocumentCard doc={doc} />
+                <DocumentCard
+                  doc={doc}
+                  onEditButtonClick={(ev) => {
+                    ev.preventDefault();
+                    void router.push(`/?documentId=${doc.id}`, undefined, {
+                      shallow: true,
+                    });
+                  }}
+                />
               </Link>
             )
           )}

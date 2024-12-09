@@ -5,17 +5,16 @@ import {type UploadingDocument} from '@/types/UploadingDocument';
 import {FilePenLine, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
-import {useRouter} from 'next/router';
 
 type DocumentCardProps = {
   doc: Document | UploadingDocument;
-  onCancelButtonClick?: () => void;
+  onCancelButtonClick?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
+  onEditButtonClick?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
 export function DocumentCard(props: DocumentCardProps) {
   const t = useTranslations('document-manager');
   const format = useFormatter();
-  const router = useRouter();
 
   return (
     <Card className="max-w-[14rem]">
@@ -55,12 +54,7 @@ export function DocumentCard(props: DocumentCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={(ev) => {
-                  ev.preventDefault();
-                  void router.push(`/?documentId=${props.doc.id}`, undefined, {
-                    shallow: true,
-                  });
-                }}
+                onClick={props.onEditButtonClick}
               >
                 <FilePenLine className="h-4 w-4" />
               </Button>
