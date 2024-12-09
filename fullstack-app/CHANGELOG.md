@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.3...v0.1.4) (2024-12-09)
+
+
+### Features
+
+* **cancel-document:** added the TRPC procedure for cancelling document parsing ([927d7ef](https://github.com/irian-codes/chat-with-manuals/commit/927d7ef22a2540efd9eac2c3e5a5faf9920fcedc))
+* **conversations:** added TRPC procedure and behaviours to add a conversation and navigate to it ([d47f463](https://github.com/irian-codes/chat-with-manuals/commit/d47f463c7f9a55e6f8e941fb73738ed5111b16f7))
+* **conversations:** adding message by using TRPC ([4d41a40](https://github.com/irian-codes/chat-with-manuals/commit/4d41a4060a7f00220e1a526ca00763e6f7569697))
+* **conversations:** loading conversations with TRPC ([144aec7](https://github.com/irian-codes/chat-with-manuals/commit/144aec7eb5f89ab8090b5aae01cefa02448d75e7))
+* **delete-document:** added the TRPC procedure for deleting document ([3e15d2a](https://github.com/irian-codes/chat-with-manuals/commit/3e15d2a7654a3828fa1a554808b720ca48d90600))
+* **edit-document:** added the TRPC procedure for editing document details ([826f3d1](https://github.com/irian-codes/chat-with-manuals/commit/826f3d13193cb9222ca0db58a07db3af013412f1))
+* **trpc:** migrated the home page to TRPC routers ([7853c15](https://github.com/irian-codes/chat-with-manuals/commit/7853c154236318df051ced09f47b05d0543e4feb))
+* **upload-document:** uploading document file to TRPC using FormData ([7b1c525](https://github.com/irian-codes/chat-with-manuals/commit/7b1c5259e025fab4c1a9d48ba4c8fd59b79f416a))
+
+
+### Bug Fixes
+
+* **lang:** unified word 'title' to refer to the document title or name in all languages ([3317e20](https://github.com/irian-codes/chat-with-manuals/commit/3317e2027e41b1bb906ddb0db94fdac64128d783))
+* **server:** don't rate limit when on development ([3c0a18a](https://github.com/irian-codes/chat-with-manuals/commit/3c0a18abd38807546bc8c1746e2c2bf1af883676))
+
 ## [0.1.3](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.2...v0.1.3) (2024-12-05)
 
 
