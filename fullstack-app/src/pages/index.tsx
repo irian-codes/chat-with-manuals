@@ -6,7 +6,6 @@ import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
-import {api} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
@@ -41,27 +40,18 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function DashboardPage() {
-  const conversationsQuery = api.conversations.getConversations.useQuery({
-    simplify: true,
-  });
-  const documentsQuery = api.documents.getDocuments.useQuery();
-
   const {isCollapsed} = useSidebar();
   const isNotMobile = useTailwindBreakpoint('sm');
-
-  // TODO: Redirect user to error page if there's an error on the calls.
 
   return (
     <MainLayout>
       <Fragment>
         <div className="flex h-screen w-full flex-row bg-background">
-          <ConversationsSidebar conversations={conversationsQuery.data ?? []} />
-          {(isCollapsed || isNotMobile) && (
-            <DashboardMain documents={documentsQuery.data ?? []} />
-          )}
+          <ConversationsSidebar />
+          {(isCollapsed || isNotMobile) && <DashboardMain />}
         </div>
 
-        <DashboardModals documents={documentsQuery.data ?? []} />
+        <DashboardModals />
       </Fragment>
     </MainLayout>
   );

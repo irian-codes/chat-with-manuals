@@ -5,7 +5,6 @@ import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
-import {api} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
@@ -38,17 +37,13 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function ConversationPage() {
-  const conversationsQuery = api.conversations.getConversations.useQuery({
-    simplify: true,
-  });
-
   const {isCollapsed} = useSidebar();
   const isNotMobile = useTailwindBreakpoint('sm');
 
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
-        <ConversationsSidebar conversations={conversationsQuery.data ?? []} />
+        <ConversationsSidebar />
         {(isCollapsed || isNotMobile) && <ConversationMain />}
       </div>
     </MainLayout>

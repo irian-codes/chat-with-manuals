@@ -2,7 +2,6 @@ import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
-import type {ConversationSimplified} from '@/types/Conversation';
 import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
 import {cn} from '@/utils/ui/utils';
@@ -13,18 +12,16 @@ import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
 import {DocumentPickerModal} from '../../reusable/DocumentListPickerModal';
 
-interface ConversationSidebarProps {
-  conversations: ConversationSimplified[];
-}
-
-export function ConversationsSidebar({
-  conversations,
-}: ConversationSidebarProps) {
+export function ConversationsSidebar() {
   const t = useTranslations('conversation-sidebar');
   const [isDocumentPickerModalOpen, setIsDocumentPickerModalOpen] =
     useState<boolean>(false);
   const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
+  const conversationsQuery = api.conversations.getConversations.useQuery({
+    simplify: true,
+  });
+  const conversations = conversationsQuery.data ?? [];
   const documentsQuery = api.documents.getDocuments.useQuery();
   const addConversationMutation =
     api.conversations.addConversation.useMutation();

@@ -34,19 +34,10 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function NewConversationPage() {
-  const conversationsQuery = api.conversations.getConversations.useQuery({
-    simplify: true,
-  });
   const addConversationMutation =
     api.conversations.addConversation.useMutation();
   const documentsQuery = api.documents.getDocuments.useQuery();
   const router = useRouter();
-
-  if (conversationsQuery.data == null || conversationsQuery.isError) {
-    // TODO: Properly redirect to the error page, or better, just show the
-    // error on the specific component that couldn't be loaded.
-    return <div>Error</div>;
-  }
 
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
@@ -59,7 +50,7 @@ export default function NewConversationPage() {
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
-        <ConversationsSidebar conversations={conversationsQuery.data ?? []} />
+        <ConversationsSidebar />
       </div>
 
       <DocumentPickerModal

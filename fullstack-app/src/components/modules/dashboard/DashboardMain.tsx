@@ -11,13 +11,11 @@ import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
 
-interface DashboardProps {
-  documents: Document[];
-}
-
-export function DashboardMain({documents}: DashboardProps) {
+export function DashboardMain() {
   const t = useTranslations('document-manager');
   const router = useRouter();
+  const documentsQuery = api.documents.getDocuments.useQuery();
+  const documents = documentsQuery.data ?? [];
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation();
 

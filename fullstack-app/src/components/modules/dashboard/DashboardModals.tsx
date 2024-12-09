@@ -3,30 +3,26 @@ import {
   EditDocumentModal,
 } from '@/components/reusable/EditDocumentModal';
 import {UploadNewDocumentModal} from '@/components/reusable/UploadNewDocumentModal';
-import type {Document} from '@/types/Document';
 import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
 import {api} from '@/utils/api';
 import {useRouter} from 'next/router';
-import {Fragment, useMemo} from 'react';
+import {Fragment} from 'react';
 
-interface DashboardModalsProps {
-  documents: Document[];
-}
-
-export function DashboardModals({documents}: DashboardModalsProps) {
+export function DashboardModals() {
   const router = useRouter();
+  const documentQuery = api.documents.getDocument.useQuery(
+    {
+      id: router.query.documentId as string,
+    },
+    {
+      enabled: !!router.query.documentId,
+    }
+  );
   const uploadDocumentMutation = api.documents.uploadDocument.useMutation();
   const updateDocumentMutation = api.documents.updateDocument.useMutation();
   const deleteDocumentMutation = api.documents.deleteDocument.useMutation();
 
-  const documentId = router.query.documentId as string;
-  // TODO: If we used a map instead of an array, we could prevent the useMemo hook because the performance would be negligible.
-  const document = useMemo(() => {
-    return documentId
-      ? (documents.find((d) => d.id === documentId) ?? null)
-      : null;
-  }, [documentId, documents]);
-
+  const document = documentQuery.data;
   const uploadingDocument = router.query.uploadingDocument === 'true';
 
   function handleUploadDocument(data: UploadDocumentPayload) {
@@ -65,7 +61,7 @@ export function DashboardModals({documents}: DashboardModalsProps) {
       <EditDocumentModal
         // Each modal is for a different document, so we need a unique key to avoid a shared state.
         key={document?.id}
-        isOpen={document !== null}
+        isOpen={document != null}
         document={document}
         onSubmit={handleUpdateDocument}
         onDelete={handleDeleteDocument}
