@@ -26,7 +26,7 @@ model GlobalSettings {
 
 model User {
     id               String            @id @default(uuid()) @db.Uuid()
-    auth_provider_id String            @unique
+    authProviderId   String            @unique
     createdAt        DateTime          @default(now()) @db.Timestamptz(3)
     updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
     UserSettings     UserSettings?
@@ -34,7 +34,7 @@ model User {
     documents        Document[] // 0-n documents
     conversations    Conversation[] // 0-n conversations
 
-    @@index([auth_provider_id(sort: Asc)])
+    @@index([authProviderId(sort: Asc)])
 }
 
 model UserSettings {

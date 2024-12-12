@@ -16,7 +16,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const helpers = createServerSideHelpers({
     router: appRouter,
     ctx: createInnerTRPCContext({
-      userId: getAuth(ctx.req).userId ?? null,
+      authProviderUserId: getAuth(ctx.req).userId ?? null,
     }),
     transformer: superjson,
   });

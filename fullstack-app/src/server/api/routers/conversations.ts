@@ -79,7 +79,7 @@ export const conversationsRouter = createTRPCRouter({
         .strict()
     )
     .mutation(async ({ctx, input}) => {
-      const userId = ctx.userId;
+      const userId = ctx.authProviderUserId;
 
       // Store user message in DB (not shown in mock)
       const userMessage: Message = {

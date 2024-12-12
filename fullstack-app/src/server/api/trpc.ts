@@ -25,7 +25,7 @@ import rateLimit from '../middleware/rateLimit';
  */
 
 interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
-  userId: string | null;
+  authProviderUserId: string | null;
 }
 
 /**
@@ -52,10 +52,10 @@ export const createInnerTRPCContext = (opts: CreateInnerContextOptions) => {
  * @see https://trpc.io/docs/context
  */
 export const createTRPCContext = (opts: CreateNextContextOptions) => {
-  const {userId} = getAuth(opts.req);
+  const {userId: authProviderUserId} = getAuth(opts.req);
 
   const innerContext = createInnerTRPCContext({
-    userId,
+    authProviderUserId,
     ...opts,
   });
 
@@ -164,13 +164,9 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
   //   return next();
   // }
 
-  const identifier = ctx.userId;
+  const id = ctx.authProviderUserId;
 
-  if (
-    identifier == null ||
-    typeof identifier !== 'string' ||
-    identifier.trim().length === 0
-  ) {
+  if (id == null || typeof id !== 'string' || id.trim().length === 0) {
     // TODO: Use anonymous rate limiter for when we know if we have or not have DDOS protections on the server.
     // await limiter.check({
     //   res: ctx.res,
@@ -181,7 +177,7 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
     await rateLimiter.check({
       res: ctx.res,
       limit: env.NODE_ENV === 'production' ? 20 : 1e12,
-      token: identifier,
+      token: id,
     });
   }
 
