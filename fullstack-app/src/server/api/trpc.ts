@@ -188,6 +188,18 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
   return next();
 });
 
+const isAuthed = t.middleware(({next, ctx}) => {
+  if (!ctx.authProviderUserId) {
+    throw new TRPCError({code: 'UNAUTHORIZED'});
+  }
+
+  return next({
+    ctx: {
+      authProviderUserId: ctx.authProviderUserId,
+    },
+  });
+});
+
 /**
  * Public (unauthenticated) procedure
  *
@@ -198,3 +210,5 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
 export const publicProcedure = t.procedure
   .use(timingMiddleware)
   .use(rateLimitMiddleware);
+
+export const authedProcedure = publicProcedure.use(isAuthed);

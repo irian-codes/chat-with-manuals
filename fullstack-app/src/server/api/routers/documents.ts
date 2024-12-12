@@ -1,11 +1,10 @@
-import {createTRPCRouter, publicProcedure} from '@/server/api/trpc';
+import {authedProcedure, createTRPCRouter} from '@/server/api/trpc';
 import type {Document} from '@/types/Document';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
-  // TODO #10: This should be an authed procedure: https://clerk.com/docs/references/nextjs/trpc
-  getDocuments: publicProcedure.query(({ctx}) => {
+  getDocuments: authedProcedure.query(({ctx}) => {
     // TODO: Get only the documents for the specific user.
 
     const documents: Document[] = [
@@ -44,7 +43,7 @@ export const documentsRouter = createTRPCRouter({
     return documents;
   }),
 
-  getDocument: publicProcedure
+  getDocument: authedProcedure
     .input(z.object({id: z.string()}))
     .query(({ctx, input}) => {
       // TODO: Get the document for the specific user.
@@ -57,7 +56,7 @@ export const documentsRouter = createTRPCRouter({
       };
     }),
 
-  uploadDocument: publicProcedure
+  uploadDocument: authedProcedure
     .input(
       z
         .instanceof(FormData)
@@ -73,7 +72,7 @@ export const documentsRouter = createTRPCRouter({
       };
     }),
 
-  updateDocument: publicProcedure
+  updateDocument: authedProcedure
     .input(
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
@@ -86,7 +85,7 @@ export const documentsRouter = createTRPCRouter({
       console.log('Received payload: ', input);
     }),
 
-  cancelDocumentParsing: publicProcedure
+  cancelDocumentParsing: authedProcedure
     .input(
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
@@ -97,7 +96,7 @@ export const documentsRouter = createTRPCRouter({
       console.log('Document parsing cancelled for ID: ', input.id);
     }),
 
-  deleteDocument: publicProcedure
+  deleteDocument: authedProcedure
     .input(
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
