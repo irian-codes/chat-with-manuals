@@ -4,6 +4,7 @@ import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {api} from '@/utils/api';
+import {UserButton} from '@clerk/nextjs';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
@@ -81,6 +82,7 @@ export function ConversationMain() {
             documentTitle: conversation.document.title,
           })}
         </h1>
+        <UserButton />
       </Header>
 
       <ScrollArea className="flex-1 p-4">

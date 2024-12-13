@@ -5,7 +5,7 @@ import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
 import {api} from '@/utils/api';
-import {SignedIn, SignedOut, SignInButton, UserButton} from '@clerk/nextjs';
+import {UserButton} from '@clerk/nextjs';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
@@ -46,12 +46,7 @@ export function DashboardMain() {
             <Upload className="mr-2 h-4 w-4" />
             {t('header.upload')}
           </Button>
-          <SignedOut>
-            <SignInButton />
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          <UserButton />
         </div>
       </Header>
 
