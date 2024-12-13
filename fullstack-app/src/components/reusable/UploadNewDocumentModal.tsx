@@ -106,7 +106,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               <Label htmlFor="lang">{t('language-label')}</Label>
               <select
                 id="lang"
-                {...form.register('language', {
+                {...form.register('locale', {
                   required: {
                     value: true,
                     message: t('form-errors.language-required'),
@@ -126,9 +126,9 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                     </option>
                   ))}
               </select>
-              {form.formState.errors.language && (
+              {form.formState.errors.locale && (
                 <p className="text-sm text-red-500">
-                  {form.formState.errors.language.message}
+                  {form.formState.errors.locale.message}
                 </p>
               )}
             </div>

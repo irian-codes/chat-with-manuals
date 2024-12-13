@@ -5,7 +5,7 @@
   },
   "conversation": {
     "input-placeholder": "Type your message...",
-    "language-alert": "Please use {language, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
+    "language-alert": "Please use {locale, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
     "send": "Send",
     "title": "Chat: {documentTitle}"
   },

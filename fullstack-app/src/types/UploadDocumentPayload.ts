@@ -5,14 +5,14 @@ export const UploadDocumentPayloadSchema = z
   .object({
     title: z.string().trim().min(2).max(255),
     description: z.string().trim().max(2000).optional(),
-    language: z
+    locale: z
       .string()
       .trim()
       .min(2)
       .refine(
-        (language) => ISO6391.validate(language),
-        (language) => ({
-          message: `Invalid language code. Got: ${language}.`,
+        (locale) => ISO6391.validate(locale),
+        (locale) => ({
+          message: `Invalid locale code. Got: ${locale}.`,
         })
       ),
     file: z

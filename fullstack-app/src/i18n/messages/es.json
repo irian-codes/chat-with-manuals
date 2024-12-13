@@ -5,7 +5,7 @@
   },
   "conversation": {
     "input-placeholder": "Escribe tu mensaje...",
-    "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {language, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
+    "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {locale, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
     "send": "Enviar",
     "title": "Chat: {documentTitle}"
   },

@@ -10,12 +10,113 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    content   String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+model GlobalSettings {
+    id                       String   @id @default(uuid()) @db.Uuid()
+    maxConcurrentFileUploads Int      @default(3) @db.SmallInt()
+    maxFileSizeInMb          Int      @default(1000) @db.SmallInt()
+    maxFileImageSizeInMb     Int      @default(100) @db.SmallInt()
+    maxTotalStorageSpaceInGb Int      @default(100) @db.SmallInt()
+    fileRetentionInDays      Int      @default(30) @db.SmallInt()
+    supportedLocales         String[] @default(["en", "es"]) // Default app locale must be always the first in the array
+    maintenanceMode          Boolean  @default(false)
+    maintenanceModeMessage   String   @default("")
+    createdAt                DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt                DateTime @updatedAt @db.Timestamptz(3)
+}
 
-    @@index([name])
+model User {
+    id               String            @id @default(uuid()) @db.Uuid()
+    authProviderId   String            @unique
+    createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+    updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+    userSettings     UserSettings?
+    pendingDocuments PendingDocument[] // 0-n pending documents
+    documents        Document[] // 0-n documents
+    conversations    Conversation[] // 0-n conversations
+
+    @@index([authProviderId(sort: Asc)])
+}
+
+model UserSettings {
+    id        String   @id @default(uuid()) @db.Uuid()
+    appLocale String   @default("en") @db.VarChar(255)
+    user      User     @relation(fields: [userId], references: [id])
+    userId    String   @unique @db.Uuid()
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+enum STATUS {
+    PENDING
+    RUNNING
+    DONE
+    ERROR
+}
+
+model PendingDocument {
+    id               String   @id @default(uuid()) @db.Uuid()
+    user             User     @relation(fields: [userId], references: [id])
+    userId           String   @db.Uuid()
+    title            String   @db.VarChar(255)
+    description      String   @default("")
+    locale           String   @default("en") @db.VarChar(255)
+    imageUrl         String   @default("")
+    fileUrl          String   @unique @default("")
+    fileHash         Bytes    @unique
+    llmParsingJobId  String
+    codeParsingJobId String
+    status           STATUS   @default(PENDING)
+    createdAt        DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+    @@index([userId(sort: Asc)])
+    @@index([fileHash(sort: Asc)])
+}
+
+model Document {
+    id            String         @id @default(uuid()) @db.Uuid()
+    user          User           @relation(fields: [userId], references: [id])
+    userId        String         @db.Uuid()
+    conversations Conversation[] // 0-n conversations
+    title         String         @db.VarChar(255)
+    description   String         @default("")
+    locale        String         @default("en") @db.VarChar(255)
+    imageUrl      String         @default("")
+    fileUrl       String         @unique @default("")
+    fileHash      Bytes          @unique
+    createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+    updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+    @@index([userId(sort: Asc)])
+    @@index([fileHash(sort: Asc)])
+}
+
+model Conversation {
+    id              String     @id @default(uuid()) @db.Uuid()
+    llmSystemPrompt String     @default("")
+    user            User       @relation(fields: [userId], references: [id])
+    userId          String     @db.Uuid()
+    createdAt       DateTime   @default(now()) @db.Timestamptz(3)
+    updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
+    messages        Message[] // 0-n messages
+    documents       Document[] // 1-n documents
+
+    @@index([userId(sort: Asc)])
+}
+
+enum AUTHOR {
+    USER
+    AI
+}
+
+model Message {
+    id             String       @id @default(uuid()) @db.Uuid()
+    conversation   Conversation @relation(fields: [conversationId], references: [id])
+    conversationId String       @db.Uuid()
+    author         AUTHOR
+    content        String
+    createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+    updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+
+    @@index([conversationId(sort: Asc)])
 }

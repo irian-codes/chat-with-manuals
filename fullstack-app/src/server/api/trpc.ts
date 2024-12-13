@@ -6,7 +6,7 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import {initTRPC} from '@trpc/server';
+import {initTRPC, TRPCError} from '@trpc/server';
 import {type CreateNextContextOptions} from '@trpc/server/adapters/next';
 import superjson from 'superjson';
 import {ZodError} from 'zod';
@@ -25,7 +25,7 @@ import rateLimit from '../middleware/rateLimit';
  */
 
 interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
-  userId: string | null;
+  authProviderUserId: string | null;
 }
 
 /**
@@ -52,10 +52,10 @@ export const createInnerTRPCContext = (opts: CreateInnerContextOptions) => {
  * @see https://trpc.io/docs/context
  */
 export const createTRPCContext = (opts: CreateNextContextOptions) => {
-  const {userId} = getAuth(opts.req);
+  const {userId: authProviderUserId} = getAuth(opts.req);
 
   const innerContext = createInnerTRPCContext({
-    userId,
+    authProviderUserId,
     ...opts,
   });
 
@@ -136,13 +136,17 @@ const timingMiddleware = t.middleware(async ({next, path}) => {
  */
 export const requestContextMiddleware = t.middleware(async (opts) => {
   if (!opts.ctx.req || !opts.ctx.res) {
-    throw new Error('You are missing `req` or `res` in your call.');
+    throw new TRPCError({
+      message: 'You are missing `req` or `res` in your call.',
+      code: 'INTERNAL_SERVER_ERROR',
+    });
   }
 
   return opts.next({
     ctx: {
       // We overwrite the context with the truthy `req` & `res`, which will also overwrite the types used in your procedure.
-      ...opts.ctx,
+      req: opts.ctx.req,
+      res: opts.ctx.res,
     },
   });
 });
@@ -164,13 +168,9 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
   //   return next();
   // }
 
-  const identifier = ctx.userId;
+  const id = ctx.authProviderUserId;
 
-  if (
-    identifier == null ||
-    typeof identifier !== 'string' ||
-    identifier.trim().length === 0
-  ) {
+  if (id == null || typeof id !== 'string' || id.trim().length === 0) {
     // TODO: Use anonymous rate limiter for when we know if we have or not have DDOS protections on the server.
     // await limiter.check({
     //   res: ctx.res,
@@ -181,11 +181,23 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
     await rateLimiter.check({
       res: ctx.res,
       limit: env.NODE_ENV === 'production' ? 20 : 1e12,
-      token: identifier,
+      token: id,
     });
   }
 
   return next();
+});
+
+const isAuthed = t.middleware(({next, ctx}) => {
+  if (!ctx.authProviderUserId) {
+    throw new TRPCError({code: 'UNAUTHORIZED'});
+  }
+
+  return next({
+    ctx: {
+      authProviderUserId: ctx.authProviderUserId,
+    },
+  });
 });
 
 /**
@@ -198,3 +210,5 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
 export const publicProcedure = t.procedure
   .use(timingMiddleware)
   .use(rateLimitMiddleware);
+
+export const authedProcedure = publicProcedure.use(isAuthed);

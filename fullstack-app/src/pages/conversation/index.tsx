@@ -15,13 +15,28 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const helpers = createServerSideHelpers({
     router: appRouter,
     ctx: createInnerTRPCContext({
-      userId: getAuth(ctx.req).userId ?? null,
+      authProviderUserId: getAuth(ctx.req).userId!,
     }),
     transformer: superjson,
   });
 
-  await helpers.conversations.getConversations.prefetch({simplify: true});
-  await helpers.documents.getDocuments.prefetch();
+  // Initialize user
+  const locale = ctx.locale;
+  const user = await helpers.users.initializePage.fetch({locale});
+
+  if (user == null) {
+    throw new Error(
+      'User not found. This should not happen because the route is protected by Clerk middleware.'
+    );
+  }
+
+  // TODO: Redirect user to the proper locale if the stored locale in the db doesn't match this SSR route locale.
+
+  // Prefetch both queries
+  await Promise.all([
+    helpers.documents.getDocuments.prefetch(),
+    helpers.conversations.getConversations.prefetch({simplify: true}),
+  ]);
 
   return {
     props: {

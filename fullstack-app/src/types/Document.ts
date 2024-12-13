@@ -3,5 +3,5 @@ export interface Document {
   title: string;
   description?: string;
   date: string;
-  languageCode: string;
+  locale: string;
 }

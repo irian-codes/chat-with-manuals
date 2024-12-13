@@ -4,6 +4,7 @@ import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {api} from '@/utils/api';
+import {UserButton} from '@clerk/nextjs';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
@@ -81,6 +82,7 @@ export function ConversationMain() {
             documentTitle: conversation.document.title,
           })}
         </h1>
+        <UserButton />
       </Header>
 
       <ScrollArea className="flex-1 p-4">
@@ -177,7 +179,7 @@ export function ConversationMain() {
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert', {
-              language: conversationQuery.data?.document.languageCode,
+              locale: conversationQuery.data?.document.locale,
             })}
           </p>
         </div>

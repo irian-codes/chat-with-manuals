@@ -14,10 +14,22 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const helpers = createServerSideHelpers({
     router: appRouter,
     ctx: createInnerTRPCContext({
-      userId: getAuth(ctx.req).userId ?? null,
+      authProviderUserId: getAuth(ctx.req).userId!,
     }),
     transformer: superjson,
   });
+
+  // Initialize user
+  const locale = ctx.locale;
+  const user = await helpers.users.initializePage.fetch({locale});
+
+  if (user == null) {
+    throw new Error(
+      'User not found. This should not happen because the route is protected by Clerk middleware.'
+    );
+  }
+
+  // TODO: Redirect user to the proper locale if the stored locale in the db doesn't match this SSR route locale.
 
   const conversationId = ctx.params?.id as string;
 
@@ -31,7 +43,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
       trpcState: helpers.dehydrate(),
       ...buildClerkProps(ctx.req),
       // eslint-disable-next-line
-      messages: (await import(`@/i18n/messages/${ctx.locale}.json`)).default,
+      messages: (await import(`@/i18n/messages/${locale}.json`)).default,
     },
   };
 };
