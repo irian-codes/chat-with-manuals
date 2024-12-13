@@ -40,7 +40,7 @@ model User {
 model UserSettings {
     id        String   @id @default(uuid()) @db.Uuid()
     appLocale String   @default("en") @db.VarChar(255)
-    user      User     @relation(fields: [userId], references: [id])
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
     userId    String   @unique @db.Uuid()
     createdAt DateTime @default(now()) @db.Timestamptz(3)
     updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -55,7 +55,7 @@ enum STATUS {
 
 model PendingDocument {
     id               String   @id @default(uuid()) @db.Uuid()
-    user             User     @relation(fields: [userId], references: [id])
+    user             User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
     userId           String   @db.Uuid()
     title            String   @db.VarChar(255)
     description      String   @default("")
@@ -75,7 +75,8 @@ model PendingDocument {
 
 model Document {
     id            String         @id @default(uuid()) @db.Uuid()
-    user          User           @relation(fields: [userId], references: [id])
+    // Deleting all documents when deleting a user seems to dangerous, so we restrict the deletion a user with documents.
+    user          User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
     userId        String         @db.Uuid()
     conversations Conversation[] // 0-n conversations
     title         String         @db.VarChar(255)
@@ -94,7 +95,7 @@ model Document {
 model Conversation {
     id              String     @id @default(uuid()) @db.Uuid()
     llmSystemPrompt String     @default("")
-    user            User       @relation(fields: [userId], references: [id])
+    user            User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
     userId          String     @db.Uuid()
     createdAt       DateTime   @default(now()) @db.Timestamptz(3)
     updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
@@ -111,7 +112,7 @@ enum AUTHOR {
 
 model Message {
     id             String       @id @default(uuid()) @db.Uuid()
-    conversation   Conversation @relation(fields: [conversationId], references: [id])
+    conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade, onUpdate: Restrict)
     conversationId String       @db.Uuid()
     author         AUTHOR
     content        String
