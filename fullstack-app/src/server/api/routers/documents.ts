@@ -12,31 +12,31 @@ export const documentsRouter = createTRPCRouter({
         id: '2',
         title: 'Business report',
         date: '2024-10-12T21:21:00.000Z',
-        languageCode: 'en',
+        locale: 'en',
       },
       {
         id: '3',
         title: 'Bitcoin whitepaper',
         date: '2023-03-07T10:14:00.000Z',
-        languageCode: 'en',
+        locale: 'en',
       },
       {
         id: '4',
         title: 'Savage Worlds RPG',
         date: '2022-11-23T00:20:54.000Z',
-        languageCode: 'en',
+        locale: 'en',
       },
       {
         id: '5',
         title: 'Urban mobility report',
         date: '2022-10-05T02:08:00.000Z',
-        languageCode: 'en',
+        locale: 'en',
       },
       {
         id: '6',
         title: 'Fridge manual model X459 fasd sdad fasd  asdf asdf sa d',
         date: '2021-03-10T00:24:00Z',
-        languageCode: 'en',
+        locale: 'en',
       },
     ];
 
@@ -52,7 +52,7 @@ export const documentsRouter = createTRPCRouter({
         id: '2',
         title: 'Business report',
         date: '2024-10-12T21:21:00.000Z',
-        languageCode: 'en',
+        locale: 'en',
       };
     }),
 

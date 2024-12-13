@@ -59,7 +59,7 @@ export const conversationsRouter = createTRPCRouter({
           id: input.documentId,
           title: 'How to play chess',
           date: '2023-03-07T10:14:00.000Z',
-          languageCode: 'en',
+          locale: 'en',
         },
       };
 
@@ -140,6 +140,6 @@ const mockConversation: Conversation = {
     id: '3',
     title: 'Bitcoin whitepaper',
     date: '2023-03-07T10:14:00.000Z',
-    languageCode: 'en',
+    locale: 'en',
   },
 };

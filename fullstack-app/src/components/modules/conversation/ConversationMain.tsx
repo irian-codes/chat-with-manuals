@@ -177,7 +177,7 @@ export function ConversationMain() {
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert', {
-              language: conversationQuery.data?.document.languageCode,
+              locale: conversationQuery.data?.document.locale,
             })}
           </p>
         </div>

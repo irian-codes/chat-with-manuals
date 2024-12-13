@@ -17,7 +17,7 @@ model GlobalSettings {
     maxFileImageSizeInMb     Int      @default(100) @db.SmallInt()
     maxTotalStorageSpaceInGb Int      @default(100) @db.SmallInt()
     fileRetentionInDays      Int      @default(30) @db.SmallInt()
-    defaultAppLanguage       String   @default("en") @db.VarChar(255)
+    supportedLocales         String[] @default(["en", "es"]) // Default app locale must be always the first in the array
     maintenanceMode          Boolean  @default(false)
     maintenanceModeMessage   String   @default("")
     createdAt                DateTime @default(now()) @db.Timestamptz(3)
@@ -29,7 +29,7 @@ model User {
     authProviderId   String            @unique
     createdAt        DateTime          @default(now()) @db.Timestamptz(3)
     updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
-    UserSettings     UserSettings?
+    userSettings     UserSettings?
     pendingDocuments PendingDocument[] // 0-n pending documents
     documents        Document[] // 0-n documents
     conversations    Conversation[] // 0-n conversations
@@ -38,12 +38,12 @@ model User {
 }
 
 model UserSettings {
-    id          String   @id @default(uuid()) @db.Uuid()
-    appLanguage String   @default("en") @db.VarChar(255)
-    user        User     @relation(fields: [userId], references: [id])
-    userId      String   @unique @db.Uuid()
-    createdAt   DateTime @default(now()) @db.Timestamptz(3)
-    updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+    id        String   @id @default(uuid()) @db.Uuid()
+    appLocale String   @default("en") @db.VarChar(255)
+    user      User     @relation(fields: [userId], references: [id])
+    userId    String   @unique @db.Uuid()
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }
 
 enum STATUS {
@@ -59,7 +59,7 @@ model PendingDocument {
     userId           String   @db.Uuid()
     title            String   @db.VarChar(255)
     description      String   @default("")
-    language         String   @default("en") @db.VarChar(255)
+    locale           String   @default("en") @db.VarChar(255)
     imageUrl         String   @default("")
     fileUrl          String   @unique @default("")
     fileHash         Bytes    @unique
@@ -80,7 +80,7 @@ model Document {
     conversations Conversation[] // 0-n conversations
     title         String         @db.VarChar(255)
     description   String         @default("")
-    language      String         @default("en") @db.VarChar(255)
+    locale        String         @default("en") @db.VarChar(255)
     imageUrl      String         @default("")
     fileUrl       String         @unique @default("")
     fileHash      Bytes          @unique

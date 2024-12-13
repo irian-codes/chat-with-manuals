@@ -46,7 +46,7 @@ export function DashboardModals() {
 
     const formData = new FormData();
     formData.set('title', data.title);
-    formData.set('language', data.language);
+    formData.set('locale', data.locale);
     if (data.description) {
       formData.set('description', data.description);
     }
