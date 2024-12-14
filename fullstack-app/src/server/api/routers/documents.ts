@@ -1,6 +1,9 @@
 import {authedProcedure, createTRPCRouter} from '@/server/api/trpc';
+import {saveUploadedFile} from '@/server/utils/fileStorage';
 import type {Document} from '@/types/Document';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
+import {STATUS} from '@prisma/client';
+import crypto from 'crypto';
 import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
@@ -64,12 +67,80 @@ export const documentsRouter = createTRPCRouter({
         .pipe(UploadDocumentPayloadSchema)
     )
     .mutation(async ({ctx, input}) => {
-      // Now input is properly typed with all our fields
-      console.log('Received payload: ', input);
+      // Get user from database using auth provider ID
+      const user = await ctx.db.user.findUnique({
+        where: {
+          authProviderId: ctx.authProviderUserId,
+        },
+      });
 
-      return {
-        success: input.file instanceof File,
-      };
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Save file and get hash
+      const {fileUrl, fileHash} = await saveUploadedFile(input.file);
+
+      // Create pending document
+      const pendingDocument = await ctx.db.pendingDocument.create({
+        data: {
+          userId: user.id,
+          title: input.title,
+          description: input.description ?? '',
+          locale: input.locale,
+          fileUrl,
+          fileHash,
+          llmParsingJobId: crypto.randomUUID(), // Placeholder for now
+          codeParsingJobId: crypto.randomUUID(), // Placeholder for now
+          status: STATUS.PENDING,
+        },
+      });
+
+      // Start async processing
+      void (async () => {
+        try {
+          // TODO: Start a DB transaction here to ensure either all is done or nothing.
+
+          // Simulate document processing
+          await new Promise((resolve) => setTimeout(resolve, 120000)); // 2 minutes
+
+          // Create final document
+          await ctx.db.document.create({
+            data: {
+              title: pendingDocument.title,
+              description: pendingDocument.description,
+              locale: pendingDocument.locale,
+              fileUrl: pendingDocument.fileUrl,
+              fileHash: pendingDocument.fileHash,
+              user: {
+                connect: {
+                  id: user.id,
+                },
+              },
+            },
+          });
+
+          // Delete pending document
+          await ctx.db.pendingDocument.delete({
+            where: {
+              id: pendingDocument.id,
+            },
+          });
+        } catch (error) {
+          // Update pending document status to ERROR
+          await ctx.db.pendingDocument.update({
+            where: {
+              id: pendingDocument.id,
+            },
+            data: {
+              status: STATUS.ERROR,
+            },
+          });
+          console.error('Error processing document:', error);
+        }
+      })();
+
+      return pendingDocument;
     }),
 
   updateDocument: authedProcedure
