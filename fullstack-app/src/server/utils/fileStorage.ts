@@ -15,10 +15,14 @@ export async function saveUploadedFile(file: File): Promise<{
   // Read file content and calculate hash
   const fileBuffer = Buffer.from(await file.arrayBuffer());
   const fileHash = crypto.createHash('sha256').update(fileBuffer).digest();
-
-  // Generate unique filename using hash
+  // Generate unique filename using the hash
   const fileName = `${fileHash.toString('hex')}.pdf`;
   const filePath = path.join(UPLOADS_DIR, fileName);
+
+  // Check if file already exists
+  if (await fileExists(filePath)) {
+    throw new Error('File already exists');
+  }
 
   // Save file
   await fs.writeFile(filePath, fileBuffer);
@@ -27,4 +31,13 @@ export async function saveUploadedFile(file: File): Promise<{
     fileUrl: `public/uploads/files/${fileName}`,
     fileHash,
   };
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
