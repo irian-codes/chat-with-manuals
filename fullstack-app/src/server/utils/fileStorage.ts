@@ -1,9 +1,16 @@
+import {env} from '@/env';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 // TODO #17: Move this to a SECURE storage solution.
-const UPLOADS_DIR = path.join(process.cwd(), 'public/uploads/files');
+const isDevEnv = env.NODE_ENV === 'development';
+const UPLOADS_DIR = path.join(
+  process.cwd(),
+  'public',
+  isDevEnv ? 'temp' : '',
+  'uploads/files'
+);
 
 export async function saveUploadedFile(file: File): Promise<{
   fileUrl: string;
