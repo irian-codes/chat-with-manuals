@@ -6,15 +6,14 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import {initTRPC, TRPCError} from '@trpc/server';
-import {type CreateNextContextOptions} from '@trpc/server/adapters/next';
-import superjson from 'superjson';
-import {ZodError} from 'zod';
-
 import {env} from '@/env';
 import {db} from '@/server/db';
+import {transformer} from '@/utils/api';
 import {getAuth} from '@clerk/nextjs/server';
 import {type User} from '@prisma/client';
+import {initTRPC, TRPCError} from '@trpc/server';
+import {type CreateNextContextOptions} from '@trpc/server/adapters/next';
+import {ZodError} from 'zod';
 import rateLimit from '../middleware/rateLimit';
 
 /**
@@ -88,7 +87,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
  */
 
 const t = initTRPC.context<typeof createInnerTRPCContext>().create({
-  transformer: superjson,
+  transformer,
   errorFormatter({shape, error}) {
     return {
       ...shape,
