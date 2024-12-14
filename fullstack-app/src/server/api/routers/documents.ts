@@ -95,34 +95,45 @@ export const documentsRouter = createTRPCRouter({
       // Start async processing
       void (async () => {
         try {
-          // TODO: Start a DB transaction here to ensure either all is done or nothing.
-
-          // Simulate document processing
-          await new Promise((resolve) => setTimeout(resolve, 120000)); // 2 minutes
-
-          // Create final document
-          await ctx.db.document.create({
-            data: {
-              // TODO: Add real imageUrl, for now using default value
-              title: pendingDocument.title,
-              description: pendingDocument.description,
-              locale: pendingDocument.locale,
-              fileUrl: pendingDocument.fileUrl,
-              fileHash: pendingDocument.fileHash,
-              user: {
-                connect: {
-                  id: userId,
-                },
-              },
-            },
-          });
-
-          // Delete pending document
-          await ctx.db.pendingDocument.delete({
+          // Update pending document status to RUNNING
+          await ctx.db.pendingDocument.update({
             where: {
               id: pendingDocument.id,
             },
+            data: {
+              status: STATUS.RUNNING,
+            },
           });
+
+          // Simulate document processing
+          await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000)); // 5 minutes
+
+          // Creating the new 'document' db entry and deleting pending
+          // document because when a document is done parsing we change its
+          // classification from 'pending document' to 'document'.
+          await ctx.db.$transaction([
+            ctx.db.document.create({
+              data: {
+                // TODO: Add real imageUrl, for now using default value
+                title: pendingDocument.title,
+                description: pendingDocument.description,
+                locale: pendingDocument.locale,
+                fileUrl: pendingDocument.fileUrl,
+                fileHash: pendingDocument.fileHash,
+                user: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            }),
+
+            ctx.db.pendingDocument.delete({
+              where: {
+                id: pendingDocument.id,
+              },
+            }),
+          ]);
         } catch (error) {
           // Update pending document status to ERROR
           await ctx.db.pendingDocument.update({
@@ -133,6 +144,7 @@ export const documentsRouter = createTRPCRouter({
               status: STATUS.ERROR,
             },
           });
+
           console.error('Error processing document:', error);
         }
       })();
