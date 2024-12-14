@@ -75,6 +75,7 @@ export const documentsRouter = createTRPCRouter({
       // Create pending document
       const pendingDocument = await ctx.db.pendingDocument.create({
         data: {
+          // TODO: Add real imageUrl, for now using default value
           title: input.title,
           description: input.description ?? '',
           locale: input.locale,
@@ -102,6 +103,7 @@ export const documentsRouter = createTRPCRouter({
           // Create final document
           await ctx.db.document.create({
             data: {
+              // TODO: Add real imageUrl, for now using default value
               title: pendingDocument.title,
               description: pendingDocument.description,
               locale: pendingDocument.locale,

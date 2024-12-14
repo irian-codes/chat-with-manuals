@@ -45,6 +45,7 @@ export function DashboardModals() {
     });
 
     const formData = new FormData();
+    // TODO: Add real imageUrl, for now using default value so we aren't sending any
     formData.set('title', data.title);
     formData.set('locale', data.locale);
     if (data.description) {
