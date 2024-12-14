@@ -1,4 +1,4 @@
-import {authedProcedure, createTRPCRouter} from '@/server/api/trpc';
+import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
 import {saveUploadedFile} from '@/server/utils/fileStorage';
 import type {Document} from '@/types/Document';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
-  getDocuments: authedProcedure.query(({ctx}) => {
+  getDocuments: withDbUserProcedure.query(({ctx}) => {
     // TODO: Get only the documents for the specific user.
 
     const documents: Document[] = [
@@ -46,7 +46,7 @@ export const documentsRouter = createTRPCRouter({
     return documents;
   }),
 
-  getDocument: authedProcedure
+  getDocument: withDbUserProcedure
     .input(z.object({id: z.string()}))
     .query(({ctx, input}) => {
       // TODO: Get the document for the specific user.
@@ -59,7 +59,7 @@ export const documentsRouter = createTRPCRouter({
       };
     }),
 
-  uploadDocument: authedProcedure
+  uploadDocument: withDbUserProcedure
     .input(
       z
         .instanceof(FormData)
@@ -67,16 +67,7 @@ export const documentsRouter = createTRPCRouter({
         .pipe(UploadDocumentPayloadSchema)
     )
     .mutation(async ({ctx, input}) => {
-      // Get user from database using auth provider ID
-      const user = await ctx.db.user.findUnique({
-        where: {
-          authProviderId: ctx.authProviderUserId,
-        },
-      });
-
-      if (!user) {
-        throw new Error('User not found');
-      }
+      const userId = ctx.dbUser.id;
 
       // Save file and get hash
       const {fileUrl, fileHash} = await saveUploadedFile(input.file);
@@ -84,7 +75,6 @@ export const documentsRouter = createTRPCRouter({
       // Create pending document
       const pendingDocument = await ctx.db.pendingDocument.create({
         data: {
-          userId: user.id,
           title: input.title,
           description: input.description ?? '',
           locale: input.locale,
@@ -93,6 +83,11 @@ export const documentsRouter = createTRPCRouter({
           llmParsingJobId: crypto.randomUUID(), // Placeholder for now
           codeParsingJobId: crypto.randomUUID(), // Placeholder for now
           status: STATUS.PENDING,
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
         },
       });
 
@@ -114,7 +109,7 @@ export const documentsRouter = createTRPCRouter({
               fileHash: pendingDocument.fileHash,
               user: {
                 connect: {
-                  id: user.id,
+                  id: userId,
                 },
               },
             },
@@ -143,7 +138,7 @@ export const documentsRouter = createTRPCRouter({
       return pendingDocument;
     }),
 
-  updateDocument: authedProcedure
+  updateDocument: withDbUserProcedure
     .input(
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
@@ -156,7 +151,7 @@ export const documentsRouter = createTRPCRouter({
       console.log('Received payload: ', input);
     }),
 
-  cancelDocumentParsing: authedProcedure
+  cancelDocumentParsing: withDbUserProcedure
     .input(
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
@@ -167,7 +162,7 @@ export const documentsRouter = createTRPCRouter({
       console.log('Document parsing cancelled for ID: ', input.id);
     }),
 
-  deleteDocument: authedProcedure
+  deleteDocument: withDbUserProcedure
     .input(
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
