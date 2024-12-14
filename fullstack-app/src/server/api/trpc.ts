@@ -188,7 +188,7 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
   return next();
 });
 
-const isAuthed = t.middleware(({next, ctx}) => {
+const authorizationMiddleware = t.middleware(({next, ctx}) => {
   if (!ctx.authProviderUserId) {
     throw new TRPCError({code: 'UNAUTHORIZED'});
   }
@@ -211,4 +211,4 @@ export const publicProcedure = t.procedure
   .use(timingMiddleware)
   .use(rateLimitMiddleware);
 
-export const authedProcedure = publicProcedure.use(isAuthed);
+export const authedProcedure = publicProcedure.use(authorizationMiddleware);
