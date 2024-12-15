@@ -6,25 +6,30 @@ import path from 'node:path';
 // TODO #17: Move this to a SECURE storage solution.
 const isDevEnv = env.NODE_ENV === 'development';
 const UPLOADS_DIR = path.join(
-  process.cwd(),
   'public',
   isDevEnv ? 'temp' : '',
   'uploads/files'
 );
 
-export async function saveUploadedFile(file: File): Promise<{
+export async function saveUploadedFile(
+  file: File,
+  fileHash?: string
+): Promise<{
   fileUrl: string;
-  fileHash: Buffer;
+  fileHash: string;
 }> {
   // Ensure uploads directory exists
   await fs.mkdir(UPLOADS_DIR, {recursive: true});
 
   // Read file content and calculate hash
   const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const fileHash = crypto.createHash('sha256').update(fileBuffer).digest();
+  const _fileHash =
+    fileHash ??
+    crypto.createHash('sha256').update(fileBuffer).digest().toString('hex');
+
   // Generate unique filename using the hash
-  const fileName = `${fileHash.toString('hex')}.pdf`;
-  const filePath = path.join(UPLOADS_DIR, fileName);
+  const fileName = `${_fileHash}.pdf`;
+  const filePath = path.join(process.cwd(), UPLOADS_DIR, fileName);
 
   // Check if file already exists
   if (await fileExists(filePath)) {
@@ -35,8 +40,8 @@ export async function saveUploadedFile(file: File): Promise<{
   await fs.writeFile(filePath, fileBuffer);
 
   return {
-    fileUrl: `public/uploads/files/${fileName}`,
-    fileHash,
+    fileUrl: filePath.replace(process.cwd(), ''),
+    fileHash: _fileHash,
   };
 }
 
@@ -47,4 +52,11 @@ async function fileExists(filePath: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function getFile(filePath: string): Promise<File> {
+  const fileBuffer = await fs.readFile(filePath);
+  const fileName = path.basename(filePath);
+
+  return new File([fileBuffer], fileName, {type: 'application/pdf'});
 }

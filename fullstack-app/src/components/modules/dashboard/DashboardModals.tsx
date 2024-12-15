@@ -23,7 +23,6 @@ export function DashboardModals() {
       enabled: !!router.query.documentId,
     }
   );
-  const uploadDocumentMutation = api.documents.uploadDocument.useMutation();
   const updateDocumentMutation = api.documents.updateDocument.useMutation();
   const deleteDocumentMutation = api.documents.deleteDocument.useMutation();
 
@@ -40,9 +39,6 @@ export function DashboardModals() {
     }
 
     const originalFile = data.file[0];
-    const file = new File([originalFile], truncateFilename(originalFile.name), {
-      type: originalFile.type,
-    });
 
     const formData = new FormData();
     // TODO: Add real imageUrl, for now using default value so we aren't sending any
@@ -51,9 +47,15 @@ export function DashboardModals() {
     if (data.description) {
       formData.set('description', data.description);
     }
-    formData.set('file', file);
+    formData.set('file', originalFile, truncateFilename(originalFile.name));
 
-    await uploadDocumentMutation.mutateAsync(formData);
+    // TRPC is incompatible with File objects, so we need to use fetch to
+    // send the form data and then the server will call TRPC.
+    await fetch('/api/uploadDocument', {
+      method: 'POST',
+      body: formData,
+    });
+
     await handleCloseDocumentModal(form);
   }
 

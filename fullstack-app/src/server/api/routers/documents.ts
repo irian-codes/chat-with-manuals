@@ -1,9 +1,10 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import {saveUploadedFile} from '@/server/utils/fileStorage';
 import type {Document} from '@/types/Document';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {STATUS} from '@prisma/client';
 import crypto from 'crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
@@ -59,18 +60,23 @@ export const documentsRouter = createTRPCRouter({
       };
     }),
 
-  uploadDocument: withDbUserProcedure
+  parseDocument: withDbUserProcedure
     .input(
-      z
-        .instanceof(FormData)
-        .transform((formData) => Object.fromEntries(formData.entries()))
-        .pipe(UploadDocumentPayloadSchema)
+      UploadDocumentPayloadSchema.extend({
+        fileUrl: z
+          .string()
+          .trim()
+          .min(1)
+          .refine((val) => fs.existsSync(path.join(process.cwd(), val)), {
+            message: 'File does not exist',
+          }),
+        fileHash: z.string().trim().length(64, {
+          message: 'Invalid file hash - must be a 64 character hex string',
+        }),
+      })
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.dbUser.id;
-
-      // Save file and get hash
-      const {fileUrl, fileHash} = await saveUploadedFile(input.file);
 
       // Create pending document
       const pendingDocument = await ctx.db.pendingDocument.create({
@@ -79,8 +85,8 @@ export const documentsRouter = createTRPCRouter({
           title: input.title,
           description: input.description ?? '',
           locale: input.locale,
-          fileUrl,
-          fileHash,
+          fileUrl: input.fileUrl,
+          fileHash: Buffer.from(input.fileHash, 'hex'),
           llmParsingJobId: crypto.randomUUID(), // Placeholder for now
           codeParsingJobId: crypto.randomUUID(), // Placeholder for now
           status: STATUS.PENDING,
@@ -92,7 +98,10 @@ export const documentsRouter = createTRPCRouter({
         },
       });
 
-      // Start async processing
+      // TODO: This doesn't really work, we need to find another way to
+      // fire this async processing.
+
+      // Start async processing of the document
       void (async () => {
         try {
           // Update pending document status to RUNNING
