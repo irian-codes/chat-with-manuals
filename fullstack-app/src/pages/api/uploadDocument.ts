@@ -22,6 +22,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // TODO #18: Ensure this endpoint is secure.
   if (req.method !== 'POST') {
     return res.status(405).json({error: 'Method not allowed'});
   }
@@ -114,6 +115,7 @@ export default async function handler(
     })
   );
 
+  // TODO: If the TRPC procedure fails, we need to delete the uploaded file.
   const trpcResponse = await trpc.documents.parseDocument({
     ...zodResult.data,
     fileUrl,
