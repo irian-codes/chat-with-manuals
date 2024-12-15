@@ -86,7 +86,7 @@ export const documentsRouter = createTRPCRouter({
           description: input.description ?? '',
           locale: input.locale,
           fileUrl: input.fileUrl,
-          fileHash: Buffer.from(input.fileHash, 'hex'),
+          fileHash: input.fileHash,
           llmParsingJobId: crypto.randomUUID(), // Placeholder for now
           codeParsingJobId: crypto.randomUUID(), // Placeholder for now
           status: STATUS.PENDING,
@@ -129,7 +129,7 @@ export const documentsRouter = createTRPCRouter({
                 locale: pendingDocument.locale,
                 fileUrl: pendingDocument.fileUrl,
                 fileHash: pendingDocument.fileHash,
-                user: {
+                users: {
                   connect: {
                     id: userId,
                   },

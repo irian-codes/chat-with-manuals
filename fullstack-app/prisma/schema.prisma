@@ -62,7 +62,7 @@ model PendingDocument {
     locale           String   @default("en") @db.VarChar(255)
     imageUrl         String   @default("")
     fileUrl          String   @unique @default("")
-    fileHash         Bytes    @unique
+    fileHash         String   @unique @db.VarChar(64) // Sha256 hash
     llmParsingJobId  String
     codeParsingJobId String
     status           STATUS   @default(PENDING)
@@ -75,14 +75,14 @@ model PendingDocument {
 
 model Document {
     id            String         @id @default(uuid()) @db.Uuid()
-    user          User[] // 1-n users
+    users         User[] // 1-n users
     conversations Conversation[] // 0-n conversations
     title         String         @db.VarChar(255)
     description   String         @default("")
     locale        String         @default("en") @db.VarChar(255)
     imageUrl      String         @default("")
     fileUrl       String         @unique @default("")
-    fileHash      Bytes          @unique
+    fileHash      String         @unique @db.VarChar(64) // Sha256 hash
     createdAt     DateTime       @default(now()) @db.Timestamptz(3)
     updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 
