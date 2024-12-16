@@ -3,6 +3,7 @@ import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
+import type {UploadingDocument} from '@/types/UploadingDocument';
 import {api} from '@/utils/api';
 import {UserButton} from '@clerk/nextjs';
 import {STATUS} from '@prisma/client';
@@ -20,7 +21,7 @@ export function DashboardMain() {
       STATUS.RUNNING,
       // TODO: Handle error ones specifically on the UI to indicate they're
       // errors. Or maybe send an email about it and that's enough.
-      STATUS.ERROR,
+      // STATUS.ERROR,
     ],
   });
   const {documents, pendingDocuments} = documentsQuery.data ?? {
@@ -65,9 +66,9 @@ export function DashboardMain() {
         <div className="flex flex-row flex-wrap gap-4">
           {[...pendingDocuments, ...documents].map((doc) =>
             // TODO: Add the conversation id to the url
-            'status' in doc && doc.status !== STATUS.ERROR ? (
+            'status' in doc ? (
               <DocumentCard
-                doc={doc}
+                doc={doc as UploadingDocument}
                 key={doc.id}
                 onCancelButtonClick={() => handleCancelDocumentParsing(doc)}
               />

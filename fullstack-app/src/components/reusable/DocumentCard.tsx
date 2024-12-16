@@ -2,22 +2,30 @@ import {Button} from '@/components/shadcn-ui/button';
 import {Card, CardContent} from '@/components/shadcn-ui/card';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
+import {cn} from '@/utils/ui/utils';
 import {FilePenLine, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
 
-type DocumentCardProps = {
-  doc: Document | UploadingDocument;
-  onCancelButtonClick?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
-  onEditButtonClick?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
+type UploadingDocumentCardProps = {
+  doc: UploadingDocument;
+  onCancelButtonClick: (ev: React.MouseEvent<HTMLButtonElement>) => void;
 };
+
+type UploadedDocumentCardProps = {
+  doc: Document;
+  onEditButtonClick: (ev: React.MouseEvent<HTMLButtonElement>) => void;
+};
+
+type DocumentCardProps = UploadingDocumentCardProps | UploadedDocumentCardProps;
 
 export function DocumentCard(props: DocumentCardProps) {
   const t = useTranslations('document-manager');
   const format = useFormatter();
+  const docIsUploading = 'onCancelButtonClick' in props;
 
   return (
-    <Card className="max-w-[14rem]">
+    <Card className={cn('max-w-[14rem]', docIsUploading && 'animate-pulse')}>
       <CardContent className="p-0">
         <Image
           src="https://picsum.photos/400"
@@ -32,17 +40,17 @@ export function DocumentCard(props: DocumentCardProps) {
           fetchPriority="auto"
           referrerPolicy="no-referrer"
         />
-        <div className="p-4">
+        <div className={'p-4'}>
           <div className="flex items-start justify-between">
             <div className="min-h-[4rem]">
               <h3 className="line-clamp-1 font-medium">{props.doc.title}</h3>
               <p className="line-clamp-2 text-sm text-muted-foreground">
-                {'status' in props.doc
+                {docIsUploading
                   ? format.relativeTime(props.doc.createdAt, Date.now())
                   : format.dateTime(props.doc.createdAt, 'full')}
               </p>
             </div>
-            {'status' in props.doc ? (
+            {docIsUploading ? (
               <Button
                 variant="ghost"
                 size="icon"
@@ -60,6 +68,11 @@ export function DocumentCard(props: DocumentCardProps) {
               </Button>
             )}
           </div>
+          {docIsUploading && (
+            <div className="pb-2 text-sm font-semibold">
+              {t('uploading-document')}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
