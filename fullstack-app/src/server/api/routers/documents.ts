@@ -339,7 +339,13 @@ export const documentsRouter = createTRPCRouter({
 
       if (tempPath != null) {
         // Delete temp file since we successfully deleted the original file
-        await deleteFile(tempPath);
+        try {
+          await deleteFile(tempPath);
+        } catch (error) {
+          console.warn(
+            `Failed to delete temp file: ${tempPath}. This is not critical and can be ignored.`
+          );
+        }
       }
 
       return pendingDocument;
@@ -430,7 +436,13 @@ export const documentsRouter = createTRPCRouter({
 
       if (tempPath != null) {
         // Delete temp file since we successfully deleted the original file
-        await deleteFile(tempPath);
+        try {
+          await deleteFile(tempPath);
+        } catch (error) {
+          console.warn(
+            `Failed to delete temp file: ${tempPath}. This is not critical and can be ignored.`
+          );
+        }
       }
 
       return document;
