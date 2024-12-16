@@ -263,8 +263,7 @@ export const documentsRouter = createTRPCRouter({
   cancelDocumentParsing: withDbUserProcedure
     .input(
       z.object({
-        // TODO: This should be whatever we end up using for IDs in the DB
-        id: z.string().min(1),
+        id: z.string().min(1).uuid(),
       })
     )
     .mutation(({ctx, input}) => {
@@ -278,7 +277,41 @@ export const documentsRouter = createTRPCRouter({
         id: z.string().min(1),
       })
     )
-    .mutation(({ctx, input}) => {
-      console.log('Document deleted for ID: ', input.id);
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.dbUser.id;
+
+      const document = await ctx.db.document
+        .delete({
+          where: {
+            id: input.id,
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+          },
+        })
+        .catch((error) => {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Document not found or access denied',
+              });
+            } else {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to delete document',
+              });
+            }
+          }
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to delete document',
+          });
+        });
+
+      return document;
     }),
 });
