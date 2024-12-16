@@ -56,6 +56,15 @@ export function DashboardModals() {
       body: formData,
     });
 
+    // TODO: This is temporary hack to reload the page after the file is
+    // uploaded. We need to actually use TRPC Subscriptions to receive an
+    // event on the component where the list of documents is displayed when
+    // the document is parsed, and then refetch the
+    // getDocumentsIncludingPending call.
+    //
+    // @see https://trpc.io/docs/server/subscriptions
+    window.location.reload();
+
     await handleCloseDocumentModal(form);
   }
 

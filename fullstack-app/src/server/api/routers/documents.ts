@@ -138,11 +138,16 @@ export const documentsRouter = createTRPCRouter({
         },
       });
 
-      // TODO: This doesn't really work, we need to find another way to
-      // fire this async processing.
+      // TODO: This whould be a fire and forget operation. But until we
+      // implement Trigger.dev we are going to await it here to simulate
+      // the parsing behaviour. This will actually work with TRPC
+      // Subscription links to send an event to the frontend when the
+      // document is parsed.
+      //
+      // @see https://trpc.io/docs/server/subscriptions
 
       // Start async processing of the document
-      void (async () => {
+      await (async () => {
         try {
           // Update pending document status to RUNNING
           await ctx.db.pendingDocument.update({
@@ -155,7 +160,7 @@ export const documentsRouter = createTRPCRouter({
           });
 
           // Simulate document processing
-          await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000)); // 5 minutes
+          await new Promise((resolve) => setTimeout(resolve, 10 * 1000)); // 10 seconds
 
           // Creating the new 'document' db entry and deleting pending
           // document because when a document is done parsing we change its
