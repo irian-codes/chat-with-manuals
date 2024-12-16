@@ -3,13 +3,12 @@ import {
   copyFile,
   copyFileToTempDir,
   deleteFile,
+  fileExists,
 } from '@/server/utils/fileStorage';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
-import fs from 'node:fs';
-import path from 'node:path';
 import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
@@ -103,11 +102,11 @@ export const documentsRouter = createTRPCRouter({
           .string()
           .trim()
           .min(1)
-          .refine((val) => fs.existsSync(path.join(process.cwd(), val)), {
-            message: 'File does not exist',
+          .refine((val) => fileExists(val), {
+            message: 'File does not exist or path is invalid',
           }),
         fileHash: z.string().trim().length(64, {
-          message: 'Invalid file hash - must be a 64 character hex string',
+          message: 'Invalid file hash. Must be a SHA256 string',
         }),
       })
     )

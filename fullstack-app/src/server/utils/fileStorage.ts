@@ -7,7 +7,7 @@ import {z} from 'zod';
 
 // TODO #17: Move this to a SECURE storage solution.
 const isDevEnv = env.NODE_ENV === 'development';
-const ABSOLUTE_UPLOADS_DIR = resolveAbsolutePath(
+const ABSOLUTE_UPLOADS_DIR = validateAndResolvePath(
   path.join('public', isDevEnv ? 'temp' : '', 'uploads/files')
 );
 
@@ -25,14 +25,13 @@ export async function saveUploadedFile(
   fileUrl: string;
   fileHash: string;
 }> {
-  z.instanceof(File).parse(file);
-  z.string().min(1).max(64).optional().parse(fileHash);
+  const _file = z.instanceof(File).parse(file);
 
   await fs.mkdir(ABSOLUTE_UPLOADS_DIR, {recursive: true});
 
-  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const fileBuffer = Buffer.from(await _file.arrayBuffer());
   const _fileHash =
-    fileHash ??
+    z.string().trim().min(1).max(64).optional().parse(fileHash) ??
     crypto.createHash('sha256').update(fileBuffer).digest().toString('hex');
 
   const fileName = `${_fileHash}.pdf`;
@@ -50,14 +49,17 @@ export async function saveUploadedFile(
   };
 }
 
-async function fileExists(filePath: string): Promise<boolean> {
-  const absolutePath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(filePath);
+export async function fileExists(filePath: string): Promise<boolean> {
+  const absolutePath = validateAndResolvePath(filePath);
+
+  if (
+    !absolutePath.startsWith(os.tmpdir()) &&
+    !isPathInUploadsDir(absolutePath)
+  ) {
+    throw new Error(
+      `Invalid file path: File must be in uploads or tmp directory. Path: ${absolutePath}`
+    );
+  }
 
   try {
     await fs.access(absolutePath);
@@ -68,14 +70,7 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 export async function getFile(filePath: string): Promise<File> {
-  const absolutePath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(filePath);
-
+  const absolutePath = validateAndResolvePath(filePath);
   const fileBuffer = await fs.readFile(absolutePath);
   const fileName = path.basename(absolutePath);
 
@@ -83,13 +78,7 @@ export async function getFile(filePath: string): Promise<File> {
 }
 
 export async function deleteFile(filePath: string): Promise<void> {
-  const absolutePath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(filePath);
+  const absolutePath = validateAndResolvePath(filePath);
 
   if (
     !absolutePath.startsWith(os.tmpdir()) &&
@@ -107,21 +96,8 @@ export async function copyFile(
   sourcePath: string,
   destinationPath: string
 ): Promise<void> {
-  const absoluteSourcePath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(sourcePath);
-
-  const absoluteDestinationPath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(destinationPath);
+  const absoluteSourcePath = validateAndResolvePath(sourcePath);
+  const absoluteDestinationPath = validateAndResolvePath(destinationPath);
 
   await fs.mkdir(path.dirname(absoluteDestinationPath), {recursive: true});
 
@@ -134,13 +110,7 @@ export async function copyFile(
 }
 
 export async function copyFileToTempDir(filePath: string): Promise<string> {
-  const absoluteSourcePath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(filePath);
+  const absoluteSourcePath = validateAndResolvePath(filePath);
 
   const tempDir = path.join(os.tmpdir(), 'chat-with-manuals/trash');
   const tempPath = path.join(tempDir, path.basename(absoluteSourcePath));
@@ -150,7 +120,7 @@ export async function copyFileToTempDir(filePath: string): Promise<string> {
   return tempPath;
 }
 
-function resolveAbsolutePath(filePath: string): string {
+function validateAndResolvePath(filePath: string): string {
   const _filePath = z
     .string()
     .trim()
@@ -169,13 +139,7 @@ function resolveAbsolutePath(filePath: string): string {
 }
 
 function isPathInUploadsDir(filePath: string): boolean {
-  const absoluteSourcePath = z
-    .string()
-    .trim()
-    .min(1)
-    .refine(isPathSafe)
-    .transform(resolveAbsolutePath)
-    .parse(filePath);
+  const absoluteSourcePath = validateAndResolvePath(filePath);
 
   return absoluteSourcePath.startsWith(ABSOLUTE_UPLOADS_DIR);
 }
