@@ -6,14 +6,14 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import {initTRPC, TRPCError} from '@trpc/server';
-import {type CreateNextContextOptions} from '@trpc/server/adapters/next';
-import superjson from 'superjson';
-import {ZodError} from 'zod';
-
 import {env} from '@/env';
 import {db} from '@/server/db';
+import {transformer} from '@/utils/api';
 import {getAuth} from '@clerk/nextjs/server';
+import {type User} from '@prisma/client';
+import {initTRPC, TRPCError} from '@trpc/server';
+import {type CreateNextContextOptions} from '@trpc/server/adapters/next';
+import {ZodError} from 'zod';
 import rateLimit from '../middleware/rateLimit';
 
 /**
@@ -26,6 +26,7 @@ import rateLimit from '../middleware/rateLimit';
 
 interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
   authProviderUserId: string | null;
+  dbUser: User | null;
 }
 
 /**
@@ -51,11 +52,24 @@ export const createInnerTRPCContext = (opts: CreateInnerContextOptions) => {
  *
  * @see https://trpc.io/docs/context
  */
-export const createTRPCContext = (opts: CreateNextContextOptions) => {
+export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const {userId: authProviderUserId} = getAuth(opts.req);
+
+  const dbUser: User | null = await (async () => {
+    if (authProviderUserId == null) {
+      return null;
+    }
+
+    return await db.user.findFirst({
+      where: {
+        authProviderId: authProviderUserId,
+      },
+    });
+  })();
 
   const innerContext = createInnerTRPCContext({
     authProviderUserId,
+    dbUser,
     ...opts,
   });
 
@@ -73,7 +87,7 @@ export const createTRPCContext = (opts: CreateNextContextOptions) => {
  */
 
 const t = initTRPC.context<typeof createInnerTRPCContext>().create({
-  transformer: superjson,
+  transformer,
   errorFormatter({shape, error}) {
     return {
       ...shape,
@@ -200,6 +214,22 @@ const authorizationMiddleware = t.middleware(({next, ctx}) => {
   });
 });
 
+const withDbUserMiddleware = t.middleware(async ({next, ctx}) => {
+  if (ctx.dbUser == null) {
+    throw new TRPCError({
+      message: 'User not found',
+      code: 'NOT_FOUND',
+    });
+  }
+
+  // This helps TypeScript know that dbUser is non-null in protected routes
+  return next({
+    ctx: {
+      dbUser: ctx.dbUser,
+    },
+  });
+});
+
 /**
  * Public (unauthenticated) procedure
  *
@@ -212,3 +242,4 @@ export const publicProcedure = t.procedure
   .use(rateLimitMiddleware);
 
 export const authedProcedure = publicProcedure.use(authorizationMiddleware);
+export const withDbUserProcedure = authedProcedure.use(withDbUserMiddleware);

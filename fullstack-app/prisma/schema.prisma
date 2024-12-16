@@ -62,7 +62,7 @@ model PendingDocument {
     locale           String   @default("en") @db.VarChar(255)
     imageUrl         String   @default("")
     fileUrl          String   @unique @default("")
-    fileHash         Bytes    @unique
+    fileHash         String   @unique @db.VarChar(64) // Sha256 hash
     llmParsingJobId  String
     codeParsingJobId String
     status           STATUS   @default(PENDING)
@@ -75,20 +75,17 @@ model PendingDocument {
 
 model Document {
     id            String         @id @default(uuid()) @db.Uuid()
-    // Deleting all documents when deleting a user seems to dangerous, so we restrict the deletion a user with documents.
-    user          User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-    userId        String         @db.Uuid()
+    users         User[] // 1-n users
     conversations Conversation[] // 0-n conversations
     title         String         @db.VarChar(255)
     description   String         @default("")
     locale        String         @default("en") @db.VarChar(255)
     imageUrl      String         @default("")
     fileUrl       String         @unique @default("")
-    fileHash      Bytes          @unique
+    fileHash      String         @unique @db.VarChar(64) // Sha256 hash
     createdAt     DateTime       @default(now()) @db.Timestamptz(3)
     updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 
-    @@index([userId(sort: Asc)])
     @@index([fileHash(sort: Asc)])
 }
 

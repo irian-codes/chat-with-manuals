@@ -1,7 +1,3 @@
-export interface Document {
-  id: string;
-  title: string;
-  description?: string;
-  date: string;
-  locale: string;
-}
+import {type RouterOutputs} from '@/utils/api';
+
+export type Document = RouterOutputs['documents']['getDocument'];

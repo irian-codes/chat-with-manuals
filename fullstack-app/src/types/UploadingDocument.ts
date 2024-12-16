@@ -1,5 +1,4 @@
-import type {Document} from '@/types/Document';
+import {type RouterOutputs} from '@/utils/api';
 
-export type UploadingDocument = Document & {
-  isUploading: boolean;
-};
+export type UploadingDocument =
+  RouterOutputs['documents']['getDocumentsIncludingPending']['pendingDocuments'][number];

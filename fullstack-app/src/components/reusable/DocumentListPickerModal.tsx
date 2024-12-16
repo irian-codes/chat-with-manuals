@@ -74,7 +74,7 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
                   <div className="flex flex-col items-start gap-1">
                     <p className="truncate font-medium">{doc.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format.dateTime(new Date(doc.date), 'short')}
+                      {format.dateTime(doc.updatedAt, 'short')}
                     </p>
                   </div>
                 </Button>

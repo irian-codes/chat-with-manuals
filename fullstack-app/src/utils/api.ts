@@ -4,12 +4,21 @@
  *
  * We also create a few inference helpers for input and output types.
  */
-import {httpBatchLink, httpLink, loggerLink, splitLink} from '@trpc/client';
-import {createTRPCNext} from '@trpc/next';
-import {type inferRouterInputs, type inferRouterOutputs} from '@trpc/server';
-import superjson from 'superjson';
-
 import {type AppRouter} from '@/server/api/root';
+import {
+  httpBatchLink,
+  httpLink,
+  isNonJsonSerializable,
+  loggerLink,
+  splitLink,
+} from '@trpc/client';
+import {createTRPCNext} from '@trpc/next';
+import {
+  type TRPCCombinedDataTransformer,
+  type inferRouterInputs,
+  type inferRouterOutputs,
+} from '@trpc/server';
+import superjson from 'superjson';
 
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') return ''; // browser should use relative url
@@ -17,13 +26,35 @@ const getBaseUrl = () => {
   return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
 };
 
-const cannotSendToTRPCdirectly = (value: unknown) => {
-  return value instanceof FormData || value instanceof File;
+export const transformer: TRPCCombinedDataTransformer = {
+  input: {
+    serialize: (obj) => {
+      if (isNonJsonSerializable(obj)) {
+        return obj;
+      } else {
+        return superjson.serialize(obj);
+      }
+    },
+    deserialize: (obj) => {
+      if (isNonJsonSerializable(obj)) {
+        return obj;
+      } else {
+        // eslint-disable-next-line
+        return superjson.deserialize(obj);
+      }
+    },
+  },
+  output: superjson,
 };
 
 /** A set of type-safe react-query hooks for your tRPC API. */
 export const api = createTRPCNext<AppRouter>({
   config() {
+    const linkConfig = {
+      url: `${getBaseUrl()}/api/trpc`,
+      transformer,
+    };
+
     return {
       /**
        * Links used to determine request flow from client to server.
@@ -40,18 +71,9 @@ export const api = createTRPCNext<AppRouter>({
         // custom link to send FormData.
         // @see https://github.com/trpc/trpc/issues/1937#issuecomment-2267163025
         splitLink({
-          condition: (op) => cannotSendToTRPCdirectly(op.input),
-          true: httpLink({
-            url: `${getBaseUrl()}/api/trpc`,
-            transformer: {
-              serialize: (data) => data as FormData | File,
-              deserialize: superjson.deserialize,
-            },
-          }),
-          false: httpBatchLink({
-            transformer: superjson,
-            url: `${getBaseUrl()}/api/trpc`,
-          }),
+          condition: (op) => isNonJsonSerializable(op.input),
+          true: httpLink(linkConfig),
+          false: httpBatchLink(linkConfig),
         }),
       ],
       queryClientConfig: {
@@ -69,7 +91,7 @@ export const api = createTRPCNext<AppRouter>({
    * @see https://trpc.io/docs/nextjs#ssr-boolean-default-false
    */
   ssr: false,
-  transformer: superjson,
+  transformer,
 });
 
 /**

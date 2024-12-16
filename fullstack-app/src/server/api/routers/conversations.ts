@@ -58,8 +58,13 @@ export const conversationsRouter = createTRPCRouter({
         document: {
           id: input.documentId,
           title: 'How to play chess',
-          date: '2023-03-07T10:14:00.000Z',
+          description: 'How to play chess',
+          createdAt: new Date(),
+          updatedAt: new Date(),
           locale: 'en',
+          fileUrl: 'https://example.com/file.pdf',
+          fileHash: '1234567890',
+          imageUrl: 'https://example.com/image.jpg',
         },
       };
 
@@ -139,7 +144,12 @@ const mockConversation: Conversation = {
   document: {
     id: '3',
     title: 'Bitcoin whitepaper',
-    date: '2023-03-07T10:14:00.000Z',
+    description: 'Bitcoin whitepaper',
+    createdAt: new Date('2023-03-07T10:14:00.000Z'),
+    updatedAt: new Date('2023-03-07T10:14:00.000Z'),
     locale: 'en',
+    fileUrl: 'https://example.com/file.pdf',
+    fileHash: '1234567890',
+    imageUrl: 'https://example.com/image.jpg',
   },
 };

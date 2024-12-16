@@ -3,21 +3,28 @@ import {DocumentListPickerModal} from '@/components/reusable/DocumentListPickerM
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
+import {db} from '@/server/db';
 import {type Document} from '@/types/Document';
-import {api} from '@/utils/api';
+import {api, transformer} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
 import {useRouter} from 'next/router';
-import superjson from 'superjson';
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  const authProviderUserId = getAuth(ctx.req).userId!;
+
   const helpers = createServerSideHelpers({
     router: appRouter,
     ctx: createInnerTRPCContext({
-      authProviderUserId: getAuth(ctx.req).userId!,
+      authProviderUserId,
+      dbUser: await db.user.findFirst({
+        where: {
+          authProviderId: authProviderUserId,
+        },
+      }),
     }),
-    transformer: superjson,
+    transformer,
   });
 
   // Initialize user

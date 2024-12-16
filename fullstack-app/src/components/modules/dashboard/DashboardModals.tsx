@@ -23,7 +23,6 @@ export function DashboardModals() {
       enabled: !!router.query.documentId,
     }
   );
-  const uploadDocumentMutation = api.documents.uploadDocument.useMutation();
   const updateDocumentMutation = api.documents.updateDocument.useMutation();
   const deleteDocumentMutation = api.documents.deleteDocument.useMutation();
 
@@ -40,20 +39,31 @@ export function DashboardModals() {
     }
 
     const originalFile = data.file[0];
-    const file = new File([originalFile], truncateFilename(originalFile.name), {
-      type: originalFile.type,
-    });
 
     const formData = new FormData();
+    // TODO: Add real imageUrl, for now using default value so we aren't sending any
     formData.set('title', data.title);
     formData.set('locale', data.locale);
     if (data.description) {
       formData.set('description', data.description);
     }
-    formData.set('file', file);
+    formData.set('file', originalFile, truncateFilename(originalFile.name));
 
-    await uploadDocumentMutation.mutateAsync(formData);
-    await handleCloseDocumentModal(form);
+    // TRPC is incompatible with File objects, so we need to use fetch to
+    // send the form data and then the server will call TRPC.
+    await fetch('/api/uploadDocument', {
+      method: 'POST',
+      body: formData,
+    });
+
+    // TODO: This is temporary hack to reload the page after the file is
+    // uploaded. We need to actually use TRPC Subscriptions to receive an
+    // event on the component where the list of documents is displayed when
+    // the document is parsed, and then refetch the
+    // getDocumentsIncludingPending call.
+    //
+    // @see https://trpc.io/docs/server/subscriptions
+    await handleCloseDocumentModal(form, true);
   }
 
   async function handleUpdateDocument(
@@ -65,7 +75,7 @@ export function DashboardModals() {
       id: document!.id,
     });
 
-    await handleCloseDocumentModal(form);
+    await handleCloseDocumentModal(form, true);
 
     // TODO: Show notification (error and success) to the user
   }
@@ -85,16 +95,25 @@ export function DashboardModals() {
       id: document.id,
     });
 
-    await handleCloseDocumentModal(form);
+    await handleCloseDocumentModal(form, true);
 
     // TODO: Show notification (error and success) to the user
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function handleCloseDocumentModal(form: UseFormReturn<any>) {
+  async function handleCloseDocumentModal(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    form: UseFormReturn<any>,
+    reload: boolean
+  ) {
     form.reset();
     form.clearErrors();
-    void router.push('/', undefined, {shallow: true});
+
+    await router.push('/', undefined, {shallow: true});
+
+    // TODO: Find a better way to update the state of the dashboard.
+    if (reload) {
+      router.reload();
+    }
   }
 
   return (
@@ -106,13 +125,13 @@ export function DashboardModals() {
         document={document}
         onSubmit={handleUpdateDocument}
         onDelete={handleDeleteDocument}
-        onClose={handleCloseDocumentModal}
+        onClose={(form) => handleCloseDocumentModal(form, false)}
       />
 
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
-        onClose={handleCloseDocumentModal}
         onSubmit={handleUploadNewDocument}
+        onClose={(form) => handleCloseDocumentModal(form, false)}
       />
     </Fragment>
   );
