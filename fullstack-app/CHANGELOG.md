@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.5](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.4...v0.1.5) (2024-12-16)
+
+
+### Features
+
+* **auth:** add Clerk UserButton to all pages properly ([5a6d996](https://github.com/irian-codes/chat-with-manuals/commit/5a6d996efb6f9d898622b67ab42f3c242ff57d87))
+* **dashboard:** displaying only non error documents and with a loading animation ([25f9c7e](https://github.com/irian-codes/chat-with-manuals/commit/25f9c7e6ad77361dfa2d26b90260743ac33c47bf))
+* **dashboard:** updating document with TRPC call ([7f783e2](https://github.com/irian-codes/chat-with-manuals/commit/7f783e2ca524c87d92a95bd08161a59dca612cb2))
+* **db:** added Prisma schema first draft ([48c746a](https://github.com/irian-codes/chat-with-manuals/commit/48c746a0893cea7122a90b2acdc342a30d5e7f61))
+* **db:** set stricter Prisma relation rules ([83c7ea9](https://github.com/irian-codes/chat-with-manuals/commit/83c7ea981b01d027c0e48abe9dc534c80bc302a3))
+* **db:** set stricter Prisma relation rules and updated document schema ([554ca5c](https://github.com/irian-codes/chat-with-manuals/commit/554ca5cdfb1a893345141f40bc02b4f2f694cce6))
+* **documents:** coded TRPC delete document procedure ([003733a](https://github.com/irian-codes/chat-with-manuals/commit/003733a3a74524c6badabd8e7622b58ee95b7f7f))
+* **documents:** fetching documents on the frontend ([f43b65a](https://github.com/irian-codes/chat-with-manuals/commit/f43b65abf919fccdc238ad9318da62abcaf1dea0))
+* **documents:** fixed document schema ([0af1fea](https://github.com/irian-codes/chat-with-manuals/commit/0af1feae8ee923d8ee0ada9ecf38939a9a41f4db))
+* **documents:** improved document file storage on server ([e97a144](https://github.com/irian-codes/chat-with-manuals/commit/e97a144435cbed027e96672f538838f71e129c0d))
+* **documents:** properly cancelling an uploading document ([f78c800](https://github.com/irian-codes/chat-with-manuals/commit/f78c800b281f724237a66e73bc7d929813f52041))
+* **documents:** properly deleting document file ([e65e917](https://github.com/irian-codes/chat-with-manuals/commit/e65e91780a5b8213222e5e1fa3fabf831c647c18))
+* **documents:** uploading document with formidable ([798fc3a](https://github.com/irian-codes/chat-with-manuals/commit/798fc3a9f485d15f3bb572268b08390c569523fb))
+* **files:** uploading files to TRPC and saving them into a folder and db ([b82aac2](https://github.com/irian-codes/chat-with-manuals/commit/b82aac2828aa48b77a5f8b72482dc8b048a4b077))
+* **trpc:** added authedProcedure with Clerk ([0abcc20](https://github.com/irian-codes/chat-with-manuals/commit/0abcc2019a8171a29857553fed28c573b22b637f)), closes [#10](https://github.com/irian-codes/chat-with-manuals/issues/10)
+* **trpc:** added user routers ([5aa2bef](https://github.com/irian-codes/chat-with-manuals/commit/5aa2befc3ce48c9faa6dfe39aeccd50fa9572501))
+* **trpc:** created procedure with db user present ([73d07d2](https://github.com/irian-codes/chat-with-manuals/commit/73d07d27960425a88ae99a1008e5d70d17b56936))
+
+
+### Bug Fixes
+
+* **auth:** marking userId as present since these are protected routes ([447832f](https://github.com/irian-codes/chat-with-manuals/commit/447832fb319a9477c890727f6574728c0a68e84a))
+* **documents:** checking for authorization first, it's more secure ([ecdec2d](https://github.com/irian-codes/chat-with-manuals/commit/ecdec2d3c04cd832c64a87f617ceb5bf362f3e5f))
+* **documents:** correctly updating the state of a pending document in a DB transaction ([d88c8b5](https://github.com/irian-codes/chat-with-manuals/commit/d88c8b5357c80544ca314854176f2976960b03e6))
+* **documents:** properly checking documents ID with zod ([a973250](https://github.com/irian-codes/chat-with-manuals/commit/a973250ec5f9f00f84b4fc9e608545871378601f))
+* **documents:** properly handling a non critical file deletion error ([4ae454a](https://github.com/irian-codes/chat-with-manuals/commit/4ae454a5f13962a4d0a64872c89883b7b809ccf3))
+* **documents:** properly handling file already exists error ([71d0be2](https://github.com/irian-codes/chat-with-manuals/commit/71d0be26eb87a3b87e2b5825a93aa0c4f5fec06f))
+* **documents:** saving documents on a temp ignored folder on development ([6db6f72](https://github.com/irian-codes/chat-with-manuals/commit/6db6f721193fd3aac948c438c4ed6a3c6a765a04))
+* **documents:** simulating document parsing in a fast way for now ([0a3c966](https://github.com/irian-codes/chat-with-manuals/commit/0a3c96646355154d5a4d13cf2c20205b8d31b890))
+* **documents:** using proper function to check if file exists and cleanup ([6dedb72](https://github.com/irian-codes/chat-with-manuals/commit/6dedb72a29e35d50c22f351081d82b4318060f00))
+* **files:** improved all file handling functions ([3843b15](https://github.com/irian-codes/chat-with-manuals/commit/3843b150345b1a3f53a98db6a7da4b361310c348))
+* **trpc:** added missing dbUser on SSG context ([efca69b](https://github.com/irian-codes/chat-with-manuals/commit/efca69ba3d00298d6102dc579de9f06ec9aed156))
+
 ## [0.1.4](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.3...v0.1.4) (2024-12-09)
 
 
