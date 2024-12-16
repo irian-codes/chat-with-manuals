@@ -63,9 +63,7 @@ export function DashboardModals() {
     // getDocumentsIncludingPending call.
     //
     // @see https://trpc.io/docs/server/subscriptions
-    window.location.reload();
-
-    await handleCloseDocumentModal(form);
+    await handleCloseDocumentModal(form, true);
   }
 
   async function handleUpdateDocument(
@@ -77,7 +75,7 @@ export function DashboardModals() {
       id: document!.id,
     });
 
-    await handleCloseDocumentModal(form);
+    await handleCloseDocumentModal(form, true);
 
     // TODO: Show notification (error and success) to the user
   }
@@ -97,16 +95,25 @@ export function DashboardModals() {
       id: document.id,
     });
 
-    await handleCloseDocumentModal(form);
+    await handleCloseDocumentModal(form, true);
 
     // TODO: Show notification (error and success) to the user
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function handleCloseDocumentModal(form: UseFormReturn<any>) {
+  async function handleCloseDocumentModal(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    form: UseFormReturn<any>,
+    reload: boolean
+  ) {
     form.reset();
     form.clearErrors();
-    void router.push('/', undefined, {shallow: true});
+
+    await router.push('/', undefined, {shallow: true});
+
+    // TODO: Find a better way to update the state of the dashboard.
+    if (reload) {
+      router.reload();
+    }
   }
 
   return (
@@ -118,13 +125,13 @@ export function DashboardModals() {
         document={document}
         onSubmit={handleUpdateDocument}
         onDelete={handleDeleteDocument}
-        onClose={handleCloseDocumentModal}
+        onClose={(form) => handleCloseDocumentModal(form, false)}
       />
 
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
-        onClose={handleCloseDocumentModal}
         onSubmit={handleUploadNewDocument}
+        onClose={(form) => handleCloseDocumentModal(form, false)}
       />
     </Fragment>
   );

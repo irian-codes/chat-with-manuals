@@ -1,6 +1,6 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
-import {STATUS} from '@prisma/client';
+import {Prisma, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
 import fs from 'node:fs';
@@ -211,12 +211,53 @@ export const documentsRouter = createTRPCRouter({
       z.object({
         // TODO: This should be whatever we end up using for IDs in the DB
         id: z.string().min(1),
-        title: z.string().trim().min(2).max(255),
-        description: z.string().trim().max(2000),
+        title: z.string().trim().min(2).max(255).optional(),
+        description: z.string().trim().max(2000).optional(),
       })
     )
-    .mutation(({ctx, input}) => {
-      console.log('Received payload: ', input);
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.dbUser.id;
+
+      const _modifiedFields = Object.fromEntries(
+        Object.entries(input).filter(
+          ([key, value]) => key !== 'id' && value != null
+        )
+      );
+
+      const document = await ctx.db.document
+        .update({
+          where: {
+            id: input.id,
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+          },
+          data: _modifiedFields,
+        })
+        .catch((error) => {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Document not found or access denied',
+              });
+            } else {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to update document',
+              });
+            }
+          }
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to update document',
+          });
+        });
+
+      return document;
     }),
 
   cancelDocumentParsing: withDbUserProcedure
