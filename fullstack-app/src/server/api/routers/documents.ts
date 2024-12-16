@@ -28,7 +28,7 @@ export const documentsRouter = createTRPCRouter({
   }),
 
   getDocument: withDbUserProcedure
-    .input(z.object({id: z.string()}))
+    .input(z.object({id: z.string().min(1).uuid()}))
     .query(async ({ctx, input}) => {
       const userId = ctx.dbUser.id;
 
@@ -209,8 +209,7 @@ export const documentsRouter = createTRPCRouter({
   updateDocument: withDbUserProcedure
     .input(
       z.object({
-        // TODO: This should be whatever we end up using for IDs in the DB
-        id: z.string().min(1),
+        id: z.string().min(1).uuid(),
         title: z.string().trim().min(2).max(255).optional(),
         description: z.string().trim().max(2000).optional(),
       })
@@ -273,8 +272,7 @@ export const documentsRouter = createTRPCRouter({
   deleteDocument: withDbUserProcedure
     .input(
       z.object({
-        // TODO: This should be whatever we end up using for IDs in the DB
-        id: z.string().min(1),
+        id: z.string().min(1).uuid(),
       })
     )
     .mutation(async ({ctx, input}) => {
