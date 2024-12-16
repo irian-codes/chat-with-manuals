@@ -11,6 +11,13 @@ const UPLOADS_DIR = path.join(
   'uploads/files'
 );
 
+export class FileAlreadyExistsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FileAlreadyExistsError';
+  }
+}
+
 export async function saveUploadedFile(
   file: File,
   fileHash?: string
@@ -33,7 +40,7 @@ export async function saveUploadedFile(
 
   // Check if file already exists
   if (await fileExists(filePath)) {
-    throw new Error('File already exists');
+    throw new FileAlreadyExistsError('File already exists');
   }
 
   // Save file

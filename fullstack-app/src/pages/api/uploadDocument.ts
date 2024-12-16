@@ -1,7 +1,11 @@
 import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {db} from '@/server/db';
-import {getFile, saveUploadedFile} from '@/server/utils/fileStorage';
+import {
+  FileAlreadyExistsError,
+  getFile,
+  saveUploadedFile,
+} from '@/server/utils/fileStorage';
 import {
   type UploadDocumentPayload,
   UploadDocumentPayloadSchema,
@@ -100,6 +104,12 @@ export default async function handler(
       throw new Error('File upload failed');
     }
   } catch (error) {
+    if (error instanceof FileAlreadyExistsError) {
+      console.error(error);
+
+      return res.status(400).json({error: 'File already exists'});
+    }
+
     console.error('Document file upload error:', error);
 
     return res.status(500).json({error: 'Upload failed'});
