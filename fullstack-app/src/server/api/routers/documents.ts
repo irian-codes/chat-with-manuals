@@ -1,6 +1,11 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
+import {
+  copyFile,
+  copyFileToTempDir,
+  deleteFile,
+} from '@/server/utils/fileStorage';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
-import {Prisma, STATUS} from '@prisma/client';
+import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
 import fs from 'node:fs';
@@ -32,16 +37,7 @@ export const documentsRouter = createTRPCRouter({
     .query(async ({ctx, input}) => {
       const userId = ctx.dbUser.id;
 
-      const document = await ctx.db.document.findUnique({
-        where: {
-          id: input.id,
-          users: {
-            some: {
-              id: userId,
-            },
-          },
-        },
-      });
+      const document = await getDocument(ctx.db, input.id, userId);
 
       if (document == null) {
         throw new TRPCError({
@@ -278,7 +274,43 @@ export const documentsRouter = createTRPCRouter({
     .mutation(async ({ctx, input}) => {
       const userId = ctx.dbUser.id;
 
-      const document = await ctx.db.document
+      const document = await getDocument(ctx.db, input.id, userId);
+
+      if (document == null) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Document not found or access denied',
+        });
+      }
+
+      let tempPath: string;
+      try {
+        // Store it in case we need to rollback
+        tempPath = await copyFileToTempDir(document.fileUrl);
+      } catch (error) {
+        console.error(error);
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to backup document file: ${document.fileUrl}`,
+          cause: error,
+        });
+      }
+
+      try {
+        // Delete original file
+        await deleteFile(document.fileUrl);
+      } catch (error) {
+        console.error(error);
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to delete document file: ${document.fileUrl}`,
+          cause: error,
+        });
+      }
+
+      await ctx.db.document
         .delete({
           where: {
             id: input.id,
@@ -289,7 +321,13 @@ export const documentsRouter = createTRPCRouter({
             },
           },
         })
-        .catch((error) => {
+        .catch(async (error) => {
+          // Rollback the deletion of the original file
+          if (tempPath != null) {
+            await copyFile(tempPath, document.fileUrl);
+          }
+
+          // Throw errors
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               throw new TRPCError({
@@ -310,6 +348,40 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
+      if (tempPath != null) {
+        // Delete temp file since we successfully deleted the original file
+        await deleteFile(tempPath);
+      }
+
       return document;
     }),
 });
+
+// REUSABLE FUNCTIONS
+
+async function getDocument(
+  db: PrismaClient,
+  documentId: string,
+  userId: string
+) {
+  const _userId = z.string().trim().min(1).uuid().safeParse(userId).success
+    ? userId.trim()
+    : undefined;
+
+  if (_userId == null) {
+    throw new Error('User ID is required or is invalid');
+  }
+
+  const document = await db.document.findUnique({
+    where: {
+      id: documentId,
+      users: {
+        some: {
+          id: _userId,
+        },
+      },
+    },
+  });
+
+  return document;
+}
