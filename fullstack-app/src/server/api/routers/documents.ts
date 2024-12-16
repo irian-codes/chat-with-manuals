@@ -261,8 +261,89 @@ export const documentsRouter = createTRPCRouter({
         id: z.string().min(1).uuid(),
       })
     )
-    .mutation(({ctx, input}) => {
-      console.log('Document parsing cancelled for ID: ', input.id);
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.dbUser.id;
+
+      const pendingDocument = await getPendingDocument(
+        ctx.db,
+        input.id,
+        userId
+      );
+
+      if (pendingDocument == null) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Pending document not found or access denied',
+        });
+      }
+
+      let tempPath: string;
+      try {
+        // Store it in case we need to rollback
+        tempPath = await copyFileToTempDir(pendingDocument.fileUrl);
+      } catch (error) {
+        console.error(error);
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to backup document file: ${pendingDocument.fileUrl}`,
+          cause: error,
+        });
+      }
+
+      try {
+        // Delete original file
+        await deleteFile(pendingDocument.fileUrl);
+      } catch (error) {
+        console.error(error);
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to delete document file: ${pendingDocument.fileUrl}`,
+          cause: error,
+        });
+      }
+
+      await ctx.db.pendingDocument
+        .delete({
+          where: {
+            id: input.id,
+            userId,
+          },
+        })
+        .catch(async (error) => {
+          // Rollback the deletion of the original file
+          if (tempPath != null) {
+            await copyFile(tempPath, pendingDocument.fileUrl);
+          }
+
+          // Throw errors
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Pending document not found or access denied',
+              });
+            } else {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to delete pending document',
+              });
+            }
+          }
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to delete pending document',
+          });
+        });
+
+      if (tempPath != null) {
+        // Delete temp file since we successfully deleted the original file
+        await deleteFile(tempPath);
+      }
+
+      return pendingDocument;
     }),
 
   deleteDocument: withDbUserProcedure
@@ -380,6 +461,29 @@ async function getDocument(
           id: _userId,
         },
       },
+    },
+  });
+
+  return document;
+}
+
+async function getPendingDocument(
+  db: PrismaClient,
+  documentId: string,
+  userId: string
+) {
+  const _userId = z.string().trim().min(1).uuid().safeParse(userId).success
+    ? userId.trim()
+    : undefined;
+
+  if (_userId == null) {
+    throw new Error('User ID is required or is invalid');
+  }
+
+  const document = await db.pendingDocument.findUnique({
+    where: {
+      id: documentId,
+      userId: _userId,
     },
   });
 

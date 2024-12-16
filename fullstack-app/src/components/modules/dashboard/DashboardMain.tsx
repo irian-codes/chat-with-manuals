@@ -36,6 +36,9 @@ export function DashboardMain() {
       id: doc.id,
     });
 
+    // TODO: Find a better way to update the state of the dashboard
+    router.reload();
+
     // TODO: Show notification (error and success) to the user
   }
 
