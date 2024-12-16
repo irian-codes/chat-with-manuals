@@ -3,9 +3,9 @@ import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
-import {type UploadingDocument} from '@/types/UploadingDocument';
 import {api} from '@/utils/api';
 import {UserButton} from '@clerk/nextjs';
+import {STATUS} from '@prisma/client';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
@@ -14,8 +14,19 @@ import {useRouter} from 'next/router';
 export function DashboardMain() {
   const t = useTranslations('document-manager');
   const router = useRouter();
-  const documentsQuery = api.documents.getDocuments.useQuery();
-  const documents = documentsQuery.data ?? [];
+  const documentsQuery = api.documents.getDocumentsIncludingPending.useQuery({
+    pendingDocumentsStatuses: [
+      STATUS.PENDING,
+      STATUS.RUNNING,
+      // TODO: Handle error ones specifically on the UI to indicate they're
+      // errors. Or maybe send an email about it and that's enough.
+      STATUS.ERROR,
+    ],
+  });
+  const {documents, pendingDocuments} = documentsQuery.data ?? {
+    documents: [],
+    pendingDocuments: [],
+  };
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation();
 
@@ -52,17 +63,9 @@ export function DashboardMain() {
 
       <main className="p-4">
         <div className="flex flex-row flex-wrap gap-4">
-          {[
-            {
-              id: '1',
-              title: t('uploading-document'),
-              date: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-              isUploading: true,
-            } as UploadingDocument,
-            ...documents,
-          ].map((doc) =>
+          {[...pendingDocuments, ...documents].map((doc) =>
             // TODO: Add the conversation id to the url
-            'isUploading' in doc && doc.isUploading ? (
+            'status' in doc && doc.status !== STATUS.ERROR ? (
               <DocumentCard
                 doc={doc}
                 key={doc.id}

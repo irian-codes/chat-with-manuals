@@ -37,12 +37,12 @@ export function DocumentCard(props: DocumentCardProps) {
             <div className="min-h-[4rem]">
               <h3 className="line-clamp-1 font-medium">{props.doc.title}</h3>
               <p className="line-clamp-2 text-sm text-muted-foreground">
-                {'isUploading' in props.doc && props.doc.isUploading
-                  ? format.relativeTime(new Date(props.doc.date), Date.now())
-                  : format.dateTime(new Date(props.doc.date), 'full')}
+                {'status' in props.doc
+                  ? format.relativeTime(props.doc.createdAt, Date.now())
+                  : format.dateTime(props.doc.createdAt, 'full')}
               </p>
             </div>
-            {'isUploading' in props.doc && props.doc.isUploading ? (
+            {'status' in props.doc ? (
               <Button
                 variant="ghost"
                 size="icon"

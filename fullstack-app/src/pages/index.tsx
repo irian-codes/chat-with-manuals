@@ -43,7 +43,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   // Prefetch both queries
   await Promise.all([
-    helpers.documents.getDocuments.prefetch(),
+    helpers.documents.getDocumentsIncludingPending.prefetch(),
     helpers.conversations.getConversations.prefetch({simplify: true}),
   ]);
 

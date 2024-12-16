@@ -1,62 +1,102 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import type {Document} from '@/types/Document';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {STATUS} from '@prisma/client';
+import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {z} from 'zod';
 
 export const documentsRouter = createTRPCRouter({
-  getDocuments: withDbUserProcedure.query(({ctx}) => {
-    // TODO: Get only the documents for the specific user.
+  getDocuments: withDbUserProcedure.query(async ({ctx}) => {
+    const userId = ctx.dbUser.id;
 
-    const documents: Document[] = [
-      {
-        id: '2',
-        title: 'Business report',
-        date: '2024-10-12T21:21:00.000Z',
-        locale: 'en',
+    const documents = await ctx.db.document.findMany({
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
       },
-      {
-        id: '3',
-        title: 'Bitcoin whitepaper',
-        date: '2023-03-07T10:14:00.000Z',
-        locale: 'en',
+      orderBy: {
+        createdAt: 'desc',
       },
-      {
-        id: '4',
-        title: 'Savage Worlds RPG',
-        date: '2022-11-23T00:20:54.000Z',
-        locale: 'en',
-      },
-      {
-        id: '5',
-        title: 'Urban mobility report',
-        date: '2022-10-05T02:08:00.000Z',
-        locale: 'en',
-      },
-      {
-        id: '6',
-        title: 'Fridge manual model X459 fasd sdad fasd  asdf asdf sa d',
-        date: '2021-03-10T00:24:00Z',
-        locale: 'en',
-      },
-    ];
+    });
 
     return documents;
   }),
 
   getDocument: withDbUserProcedure
     .input(z.object({id: z.string()}))
-    .query(({ctx, input}) => {
-      // TODO: Get the document for the specific user.
+    .query(async ({ctx, input}) => {
+      const userId = ctx.dbUser.id;
+
+      const document = await ctx.db.document.findUnique({
+        where: {
+          id: input.id,
+          users: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      });
+
+      if (document == null) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Document not found',
+        });
+      }
+
+      return document;
+    }),
+
+  getDocumentsIncludingPending: withDbUserProcedure
+    .input(
+      z
+        .object({
+          pendingDocumentsStatuses: z.array(z.nativeEnum(STATUS)),
+        })
+        .strict()
+        .optional()
+    )
+    .query(async ({ctx, input}) => {
+      const userId = ctx.dbUser.id;
+
+      const [documents, pendingDocuments] = await Promise.all([
+        ctx.db.document.findMany({
+          where: {
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        ctx.db.pendingDocument.findMany({
+          where: {
+            userId: userId,
+            status:
+              input?.pendingDocumentsStatuses == null
+                ? undefined
+                : {
+                    in: input.pendingDocumentsStatuses,
+                  },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+      ]);
 
       return {
-        id: '2',
-        title: 'Business report',
-        date: '2024-10-12T21:21:00.000Z',
-        locale: 'en',
+        documents,
+        pendingDocuments,
       };
     }),
 
