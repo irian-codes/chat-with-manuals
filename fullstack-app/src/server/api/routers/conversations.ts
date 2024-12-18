@@ -4,6 +4,8 @@ import {
   type ConversationSimplified,
 } from '@/types/Conversation';
 import {type Message} from '@/types/Message';
+import {TRPCError} from '@trpc/server';
+import ISO6391 from 'iso-639-1';
 import {z} from 'zod';
 
 export const conversationsRouter = createTRPCRouter({
@@ -42,31 +44,57 @@ export const conversationsRouter = createTRPCRouter({
     .input(
       z
         .object({
-          // TODO: This should be whatever we end up using for IDs in the DB
-          documentId: z.string().min(1),
+          // TODO: For now we only support one document per conversation even if the schema is ready for more.
+          documentId: z.string().min(1).uuid(),
         })
         .strict()
     )
-    .mutation(({ctx, input}) => {
-      console.log('Conversation added for ID: ', input.documentId);
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.dbUser.id;
 
-      // TODO: Replace with actual DB call
-      const conversation: Conversation = {
-        id: '2',
-        title: 'How to play chess',
-        messages: [],
-        document: {
+      const document = await ctx.db.document.findUnique({
+        where: {
           id: input.documentId,
-          title: 'How to play chess',
-          description: 'How to play chess',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          locale: 'en',
-          fileUrl: 'https://example.com/file.pdf',
-          fileHash: '1234567890',
-          imageUrl: 'https://example.com/image.jpg',
+          users: {
+            some: {
+              id: userId,
+            },
+          },
         },
-      };
+        select: {
+          id: true,
+          description: true,
+          locale: true,
+        },
+      });
+
+      if (!document) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Document not found or access denied',
+        });
+      }
+
+      const defaultLlmSystemPrompt = `You're a helpful AI assistant that answers questions about documents in understandable terms.
+This document has the following description:
+${document.description}
+
+The language of the document is ${ISO6391.getName(document.locale)}. Your answers must always be in this same language.`;
+
+      const conversation = await ctx.db.conversation.create({
+        data: {
+          userId,
+          llmSystemPrompt: defaultLlmSystemPrompt,
+          documents: {
+            connect: {
+              id: document.id,
+            },
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
 
       return conversation.id;
     }),
