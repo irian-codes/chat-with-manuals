@@ -7,9 +7,10 @@
     "input-placeholder": "Type your message...",
     "language-alert": "Please use {locale, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
     "send": "Send",
-    "title": "Chat: {documentTitle}"
+    "title": "Chat: {title}"
   },
   "conversation-sidebar": {
+    "conversation-title-missing": "Untitled",
     "newConversation": "New conversation",
     "search": "Search",
     "title": "Conversations"

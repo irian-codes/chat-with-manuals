@@ -1,9 +1,4 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import {
-  type Conversation,
-  type ConversationSimplified,
-} from '@/types/Conversation';
-import {type Message} from '@/types/Message';
 import {TRPCError} from '@trpc/server';
 import ISO6391 from 'iso-639-1';
 import {z} from 'zod';
@@ -11,33 +6,54 @@ import {z} from 'zod';
 export const conversationsRouter = createTRPCRouter({
   getConversations: withDbUserProcedure
     .input(
-      z.object({
-        simplify: z.boolean().optional(),
-      })
+      z
+        .object({
+          withMessages: z.boolean().optional(),
+          withDocuments: z.boolean().optional(),
+        })
+        .strict()
+        .optional()
     )
     .query(async ({ctx, input}) => {
-      const simplifiedConversations: ConversationSimplified[] = [
-        {
-          id: '1',
-          title: 'How does Bitcoin work and what are its implications?',
+      const userId = ctx.dbUser.id;
+
+      const conversations = await ctx.db.conversation.findMany({
+        where: {
+          userId,
         },
-        {id: '2', title: 'Troubleshooting volume issues in audio systems.'},
-        {id: '3', title: 'Moving with a pawn in chess: strategies and tips.'},
-        {id: '4', title: 'Configuring a detector for optimal performance.'},
-      ];
+        include: {
+          messages: input?.withMessages ? true : false,
+          documents: input?.withDocuments ? true : false,
+        },
+      });
 
-      // TODO: Populate with more defined mock converstions.
-      const conversations: Conversation[] = [];
-
-      return input.simplify ? simplifiedConversations : conversations;
+      return conversations;
     }),
 
   getConversation: withDbUserProcedure
-    .input(z.object({id: z.string()}))
+    .input(z.object({id: z.string().min(1).uuid()}))
     .query(async ({ctx, input}) => {
-      // TODO: Get the conversation for the specific user. Mock data for now.
+      const userId = ctx.dbUser.id;
 
-      return mockConversation;
+      const conversation = await ctx.db.conversation.findUnique({
+        where: {
+          id: input.id,
+          userId,
+        },
+        include: {
+          messages: true,
+          documents: true,
+        },
+      });
+
+      if (conversation == null) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Conversation not found or access denied',
+        });
+      }
+
+      return conversation;
     }),
 
   addConversation: withDbUserProcedure
@@ -113,7 +129,7 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
       const userId = ctx.authProviderUserId;
 
       // Store user message in DB (not shown in mock)
-      const userMessage: Message = {
+      const userMessage = {
         id: String(mockConversation.messages.length + 1),
         author: userId,
         content: input.message,
@@ -127,7 +143,7 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Generate and store AI response
-      const aiResponse: Message = {
+      const aiResponse = {
         id: String(mockConversation.messages.length + 1),
         author: 'ai',
         content: "Thank you for your message. I'm processing your request.",
@@ -142,7 +158,7 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
 });
 
 // TODO: Pass this to DB when we have it.
-const mockConversation: Conversation = {
+const mockConversation = {
   id: '1',
   title: 'How does Bitcoin work and what are its implications?',
   messages: [

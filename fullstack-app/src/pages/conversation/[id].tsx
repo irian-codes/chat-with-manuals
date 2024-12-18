@@ -42,7 +42,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const conversationId = ctx.params?.id as string;
 
   await Promise.all([
-    helpers.conversations.getConversations.prefetch({simplify: true}),
+    helpers.conversations.getConversations.prefetch(),
     helpers.conversations.getConversation.prefetch({id: conversationId}),
   ]);
 

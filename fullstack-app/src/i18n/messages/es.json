@@ -7,9 +7,10 @@
     "input-placeholder": "Escribe tu mensaje...",
     "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {locale, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
     "send": "Enviar",
-    "title": "Chat: {documentTitle}"
+    "title": "Chat: {title}"
   },
   "conversation-sidebar": {
+    "conversation-title-missing": "Sin título",
     "newConversation": "Nueva conversación",
     "search": "Buscar",
     "title": "Conversaciones"

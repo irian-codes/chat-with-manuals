@@ -1,7 +1,4 @@
-export interface Message {
-  id: string;
-  author: string; // userId or ai
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import {type RouterOutputs} from '@/utils/api';
+
+export type Message =
+  RouterOutputs['conversations']['getConversation']['messages'][number];

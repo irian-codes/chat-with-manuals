@@ -4,6 +4,7 @@ import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
+import {isStringEmpty} from '@/utils/strings';
 import {cn} from '@/utils/ui/utils';
 import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
@@ -18,9 +19,7 @@ export function ConversationsSidebar() {
     useState<boolean>(false);
   const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
-  const conversationsQuery = api.conversations.getConversations.useQuery({
-    simplify: true,
-  });
+  const conversationsQuery = api.conversations.getConversations.useQuery();
   const conversations = conversationsQuery.data ?? [];
   const documentsQuery = api.documents.getDocuments.useQuery();
   const addConversationMutation =
@@ -73,7 +72,9 @@ export function ConversationsSidebar() {
                     >
                       <Link href={`/conversation/${conversation.id}`}>
                         <span className="truncate font-normal">
-                          {conversation.title}
+                          {isStringEmpty(conversation.title)
+                            ? t('conversation-title-missing')
+                            : conversation.title}
                         </span>
                       </Link>
                     </Button>
