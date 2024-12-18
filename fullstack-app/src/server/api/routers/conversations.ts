@@ -1,4 +1,4 @@
-import {authedProcedure, createTRPCRouter} from '@/server/api/trpc';
+import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
 import {
   type Conversation,
   type ConversationSimplified,
@@ -7,7 +7,7 @@ import {type Message} from '@/types/Message';
 import {z} from 'zod';
 
 export const conversationsRouter = createTRPCRouter({
-  getConversations: authedProcedure
+  getConversations: withDbUserProcedure
     .input(
       z.object({
         simplify: z.boolean().optional(),
@@ -30,7 +30,7 @@ export const conversationsRouter = createTRPCRouter({
       return input.simplify ? simplifiedConversations : conversations;
     }),
 
-  getConversation: authedProcedure
+  getConversation: withDbUserProcedure
     .input(z.object({id: z.string()}))
     .query(async ({ctx, input}) => {
       // TODO: Get the conversation for the specific user. Mock data for now.
@@ -38,7 +38,7 @@ export const conversationsRouter = createTRPCRouter({
       return mockConversation;
     }),
 
-  addConversation: authedProcedure
+  addConversation: withDbUserProcedure
     .input(
       z
         .object({
@@ -71,7 +71,7 @@ export const conversationsRouter = createTRPCRouter({
       return conversation.id;
     }),
 
-  sendMessage: authedProcedure
+  sendMessage: withDbUserProcedure
     .input(
       z
         .object({
