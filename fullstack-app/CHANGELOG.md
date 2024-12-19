@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.6](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.5...v0.1.6) (2024-12-19)
+
+
+### Features
+
+* **conversation:** get and display conversations from TRPC and DB ([79b20bd](https://github.com/irian-codes/chat-with-manuals/commit/79b20bd6759f48a40d1a9e7d7f4271081e4517a7))
+* **conversations:** add conversation to DB via TRPC ([2cbc4dd](https://github.com/irian-codes/chat-with-manuals/commit/2cbc4ddb25321b441bdc4a65b971198c40494537))
+* **conversation:** send messages to the DB via TRPC ([4ee1b3f](https://github.com/irian-codes/chat-with-manuals/commit/4ee1b3fb096770656531163f95da1513aeb748a9))
+* **trpc:** added user DB in conversation router ([0f8a8ea](https://github.com/irian-codes/chat-with-manuals/commit/0f8a8ea586a84adc445e4e00137f440574796d22))
+* **utils:** add string utils, pinned engines version ([0b0b5c2](https://github.com/irian-codes/chat-with-manuals/commit/0b0b5c24d313189c0bf4d5cb2fa8274fc838af26))
+
 ## [0.1.5](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.4...v0.1.5) (2024-12-16)
 
 
