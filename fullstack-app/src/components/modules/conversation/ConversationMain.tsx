@@ -3,12 +3,14 @@ import {Button} from '@/components/shadcn-ui/button';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
+import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
 import {UserButton} from '@clerk/nextjs';
+import {AUTHOR} from '@prisma/client';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 
 export function ConversationMain() {
   const t = useTranslations('conversation');
@@ -19,9 +21,12 @@ export function ConversationMain() {
   const isTouchDevice = useIsTouchDevice();
   const isMacOs = useIsMacOs();
   const router = useRouter();
-  const conversationQuery = api.conversations.getConversation.useQuery({
-    id: router.query.id as string,
-  });
+  const conversationQuery = api.conversations.getConversation.useQuery(
+    {
+      id: router.query.id as string,
+    },
+    {enabled: router.query.id != null}
+  );
   const utils = api.useUtils();
   const sendMessageMutation = api.conversations.sendMessage.useMutation({
     // New way of Tanstack Query of doing optimistic updates
@@ -34,8 +39,8 @@ export function ConversationMain() {
   });
   const isLoading =
     sendMessageMutation.isPending || conversationQuery.isPending;
-  const conversation = conversationQuery.data!;
-  const messages = conversation.messages ?? [];
+  const conversation = conversationQuery.data;
+  const messages = conversation?.messages ?? [];
 
   useEffect(() => {
     // Focus the input when the loading state changes
@@ -44,7 +49,13 @@ export function ConversationMain() {
     }
   }, [isLoading, inputRef]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setTimeout(() => {
+      scrollAnchorRef.current?.scrollIntoView({behavior: 'instant'});
+    }, 150);
+  }, []);
+
+  useLayoutEffect(() => {
     // Scroll to the bottom of the conversation when a new message is added
     scrollAnchorRef.current?.scrollIntoView({behavior: 'smooth'});
   }, [
@@ -61,7 +72,7 @@ export function ConversationMain() {
 
       try {
         await sendMessageMutation.mutateAsync({
-          conversationId: conversation.id,
+          conversationId: conversation!.id,
           message: _inputMessage,
         });
       } catch (error) {
@@ -74,12 +85,17 @@ export function ConversationMain() {
     }
   }
 
+  if (conversation == null) {
+    // TODO: Redirect to the error page
+    return <div>Conversation not found</div>;
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <Header>
         <h1 className="text-2xl font-semibold">
           {t('title', {
-            documentTitle: conversation.document.title,
+            title: conversation.title,
           })}
         </h1>
         <UserButton />
@@ -88,29 +104,29 @@ export function ConversationMain() {
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {(sendMessageMutation.isPending
-            ? [
+            ? ([
                 ...messages,
                 // Optimistic update message
                 {
-                  id: String(messages.length + 1),
-                  // TODO: Replace with actual user ID
-                  author: 'userId',
-                  content: sendMessageMutation.variables?.message,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
+                  id: crypto.randomUUID(),
+                  conversationId: conversation.id,
+                  author: AUTHOR.USER,
+                  content: sendMessageMutation.variables?.message ?? '',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
                 },
-              ]
+              ] satisfies Message[])
             : messages
           ).map((message) => (
             <div
               key={message.id}
               className={`flex ${
-                message.author === 'ai' ? 'justify-start' : 'justify-end'
+                message.author === AUTHOR.AI ? 'justify-start' : 'justify-end'
               }`}
             >
               <div
                 className={`max-w-[70%] rounded-md p-4 ${
-                  message.author === 'ai'
+                  message.author === AUTHOR.AI
                     ? 'bg-muted'
                     : 'bg-primary text-primary-foreground'
                 }`}
@@ -136,7 +152,10 @@ export function ConversationMain() {
             </div>
           )}
 
-          <div className="invisible h-[1px] w-full" ref={scrollAnchorRef} />
+          <div
+            className="invisible h-[1px] w-full pt-6 sm:pt-4 md:pt-0"
+            ref={scrollAnchorRef}
+          />
         </div>
       </ScrollArea>
 
@@ -179,7 +198,7 @@ export function ConversationMain() {
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert', {
-              locale: conversationQuery.data?.document.locale,
+              locale: conversationQuery.data.documents[0]!.locale,
             })}
           </p>
         </div>
