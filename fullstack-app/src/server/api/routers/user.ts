@@ -40,13 +40,13 @@ export const usersRouter = createTRPCRouter({
     .query(async ({ctx, input}) => {
       const user = await (async () => {
         if ('id' in input) {
-          return await ctx.db.user.findUnique({
+          return await ctx.prisma.user.findUnique({
             where: {
               id: input.id,
             },
           });
         } else {
-          return await ctx.db.user.findUnique({
+          return await ctx.prisma.user.findUnique({
             where: {
               authProviderId: ctx.authProviderUserId,
             },
@@ -94,7 +94,7 @@ export const usersRouter = createTRPCRouter({
       })
     )
     .query(async ({ctx, input}) => {
-      const existingUser = await ctx.db.user.findUnique({
+      const existingUser = await ctx.prisma.user.findUnique({
         where: {
           authProviderId: ctx.authProviderUserId,
         },
@@ -105,8 +105,9 @@ export const usersRouter = createTRPCRouter({
         return existingUser;
       }
 
-      const supportedLocales = (await ctx.db.globalSettings.findFirstOrThrow())
-        .supportedLocales;
+      const supportedLocales = (
+        await ctx.prisma.globalSettings.findFirstOrThrow()
+      ).supportedLocales;
 
       const defaultLocale = supportedLocales[0]!;
       const inputLocale = input.locale ?? 'UNDEFINED';
@@ -115,7 +116,7 @@ export const usersRouter = createTRPCRouter({
         ? inputLocale
         : defaultLocale;
 
-      const newUser = await ctx.db.user.create({
+      const newUser = await ctx.prisma.user.create({
         data: {
           authProviderId: ctx.authProviderUserId,
           userSettings: {

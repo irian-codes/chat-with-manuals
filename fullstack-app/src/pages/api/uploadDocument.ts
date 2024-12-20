@@ -1,6 +1,6 @@
 import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
-import {db} from '@/server/db';
+import {prisma} from '@/server/db/prisma';
 import {
   allowedAbsoluteDirPaths,
   FileAlreadyExistsError,
@@ -38,13 +38,13 @@ export default async function handler(
     return res.status(401).json({error: 'Unauthorized'});
   }
 
-  const dbUser = await db.user.findFirst({
+  const prismaUser = await prisma.user.findFirst({
     where: {
       authProviderId: userAuthId,
     },
   });
 
-  if (!dbUser) {
+  if (!prismaUser) {
     return res.status(401).json({error: 'Unauthorized'});
   }
 
@@ -121,7 +121,7 @@ export default async function handler(
       req,
       res,
       authProviderUserId: userAuthId,
-      dbUser,
+      prismaUser,
     })
   );
 

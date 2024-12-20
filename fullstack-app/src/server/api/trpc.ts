@@ -7,7 +7,7 @@
  * need to use are documented accordingly near the end.
  */
 import {env} from '@/env';
-import {db} from '@/server/db';
+import {prisma} from '@/server/db/prisma';
 import {transformer} from '@/utils/api';
 import {getAuth} from '@clerk/nextjs/server';
 import {type User} from '@prisma/client';
@@ -26,7 +26,7 @@ import rateLimit from '../middleware/rateLimit';
 
 interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
   authProviderUserId: string | null;
-  dbUser: User | null;
+  prismaUser: User | null;
 }
 
 /**
@@ -42,7 +42,7 @@ interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
 export const createInnerTRPCContext = (opts: CreateInnerContextOptions) => {
   return {
     ...opts,
-    db,
+    prisma,
   };
 };
 
@@ -55,12 +55,12 @@ export const createInnerTRPCContext = (opts: CreateInnerContextOptions) => {
 export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const {userId: authProviderUserId} = getAuth(opts.req);
 
-  const dbUser: User | null = await (async () => {
+  const prismaUser: User | null = await (async () => {
     if (authProviderUserId == null) {
       return null;
     }
 
-    return await db.user.findFirst({
+    return await prisma.user.findFirst({
       where: {
         authProviderId: authProviderUserId,
       },
@@ -69,7 +69,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
 
   const innerContext = createInnerTRPCContext({
     authProviderUserId,
-    dbUser,
+    prismaUser,
     ...opts,
   });
 
@@ -227,17 +227,17 @@ const authorizationMiddleware = t.middleware(({next, ctx}) => {
 });
 
 const withDbUserMiddleware = t.middleware(async ({next, ctx}) => {
-  if (ctx.dbUser == null) {
+  if (ctx.prismaUser == null) {
     throw new TRPCError({
       message: 'User not found',
       code: 'NOT_FOUND',
     });
   }
 
-  // This helps TypeScript know that dbUser is non-null in protected routes
+  // This helps TypeScript know that prismaUser is non-null in protected routes
   return next({
     ctx: {
-      dbUser: ctx.dbUser,
+      prismaUser: ctx.prismaUser,
     },
   });
 });
