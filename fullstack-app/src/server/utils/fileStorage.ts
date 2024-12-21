@@ -7,8 +7,22 @@ import {z} from 'zod';
 
 // TODO #17: Move this to a SECURE storage solution.
 const isDevEnv = env.NODE_ENV === 'development';
-const ABSOLUTE_UPLOADS_DIR = validateAndResolvePath(
-  path.join('public', isDevEnv ? 'temp' : '', 'uploads/files')
+
+export const allowedAbsoluteDirPaths = {
+  publicUploadedFiles: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'uploads/files')
+  ),
+  publicParsingResults: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results')
+  ),
+  appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
+} as const;
+
+// Ensure that directories exist, if not create them
+void Promise.all(
+  Object.values(allowedAbsoluteDirPaths).map(async (dir) => {
+    await fs.mkdir(dir, {recursive: true});
+  })
 );
 
 export class FileAlreadyExistsError extends Error {
@@ -27,7 +41,9 @@ export async function saveUploadedFile(
 }> {
   const _file = z.instanceof(File).parse(file);
 
-  await fs.mkdir(ABSOLUTE_UPLOADS_DIR, {recursive: true});
+  await fs.mkdir(allowedAbsoluteDirPaths.publicUploadedFiles, {
+    recursive: true,
+  });
 
   const fileBuffer = Buffer.from(await _file.arrayBuffer());
   const _fileHash =
@@ -35,7 +51,10 @@ export async function saveUploadedFile(
     crypto.createHash('sha256').update(fileBuffer).digest().toString('hex');
 
   const fileName = `${_fileHash}.pdf`;
-  const filePath = path.join(ABSOLUTE_UPLOADS_DIR, fileName);
+  const filePath = path.join(
+    allowedAbsoluteDirPaths.publicUploadedFiles,
+    fileName
+  );
 
   if (await fileExists(filePath)) {
     throw new FileAlreadyExistsError('File already exists');
@@ -51,15 +70,6 @@ export async function saveUploadedFile(
 
 export async function fileExists(filePath: string): Promise<boolean> {
   const absolutePath = validateAndResolvePath(filePath);
-
-  if (
-    !absolutePath.startsWith(os.tmpdir()) &&
-    !isPathInUploadsDir(absolutePath)
-  ) {
-    throw new Error(
-      `Invalid file path: File must be in uploads or tmp directory. Path: ${absolutePath}`
-    );
-  }
 
   try {
     await fs.access(absolutePath);
@@ -79,15 +89,6 @@ export async function getFile(filePath: string): Promise<File> {
 
 export async function deleteFile(filePath: string): Promise<void> {
   const absolutePath = validateAndResolvePath(filePath);
-
-  if (
-    !absolutePath.startsWith(os.tmpdir()) &&
-    !isPathInUploadsDir(absolutePath)
-  ) {
-    throw new Error(
-      `Invalid file path: File must be in uploads directory. Path: ${absolutePath}`
-    );
-  }
 
   await fs.unlink(absolutePath);
 }
@@ -112,40 +113,64 @@ export async function copyFile(
 export async function copyFileToTempDir(filePath: string): Promise<string> {
   const absoluteSourcePath = validateAndResolvePath(filePath);
 
-  const tempDir = path.join(os.tmpdir(), 'chat-with-manuals/trash');
-  const tempPath = path.join(tempDir, path.basename(absoluteSourcePath));
+  const tempPath = path.join(
+    allowedAbsoluteDirPaths.appTempDir,
+    path.basename(absoluteSourcePath)
+  );
 
   await copyFile(absoluteSourcePath, tempPath);
 
   return tempPath;
 }
 
-function validateAndResolvePath(filePath: string): string {
+function ensureAbsolutePath(filePath: string): string {
   const _filePath = z
     .string()
     .trim()
     .min(1)
     .transform((_path) => path.normalize(_path))
-    .refine(isPathSafe)
+    .refine(isPathSafe, {
+      message: `Path is not safe. Got: ${filePath}`,
+    })
     .parse(filePath);
 
-  if (_filePath.startsWith(os.tmpdir())) {
-    return _filePath;
-  }
-
-  return _filePath.startsWith(process.cwd())
+  const absolutePath = _filePath.startsWith(os.tmpdir())
     ? _filePath
-    : path.join(process.cwd(), _filePath);
+    : _filePath.startsWith(process.cwd())
+      ? _filePath
+      : path.join(process.cwd(), _filePath);
+
+  return absolutePath;
 }
 
-function isPathInUploadsDir(filePath: string): boolean {
-  const absoluteSourcePath = validateAndResolvePath(filePath);
+function isPathInValidDir(filePath: string): boolean {
+  const absolutePath = ensureAbsolutePath(filePath);
 
-  return absoluteSourcePath.startsWith(ABSOLUTE_UPLOADS_DIR);
+  return Object.values(allowedAbsoluteDirPaths).some((dir) =>
+    absolutePath.startsWith(dir)
+  );
+}
+
+function validateAndResolvePath(filePath: string): string {
+  const absolutePath = ensureAbsolutePath(filePath);
+
+  if (!isPathInValidDir(absolutePath)) {
+    throw new Error(
+      `Path must be within allowed directories. Got: ${absolutePath}`
+    );
+  }
+
+  return absolutePath;
 }
 
 function isPathSafe(filePath: string): boolean {
-  const _filePath = z.string().trim().min(1).parse(filePath);
+  try {
+    z.string().trim().min(1).parse(filePath);
+  } catch (error) {
+    return false;
+  }
+
+  const _filePath = filePath.trim();
 
   // Check for null bytes
   if (_filePath.includes('\0')) {

@@ -2,6 +2,7 @@ import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {db} from '@/server/db';
 import {
+  allowedAbsoluteDirPaths,
   FileAlreadyExistsError,
   getFile,
   saveUploadedFile,
@@ -13,7 +14,6 @@ import {
 import {getAuth} from '@clerk/nextjs/server';
 import formidable, {type File as FileInfo} from 'formidable';
 import type {NextApiRequest, NextApiResponse} from 'next';
-import os from 'node:os';
 
 export const config = {
   api: {
@@ -56,7 +56,7 @@ export default async function handler(
   const form = formidable({
     allowEmptyFiles: false,
     maxFiles: 1,
-    uploadDir: os.tmpdir(),
+    uploadDir: allowedAbsoluteDirPaths.appTempDir,
     hashAlgorithm: 'sha256',
     keepExtensions: true,
   });
