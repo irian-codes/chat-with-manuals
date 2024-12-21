@@ -7,10 +7,10 @@
 import {type AppRouter} from '@/server/api/root';
 import {
   httpBatchLink,
-  httpLink,
   isNonJsonSerializable,
   loggerLink,
   splitLink,
+  unstable_httpSubscriptionLink,
 } from '@trpc/client';
 import {createTRPCNext} from '@trpc/next';
 import {
@@ -71,8 +71,8 @@ export const api = createTRPCNext<AppRouter>({
         // custom link to send FormData.
         // @see https://github.com/trpc/trpc/issues/1937#issuecomment-2267163025
         splitLink({
-          condition: (op) => isNonJsonSerializable(op.input),
-          true: httpLink(linkConfig),
+          condition: (op) => op.type === 'subscription',
+          true: unstable_httpSubscriptionLink(linkConfig),
           false: httpBatchLink(linkConfig),
         }),
       ],

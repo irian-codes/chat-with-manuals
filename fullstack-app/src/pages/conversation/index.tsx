@@ -3,7 +3,7 @@ import {DocumentListPickerModal} from '@/components/reusable/DocumentListPickerM
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
-import {db} from '@/server/db';
+import {prisma} from '@/server/db/prisma';
 import {type Document} from '@/types/Document';
 import {api, transformer} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
@@ -18,7 +18,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     router: appRouter,
     ctx: createInnerTRPCContext({
       authProviderUserId,
-      dbUser: await db.user.findFirst({
+      prismaUser: await prisma.user.findFirst({
         where: {
           authProviderId: authProviderUserId,
         },

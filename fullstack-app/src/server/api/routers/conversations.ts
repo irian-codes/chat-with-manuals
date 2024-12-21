@@ -17,9 +17,9 @@ export const conversationsRouter = createTRPCRouter({
         .optional()
     )
     .query(async ({ctx, input}) => {
-      const userId = ctx.dbUser.id;
+      const userId = ctx.prismaUser.id;
 
-      const conversations = await ctx.db.conversation.findMany({
+      const conversations = await ctx.prisma.conversation.findMany({
         where: {
           userId,
         },
@@ -35,9 +35,9 @@ export const conversationsRouter = createTRPCRouter({
   getConversation: withDbUserProcedure
     .input(z.object({id: z.string().min(1).uuid()}))
     .query(async ({ctx, input}) => {
-      const userId = ctx.dbUser.id;
+      const userId = ctx.prismaUser.id;
 
-      const conversation = await ctx.db.conversation.findUnique({
+      const conversation = await ctx.prisma.conversation.findUnique({
         where: {
           id: input.id,
           userId,
@@ -68,9 +68,9 @@ export const conversationsRouter = createTRPCRouter({
         .strict()
     )
     .mutation(async ({ctx, input}) => {
-      const userId = ctx.dbUser.id;
+      const userId = ctx.prismaUser.id;
 
-      const document = await ctx.db.document.findUnique({
+      const document = await ctx.prisma.document.findUnique({
         where: {
           id: input.documentId,
           users: {
@@ -99,7 +99,7 @@ ${document.description}
 
 The language of the document is ${ISO6391.getName(document.locale)}. Your answers must always be in this same language.`;
 
-      const conversation = await ctx.db.conversation.create({
+      const conversation = await ctx.prisma.conversation.create({
         data: {
           userId,
           llmSystemPrompt: defaultLlmSystemPrompt,
@@ -129,10 +129,10 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
         .strict()
     )
     .mutation(async ({ctx, input}) => {
-      const userId = ctx.dbUser.id;
+      const userId = ctx.prismaUser.id;
 
       // Get conversation to verify it exists and user has access
-      const conversation = await ctx.db.conversation.findFirst({
+      const conversation = await ctx.prisma.conversation.findFirst({
         where: {
           id: input.conversationId,
           userId: userId,
@@ -147,7 +147,7 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
       }
 
       // Create user message
-      const userMessage = await ctx.db.message.create({
+      const userMessage = await ctx.prisma.message.create({
         data: {
           conversation: {
             connect: {
@@ -162,7 +162,7 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
       // Add artificial delay to simulate AI processing time
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const aiMessage = await ctx.db.message.create({
+      const aiMessage = await ctx.prisma.message.create({
         data: {
           conversation: {
             connect: {

@@ -5,7 +5,7 @@ import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
-import {db} from '@/server/db';
+import {prisma} from '@/server/db/prisma';
 import {transformer} from '@/utils/api';
 import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
@@ -18,7 +18,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     router: appRouter,
     ctx: createInnerTRPCContext({
       authProviderUserId,
-      dbUser: await db.user.findFirst({
+      prismaUser: await prisma.user.findFirst({
         where: {
           authProviderId: authProviderUserId,
         },

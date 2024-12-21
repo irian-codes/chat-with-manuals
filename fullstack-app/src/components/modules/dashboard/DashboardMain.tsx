@@ -15,19 +15,37 @@ import {useRouter} from 'next/router';
 export function DashboardMain() {
   const t = useTranslations('document-manager');
   const router = useRouter();
-  const documentsQuery = api.documents.getDocumentsIncludingPending.useQuery({
-    pendingDocumentsStatuses: [
-      STATUS.PENDING,
-      STATUS.RUNNING,
-      // TODO: Handle error ones specifically on the UI to indicate they're
-      // errors. Or maybe send an email about it and that's enough.
-      // STATUS.ERROR,
-    ],
-  });
-  const {documents, pendingDocuments} = documentsQuery.data ?? {
-    documents: [],
-    pendingDocuments: [],
-  };
+  const documentsQuery = api.documents.getDocuments.useQuery();
+  const pendingDocumentsQuery =
+    api.documents.onDocumentParsingUpdate.useSubscription(
+      {
+        includedStatuses: [
+          STATUS.PENDING,
+          STATUS.RUNNING,
+          // TODO: Handle error ones on the UI to indicate they're errors.
+          // Or maybe send an email about it and that's enough. For now we
+          // don't fetch them.
+          // STATUS.ERROR,
+        ],
+      },
+      {
+        onData: (data) => {
+          // If a document finished parsing, it means now it's in the documents list, so we refetch it.
+          if (data.action === 'finished') {
+            void documentsQuery.refetch();
+          }
+        },
+        onError: (error) => {
+          console.error(
+            'Error subscribing to document parsing updates:',
+            error
+          );
+        },
+      }
+    );
+
+  const documents = documentsQuery.data ?? [];
+  const pendingDocuments = pendingDocumentsQuery.data?.docs ?? [];
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation();
 
@@ -35,9 +53,6 @@ export function DashboardMain() {
     cancelDocumentParsingMutation.mutate({
       id: doc.id,
     });
-
-    // TODO: Find a better way to update the state of the dashboard
-    router.reload();
 
     // TODO: Show notification (error and success) to the user
   }
