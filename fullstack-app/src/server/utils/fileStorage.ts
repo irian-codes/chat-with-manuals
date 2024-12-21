@@ -1,4 +1,5 @@
 import {env} from '@/env';
+import {isStringEmpty} from '@/utils/strings';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -66,6 +67,70 @@ export async function saveUploadedFile(
     fileUrl: filePath.replace(process.cwd(), ''),
     fileHash: _fileHash,
   };
+}
+
+export async function writeToTimestampedFile(params: {
+  content: string;
+  destinationFolderPath: string;
+  fileName: string;
+  fileExtension: string;
+  prefix?: string;
+  suffix?: string;
+}): Promise<string> {
+  const paramsSchema = await z
+    .object({
+      content: z.string().trim().min(1),
+      destinationFolderPath: z
+        .string()
+        .transform((val) => validateAndResolvePath(val))
+        .refine(async (val) => {
+          try {
+            const stats = await fs.stat(val);
+            return stats.isDirectory();
+          } catch {
+            return false;
+          }
+        }),
+      fileName: z
+        .string()
+        .trim()
+        .refine((val) => !isStringEmpty(val), {
+          message: 'File name cannot be empty',
+        }),
+      fileExtension: z
+        .string()
+        .trim()
+        .refine((val) => !isStringEmpty(val)),
+      prefix: z.string().trim().optional().default(''),
+      suffix: z.string().trim().optional().default(''),
+    })
+    .parseAsync(params);
+
+  const _prefix = !isStringEmpty(paramsSchema.prefix)
+    ? paramsSchema.prefix + '_'
+    : '';
+  const _suffix = !isStringEmpty(paramsSchema.suffix)
+    ? '_' + paramsSchema.suffix
+    : '';
+  const _fileName = paramsSchema.fileName;
+  const _fileExtension = paramsSchema.fileExtension;
+  const _content = paramsSchema.content;
+  const _destinationFolderPath = paramsSchema.destinationFolderPath;
+  const date: string =
+    '_' +
+    new Date().toISOString().slice(0, 10).replace(/-/g, '') +
+    '-' +
+    new Date().toTimeString().slice(0, 5).replace(/:/g, '');
+
+  const absolutePath = path.join(
+    _destinationFolderPath,
+    `${_prefix}${_fileName}${_suffix}${date}.${_fileExtension}`
+  );
+
+  await fs.mkdir(path.dirname(absolutePath), {recursive: true});
+  await fs.writeFile(absolutePath, _content);
+
+  return absolutePath;
 }
 
 export async function fileExists(filePath: string): Promise<boolean> {
@@ -151,7 +216,7 @@ function isPathInValidDir(filePath: string): boolean {
   );
 }
 
-function validateAndResolvePath(filePath: string): string {
+export function validateAndResolvePath(filePath: string): string {
   const absolutePath = ensureAbsolutePath(filePath);
 
   if (!isPathInValidDir(absolutePath)) {

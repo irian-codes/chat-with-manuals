@@ -1,9 +1,13 @@
+import {env} from '@/env';
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
+import {pdfParseWithLlamaparse} from '@/server/document/parsing';
 import {
+  allowedAbsoluteDirPaths,
   copyFile,
   copyFileToTempDir,
   deleteFile,
   fileExists,
+  writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
@@ -154,8 +158,23 @@ export const documentsRouter = createTRPCRouter({
             },
           });
 
-          // Simulate document processing
-          await new Promise((resolve) => setTimeout(resolve, 10 * 1000)); // 10 seconds
+          const markdown = await pdfParseWithLlamaparse({
+            filePath: pendingDocument.fileUrl,
+            documentLanguage: pendingDocument.locale,
+          });
+
+          if (env.NODE_ENV === 'development') {
+            await writeToTimestampedFile({
+              content: markdown,
+              destinationFolderPath:
+                allowedAbsoluteDirPaths.publicParsingResults,
+              suffix: 'llamaParse',
+              fileName: pendingDocument.title,
+              fileExtension: 'md',
+            });
+          }
+
+          // TODO: Embed into Chroma DB the parsed text
 
           // Creating the new 'document' db entry and deleting pending
           // document because when a document is done parsing we change its
