@@ -13,6 +13,9 @@ export const env = createEnv({
       .default('development'),
     CLERK_SECRET_KEY: z.string(),
     LLAMA_CLOUD_API_KEY: z.string(),
+    OPENAI_API_KEY: z.string(),
+    CHROMA_DB_HOST: z.string(),
+    CHROMA_DB_TIMEOUT: z.coerce.number().min(100).max(10000).default(2000),
   },
 
   /**
@@ -35,6 +38,9 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     LLAMA_CLOUD_API_KEY: process.env.LLAMA_CLOUD_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    CHROMA_DB_HOST: process.env.CHROMA_DB_HOST,
+    CHROMA_DB_TIMEOUT: process.env.CHROMA_DB_TIMEOUT,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

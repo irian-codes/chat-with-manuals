@@ -1,5 +1,6 @@
 import {env} from '@/env';
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
+import {embedPDF} from '@/server/db/chroma';
 import {pdfParseWithLlamaparse} from '@/server/document/parsing';
 import {AppEventEmitter} from '@/server/utils/eventEmitter';
 import {
@@ -14,6 +15,7 @@ import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
+import {Document} from 'langchain/document';
 import {z} from 'zod';
 
 const ee = new AppEventEmitter();
@@ -213,9 +215,20 @@ export const documentsRouter = createTRPCRouter({
             documentLanguage: pendingDocument.locale,
           });
 
+          const vectorStore = await embedPDF(pendingDocument.fileHash, [
+            new Document({
+              pageContent: markdown,
+              metadata: {
+                title: pendingDocument.title,
+                description: pendingDocument.description,
+                locale: pendingDocument.locale,
+              },
+            }),
+          ]);
+
           if (env.NODE_ENV === 'development') {
             await writeToTimestampedFile({
-              content: markdown,
+              content: `Chroma collection name: ${vectorStore.collectionName}\n\nContent:\n${markdown}`,
               destinationFolderPath:
                 allowedAbsoluteDirPaths.publicParsingResults,
               suffix: 'llamaParse',
