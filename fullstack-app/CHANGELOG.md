@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.7](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.6...v0.1.7) (2024-12-21)
+
+
+### Features
+
+* **dashboard:** implementing TRPC subscriptions for documents list ([0a35a7c](https://github.com/irian-codes/chat-with-manuals/commit/0a35a7c029b0288ca7b83ed32f3907c2b50e4e2a))
+* **db:** added chroma db with langchain ([585081d](https://github.com/irian-codes/chat-with-manuals/commit/585081d7a46a05954ec069ad3602694afbf28a71))
+* **parsing:** parsing documents with Llamaparse ([bd55a14](https://github.com/irian-codes/chat-with-manuals/commit/bd55a1485ab8023eeec7eea1b1bfa595f57d507b))
+
 ## [0.1.6](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.5...v0.1.6) (2024-12-19)
 
 
