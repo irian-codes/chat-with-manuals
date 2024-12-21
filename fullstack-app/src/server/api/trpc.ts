@@ -230,6 +230,17 @@ const withDbUserMiddleware = t.middleware(async ({next, ctx}) => {
   });
 });
 
+const debugMiddleware = t.middleware(async ({next, ctx}) => {
+  if (env.NODE_ENV !== 'development') {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message:
+        'This route is only available in development mode, you sneaky bastard!',
+    });
+  }
+  return next({ctx});
+});
+
 /**
  * Public (unauthenticated) procedure
  *
@@ -243,3 +254,6 @@ export const publicProcedure = t.procedure
 
 export const authedProcedure = publicProcedure.use(authorizationMiddleware);
 export const withDbUserProcedure = authedProcedure.use(withDbUserMiddleware);
+export const debugProcedure = authedProcedure
+  .use(rateLimitMiddleware)
+  .use(debugMiddleware);
