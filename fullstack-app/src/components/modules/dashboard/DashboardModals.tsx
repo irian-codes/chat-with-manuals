@@ -51,19 +51,14 @@ export function DashboardModals() {
 
     // TRPC is incompatible with File objects, so we need to use fetch to
     // send the form data and then the server will call TRPC.
+    //
+    // @see https://github.com/trpc/trpc/issues/1937
     await fetch('/api/uploadDocument', {
       method: 'POST',
       body: formData,
     });
 
-    // TODO: This is temporary hack to reload the page after the file is
-    // uploaded. We need to actually use TRPC Subscriptions to receive an
-    // event on the component where the list of documents is displayed when
-    // the document is parsed, and then refetch the
-    // getDocumentsIncludingPending call.
-    //
-    // @see https://trpc.io/docs/server/subscriptions
-    await handleCloseDocumentModal(form, true);
+    await handleCloseDocumentModal(form, false);
   }
 
   async function handleUpdateDocument(
@@ -110,7 +105,7 @@ export function DashboardModals() {
 
     await router.push('/', undefined, {shallow: true});
 
-    // TODO: Find a better way to update the state of the dashboard.
+    // TODO #34: Find a better way to update the state of the dashboard.
     if (reload) {
       router.reload();
     }

@@ -1,6 +1,7 @@
 import {env} from '@/env';
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
 import {pdfParseWithLlamaparse} from '@/server/document/parsing';
+import {AppEventEmitter} from '@/server/utils/eventEmitter';
 import {
   allowedAbsoluteDirPaths,
   copyFile,
@@ -14,6 +15,8 @@ import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
 import {z} from 'zod';
+
+const ee = new AppEventEmitter();
 
 export const documentsRouter = createTRPCRouter({
   getDocuments: withDbUserProcedure.query(async ({ctx}) => {
@@ -99,6 +102,50 @@ export const documentsRouter = createTRPCRouter({
       };
     }),
 
+  onDocumentParsingUpdate: withDbUserProcedure
+    .input(
+      z
+        .object({
+          includedStatuses: z.array(z.nativeEnum(STATUS)),
+        })
+        .strict()
+        .optional()
+    )
+    .subscription(async function* ({ctx, input, signal}) {
+      // This code is a simplified version of the official TRPC example
+      // because pending documents list is small enough.
+      // @see https://github.com/trpc/examples-next-sse-chat/blob/main/src/server/routers/post.ts
+
+      // We start by subscribing to the event emitter so that we don't miss any new events while fetching
+      const iterable = ee.toIterable('pendingDocument', {
+        // We pass the signal so we can cancel the subscription if the request is aborted.
+        signal,
+      });
+
+      const userId = ctx.dbUser.id;
+
+      yield {
+        docs: await getPendingDocuments(
+          ctx.db,
+          userId,
+          input?.includedStatuses
+        ),
+        action: null,
+      };
+
+      // Listen for any new pending document list updates from the emitter
+      for await (const [action] of iterable) {
+        yield {
+          docs: await getPendingDocuments(
+            ctx.db,
+            userId,
+            input?.includedStatuses
+          ),
+          action,
+        };
+      }
+    }),
+
   parseDocument: withDbUserProcedure
     .input(
       UploadDocumentPayloadSchema.extend({
@@ -137,24 +184,27 @@ export const documentsRouter = createTRPCRouter({
         },
       });
 
-      // TODO: This whould be a fire and forget operation. But until we
-      // implement Trigger.dev we are going to await it here to simulate
-      // the parsing behaviour. This will actually work with TRPC
-      // Subscription links to send an event to the frontend when the
-      // document is parsed.
-      //
-      // @see https://trpc.io/docs/server/subscriptions
+      ee.emit('pendingDocument', 'added');
 
-      // Start async processing of the document
-      await (async () => {
+      // Start async processing without awaiting.
+      //
+      // TODO: This is a temporary hack but we should be using either
+      // something like Trigger.dev, a proper queue system or another
+      // solution to ensure Node doesn't kill the promise.
+      //
+      // @see
+      // https://stackoverflow.com/questions/46914025/node-exits-without-error-and-doesnt-await-promise-event-callback
+      // @see https://github.com/nodejs/node/issues/22088
+      void (async () => {
         try {
           // Update pending document status to RUNNING
-          await ctx.db.pendingDocument.update({
-            where: {
-              id: pendingDocument.id,
-            },
-            data: {
-              status: STATUS.RUNNING,
+
+          const _pendingDocument = await ctx.db.pendingDocument.update({
+            where: {id: pendingDocument.id},
+            data: {status: STATUS.RUNNING},
+            select: {
+              id: true,
+              status: true,
             },
           });
 
@@ -202,17 +252,24 @@ export const documentsRouter = createTRPCRouter({
               },
             }),
           ]);
+
+          ee.emit('pendingDocument', 'finished');
         } catch (error) {
           // Update pending document status to ERROR
-          await ctx.db.pendingDocument.update({
-            where: {
-              id: pendingDocument.id,
-            },
-            data: {
-              status: STATUS.ERROR,
+          const _pendingDocument = await ctx.db.pendingDocument.update({
+            where: {id: pendingDocument.id},
+            data: {status: STATUS.ERROR},
+            select: {
+              id: true,
+              status: true,
             },
           });
 
+          ee.emit('pendingDocument', 'error');
+
+          // TODO: We should take care of these error results because
+          // otherwise they'll pile up. And TRPC cannot return any errors
+          // at this point.
           console.error('Error processing document:', error);
         }
       })();
@@ -367,6 +424,8 @@ export const documentsRouter = createTRPCRouter({
         }
       }
 
+      ee.emit('pendingDocument', 'cancelled');
+
       return pendingDocument;
     }),
 
@@ -518,4 +577,27 @@ async function getPendingDocument(
   });
 
   return document;
+}
+
+async function getPendingDocuments(
+  db: PrismaClient,
+  userId: string,
+  includedStatuses?: STATUS[]
+) {
+  const pendingDocs = await db.pendingDocument.findMany({
+    where: {
+      userId,
+      status:
+        includedStatuses == null
+          ? undefined
+          : {
+              in: includedStatuses,
+            },
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+
+  return pendingDocs;
 }
