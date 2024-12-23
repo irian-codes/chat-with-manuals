@@ -210,10 +210,17 @@ export const documentsRouter = createTRPCRouter({
             },
           });
 
-          const markdown = await pdfParseWithLlamaparse({
-            filePath: pendingDocument.fileUrl,
-            documentLanguage: pendingDocument.locale,
-          });
+          const markdown = await (async () => {
+            if (env.NODE_ENV === 'development' && true) {
+              await new Promise((resolve) => setTimeout(resolve, 1_500));
+              return 'Mocked markdown';
+            } else {
+              return await pdfParseWithLlamaparse({
+                filePath: pendingDocument.fileUrl,
+                documentLanguage: pendingDocument.locale,
+              });
+            }
+          })();
 
           const vectorStore = await embedPDF(pendingDocument.fileHash, [
             new Document({
