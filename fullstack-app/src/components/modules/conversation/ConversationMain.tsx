@@ -86,8 +86,11 @@ export function ConversationMain() {
   }
 
   if (conversation == null) {
-    // TODO: Redirect to the error page
-    return <div>Conversation not found</div>;
+    if (typeof window !== 'undefined') {
+      return router.push('/404');
+    } else {
+      return null;
+    }
   }
 
   return (
