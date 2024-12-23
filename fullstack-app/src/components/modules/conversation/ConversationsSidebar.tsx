@@ -96,7 +96,7 @@ export function ConversationsSidebar() {
       <DocumentListPickerModal
         documents={documentsQuery.data ?? []}
         isOpen={isDocumentPickerModalOpen}
-        onSelect={async (document) => {
+        onDocumentClick={async (document) => {
           console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}

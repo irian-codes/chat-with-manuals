@@ -78,7 +78,7 @@ export default function NewConversationPage() {
       <DocumentListPickerModal
         documents={documentsQuery.data ?? []}
         isOpen={true}
-        onSelect={async (document) => {
+        onDocumentClick={async (document) => {
           console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}

@@ -9,7 +9,6 @@ import {UserButton} from '@clerk/nextjs';
 import {STATUS} from '@prisma/client';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
-import Link from 'next/link';
 import {useRouter} from 'next/router';
 
 export function DashboardMain() {
@@ -57,6 +56,14 @@ export function DashboardMain() {
     // TODO: Show notification (error and success) to the user
   }
 
+  function handleEditDocument(doc: Document) {
+    // TODO: Show notification (error and success) to the user
+
+    void router.push(`/?documentId=${doc.id}`, undefined, {
+      shallow: true,
+    });
+  }
+
   return (
     <div className="flex-1">
       <Header>
@@ -83,7 +90,6 @@ export function DashboardMain() {
       <main className="p-4">
         <div className="flex flex-row flex-wrap gap-4">
           {[...pendingDocuments, ...documents].map((doc) =>
-            // TODO: Add the conversation id to the url
             'status' in doc ? (
               <DocumentCard
                 doc={doc as UploadingDocument}
@@ -91,17 +97,14 @@ export function DashboardMain() {
                 onCancelButtonClick={() => handleCancelDocumentParsing(doc)}
               />
             ) : (
-              <Link href={`/conversation/${doc.id}`} key={doc.id}>
-                <DocumentCard
-                  doc={doc}
-                  onEditButtonClick={(ev) => {
-                    ev.preventDefault();
-                    void router.push(`/?documentId=${doc.id}`, undefined, {
-                      shallow: true,
-                    });
-                  }}
-                />
-              </Link>
+              <DocumentCard
+                doc={doc}
+                key={doc.id}
+                onEditButtonClick={(ev) => {
+                  ev.preventDefault();
+                  handleEditDocument(doc);
+                }}
+              />
             )
           )}
         </div>
