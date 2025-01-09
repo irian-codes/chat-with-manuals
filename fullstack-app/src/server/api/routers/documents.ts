@@ -12,6 +12,7 @@ import {
   writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
+import {isStringEmpty} from '@/utils/strings';
 import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import crypto from 'crypto';
@@ -21,24 +22,45 @@ import {z} from 'zod';
 const ee = new AppEventEmitter();
 
 export const documentsRouter = createTRPCRouter({
-  getDocuments: withDbUserProcedure.query(async ({ctx}) => {
-    const userId = ctx.prismaUser.id;
+  getDocuments: withDbUserProcedure
+    .input(
+      z
+        .object({
+          titleSearch: z.string().max(30).default(''),
+        })
+        .strict()
+        .optional()
+    )
+    .query(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
 
-    const documents = await ctx.prisma.document.findMany({
-      where: {
-        users: {
-          some: {
-            id: userId,
+      const documents = await ctx.prisma.document.findMany({
+        where: {
+          AND: {
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+            ...(input == null ||
+            isStringEmpty(input.titleSearch) ||
+            input.titleSearch.length < 2
+              ? undefined
+              : {
+                  title: {
+                    mode: 'insensitive',
+                    contains: input.titleSearch.trim(),
+                  },
+                }),
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return documents;
-  }),
+      return documents;
+    }),
 
   getDocument: withDbUserProcedure
     .input(z.object({id: z.string().min(1).uuid()}))
@@ -210,10 +232,17 @@ export const documentsRouter = createTRPCRouter({
             },
           });
 
-          const markdown = await pdfParseWithLlamaparse({
-            filePath: pendingDocument.fileUrl,
-            documentLanguage: pendingDocument.locale,
-          });
+          const markdown = await (async () => {
+            if (env.NODE_ENV === 'development' && true) {
+              await new Promise((resolve) => setTimeout(resolve, 1_500));
+              return 'Mocked markdown';
+            } else {
+              return await pdfParseWithLlamaparse({
+                filePath: pendingDocument.fileUrl,
+                documentLanguage: pendingDocument.locale,
+              });
+            }
+          })();
 
           const vectorStore = await embedPDF(pendingDocument.fileHash, [
             new Document({

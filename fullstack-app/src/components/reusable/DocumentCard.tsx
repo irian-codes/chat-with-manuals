@@ -15,6 +15,12 @@ type UploadingDocumentCardProps = {
 type UploadedDocumentCardProps = {
   doc: Document;
   onEditButtonClick: (ev: React.MouseEvent<HTMLButtonElement>) => void;
+  onEditDocumentPreview?: (
+    ev:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.FocusEvent<HTMLButtonElement>,
+    document: Document
+  ) => void;
 };
 
 type DocumentCardProps = UploadingDocumentCardProps | UploadedDocumentCardProps;
@@ -50,23 +56,33 @@ export function DocumentCard(props: DocumentCardProps) {
                   : format.dateTime(props.doc.createdAt, 'full')}
               </p>
             </div>
-            {docIsUploading ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={props.onCancelButtonClick}
-              >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={
+                docIsUploading
+                  ? props.onCancelButtonClick
+                  : props.onEditButtonClick
+              }
+              onMouseEnter={(ev) => {
+                // Prefetching for the edit modal
+                if ('onEditDocumentPreview' in props) {
+                  props.onEditDocumentPreview?.(ev, props.doc);
+                }
+              }}
+              onFocus={(ev) => {
+                // Prefetching for the edit modal
+                if ('onEditDocumentPreview' in props) {
+                  props.onEditDocumentPreview?.(ev, props.doc);
+                }
+              }}
+            >
+              {docIsUploading ? (
                 <X className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={props.onEditButtonClick}
-              >
+              ) : (
                 <FilePenLine className="h-4 w-4" />
-              </Button>
-            )}
+              )}
+            </Button>
           </div>
           {docIsUploading && (
             <div className="pb-2 text-sm font-semibold">

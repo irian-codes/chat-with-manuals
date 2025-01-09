@@ -11,14 +11,13 @@ import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import type {Document} from '@/types/Document';
 import {Search} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
-import Link from 'next/link';
 import {useState} from 'react';
 
 interface DocumentPickerModalProps {
   isOpen: boolean;
   documents: Document[];
   onClose?: () => void;
-  onSelect?: (document: Document) => void;
+  onDocumentClick?: (document: Document) => void;
   searchFunction?: (searchQuery: string) => Document[];
 }
 
@@ -61,24 +60,22 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
         <ScrollArea className="h-[400px]">
           <div className="flex flex-col items-start gap-2">
             {filteredDocuments.map((doc) => (
-              // TODO: Replace with actual conversation creation
-              <Link href={`/conversation`} key={doc.id} className="w-full">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start py-8"
-                  onClick={() => {
-                    props.onSelect?.(doc);
-                    props.onClose?.();
-                  }}
-                >
-                  <div className="flex flex-col items-start gap-1">
-                    <p className="truncate font-medium">{doc.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format.dateTime(doc.updatedAt, 'short')}
-                    </p>
-                  </div>
-                </Button>
-              </Link>
+              <Button
+                key={doc.id}
+                variant="outline"
+                className="w-full justify-start py-8"
+                onClick={() => {
+                  props.onDocumentClick?.(doc);
+                  props.onClose?.();
+                }}
+              >
+                <div className="flex flex-col items-start gap-1">
+                  <p className="truncate font-medium">{doc.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format.dateTime(doc.updatedAt, 'short')}
+                  </p>
+                </div>
+              </Button>
             ))}
           </div>
         </ScrollArea>

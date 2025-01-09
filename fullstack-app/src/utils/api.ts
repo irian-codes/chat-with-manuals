@@ -80,6 +80,12 @@ export const api = createTRPCNext<AppRouter>({
         defaultOptions: {
           queries: {
             retry: 3,
+            // React Query defaults to very aggressive fetching, but we
+            // want to have some stale time since our data is not changing
+            // much. Also, we invalidate data on mutations so we ensure
+            // it'll always be up to date.
+            staleTime: 5_000,
+            gcTime: 10_000,
           },
         },
       },

@@ -78,16 +78,16 @@ export function ConversationMain() {
       } catch (error) {
         console.error('Could not send message', error);
         setMessageInput(_inputMessage);
-        return;
       }
-
-      await conversationQuery.refetch();
     }
   }
 
   if (conversation == null) {
-    // TODO: Redirect to the error page
-    return <div>Conversation not found</div>;
+    if (typeof window !== 'undefined') {
+      return router.push('/404');
+    } else {
+      return null;
+    }
   }
 
   return (

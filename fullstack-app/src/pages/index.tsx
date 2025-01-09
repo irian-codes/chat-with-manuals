@@ -41,7 +41,10 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   // TODO: Redirect user to the proper locale if the stored locale in the db doesn't match this SSR route locale.
 
-  await helpers.conversations.getConversations.prefetch();
+  await Promise.all([
+    helpers.documents.getDocuments.prefetch(),
+    helpers.conversations.getConversations.prefetch(),
+  ]);
 
   return {
     props: {

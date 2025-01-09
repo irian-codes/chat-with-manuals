@@ -11,6 +11,7 @@ import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
+import {useDebounce} from 'use-debounce';
 import {DocumentListPickerModal} from '../../reusable/DocumentListPickerModal';
 
 export function ConversationsSidebar() {
@@ -19,11 +20,40 @@ export function ConversationsSidebar() {
     useState<boolean>(false);
   const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
-  const conversationsQuery = api.conversations.getConversations.useQuery();
+  const utils = api.useUtils();
+  const [conversationSearch, setConversationSearch] = useState('');
+  const [debouncedConversationSearch] = useDebounce(conversationSearch, 1000);
+  const conversationsQuery = api.conversations.getConversations.useQuery(
+    {
+      titleSearch:
+        debouncedConversationSearch.length > 1
+          ? debouncedConversationSearch
+          : undefined,
+    },
+    {
+      enabled: !isCollapsed,
+    }
+  );
   const conversations = conversationsQuery.data ?? [];
-  const documentsQuery = api.documents.getDocuments.useQuery();
-  const addConversationMutation =
-    api.conversations.addConversation.useMutation();
+  const [titleSearch, setTitleSearch] = useState('');
+  const [debouncedTitleSearch] = useDebounce(titleSearch, 1000);
+  const documentsQuery = api.documents.getDocuments.useQuery(
+    {
+      titleSearch:
+        debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
+    },
+    {
+      enabled: isDocumentPickerModalOpen,
+    }
+  );
+  const documents = documentsQuery.data ?? [];
+  const addConversationMutation = api.conversations.addConversation.useMutation(
+    {
+      onSuccess: async () => {
+        await utils.conversations.getConversations.invalidate();
+      },
+    }
+  );
 
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
@@ -60,7 +90,12 @@ export function ConversationsSidebar() {
             <Fragment>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder={t('search')} className="pl-8" />
+                <Input
+                  placeholder={t('search')}
+                  className="pl-8"
+                  value={conversationSearch}
+                  onChange={(ev) => setConversationSearch(ev.target.value)}
+                />
               </div>
               <ScrollArea className="h-[calc(100vh-200px)]">
                 <div className="space-y-2">
@@ -69,8 +104,22 @@ export function ConversationsSidebar() {
                       key={conversation.id}
                       variant="ghost"
                       className="w-full justify-start"
+                      onMouseEnter={() => {
+                        void utils.conversations.getConversation.prefetch({
+                          id: conversation.id,
+                        });
+                      }}
+                      onFocus={() => {
+                        void utils.conversations.getConversation.prefetch({
+                          id: conversation.id,
+                        });
+                      }}
                     >
-                      <Link href={`/conversation/${conversation.id}`}>
+                      <Link
+                        href={`/conversation/${conversation.id}`}
+                        prefetch={!isCollapsed}
+                        className="w-full text-left"
+                      >
                         <span className="truncate font-normal">
                           {isStringEmpty(conversation.title)
                             ? t('conversation-title-missing')
@@ -82,6 +131,12 @@ export function ConversationsSidebar() {
                   <Button
                     className="w-full"
                     onClick={() => setIsDocumentPickerModalOpen(true)}
+                    onMouseEnter={() => {
+                      void utils.documents.getDocuments.prefetch();
+                    }}
+                    onFocus={() => {
+                      void utils.documents.getDocuments.prefetch();
+                    }}
                   >
                     <Plus className="mr-1 h-4 w-4" />
                     {t('newConversation')}
@@ -94,20 +149,16 @@ export function ConversationsSidebar() {
       </div>
 
       <DocumentListPickerModal
-        documents={documentsQuery.data ?? []}
+        documents={documents}
         isOpen={isDocumentPickerModalOpen}
-        onSelect={async (document) => {
+        onDocumentClick={async (document) => {
           console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
         searchFunction={(searchQuery) => {
-          if (documentsQuery.data == null) {
-            return [];
-          }
+          setTitleSearch(searchQuery);
 
-          return documentsQuery.data.filter((doc) =>
-            doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-          );
+          return documents;
         }}
         onClose={() => setIsDocumentPickerModalOpen(false)}
       />
