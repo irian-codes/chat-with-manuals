@@ -56,8 +56,14 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function NewConversationPage() {
-  const addConversationMutation =
-    api.conversations.addConversation.useMutation();
+  const utils = api.useUtils();
+  const addConversationMutation = api.conversations.addConversation.useMutation(
+    {
+      onSuccess: async () => {
+        await utils.conversations.getConversations.invalidate();
+      },
+    }
+  );
   const documentsQuery = api.documents.getDocuments.useQuery();
   const router = useRouter();
 

@@ -78,10 +78,7 @@ export function ConversationMain() {
       } catch (error) {
         console.error('Could not send message', error);
         setMessageInput(_inputMessage);
-        return;
       }
-
-      await conversationQuery.refetch();
     }
   }
 

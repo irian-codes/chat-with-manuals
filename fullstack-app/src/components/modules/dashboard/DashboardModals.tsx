@@ -23,8 +23,22 @@ export function DashboardModals() {
       enabled: !!router.query.documentId,
     }
   );
-  const updateDocumentMutation = api.documents.updateDocument.useMutation();
-  const deleteDocumentMutation = api.documents.deleteDocument.useMutation();
+  const utils = api.useUtils();
+  const updateDocumentMutation = api.documents.updateDocument.useMutation({
+    onSuccess: async () => {
+      await utils.documents.invalidate();
+    },
+  });
+  const deleteDocumentMutation = api.documents.deleteDocument.useMutation({
+    onSuccess: async () => {
+      // Note: We cannot invalidate the whole documents router because it
+      // would invalidate the recently deleted document too and then new
+      // requests would trigger and fail with a 404. And it doesn't really
+      // matter if we don't invalidate the document since we cannot select
+      // it anyway in the UI.
+      await utils.documents.getDocuments.invalidate();
+    },
+  });
 
   const document = documentQuery.data;
   const uploadingDocument = router.query.uploadingDocument === 'true';
@@ -58,7 +72,7 @@ export function DashboardModals() {
       body: formData,
     });
 
-    await handleCloseDocumentModal(form, false);
+    await handleCloseDocumentModal(form);
   }
 
   async function handleUpdateDocument(
@@ -70,7 +84,7 @@ export function DashboardModals() {
       id: document!.id,
     });
 
-    await handleCloseDocumentModal(form, true);
+    await handleCloseDocumentModal(form);
 
     // TODO: Show notification (error and success) to the user
   }
@@ -90,25 +104,19 @@ export function DashboardModals() {
       id: document.id,
     });
 
-    await handleCloseDocumentModal(form, true);
+    await handleCloseDocumentModal(form);
 
     // TODO: Show notification (error and success) to the user
   }
 
   async function handleCloseDocumentModal(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    form: UseFormReturn<any>,
-    reload: boolean
+    form: UseFormReturn<any>
   ) {
     form.reset();
     form.clearErrors();
 
     await router.push('/', undefined, {shallow: true});
-
-    // TODO #34: Find a better way to update the state of the dashboard.
-    if (reload) {
-      router.reload();
-    }
   }
 
   return (
@@ -120,13 +128,13 @@ export function DashboardModals() {
         document={document}
         onSubmit={handleUpdateDocument}
         onDelete={handleDeleteDocument}
-        onClose={(form) => handleCloseDocumentModal(form, false)}
+        onClose={(form) => handleCloseDocumentModal(form)}
       />
 
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
         onSubmit={handleUploadNewDocument}
-        onClose={(form) => handleCloseDocumentModal(form, false)}
+        onClose={(form) => handleCloseDocumentModal(form)}
       />
     </Fragment>
   );

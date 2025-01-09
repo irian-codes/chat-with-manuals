@@ -19,11 +19,24 @@ export function ConversationsSidebar() {
     useState<boolean>(false);
   const {isCollapsed, setIsCollapsed} = useSidebar();
   const router = useRouter();
-  const conversationsQuery = api.conversations.getConversations.useQuery();
+  const conversationsQuery = api.conversations.getConversations.useQuery(
+    undefined,
+    {
+      enabled: !isCollapsed,
+    }
+  );
   const conversations = conversationsQuery.data ?? [];
-  const documentsQuery = api.documents.getDocuments.useQuery();
-  const addConversationMutation =
-    api.conversations.addConversation.useMutation();
+  const documentsQuery = api.documents.getDocuments.useQuery(undefined, {
+    enabled: isDocumentPickerModalOpen,
+  });
+  const utils = api.useUtils();
+  const addConversationMutation = api.conversations.addConversation.useMutation(
+    {
+      onSuccess: async () => {
+        await utils.conversations.getConversations.invalidate();
+      },
+    }
+  );
 
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
@@ -69,8 +82,22 @@ export function ConversationsSidebar() {
                       key={conversation.id}
                       variant="ghost"
                       className="w-full justify-start"
+                      onMouseEnter={() => {
+                        void utils.conversations.getConversation.prefetch({
+                          id: conversation.id,
+                        });
+                      }}
+                      onFocus={() => {
+                        void utils.conversations.getConversation.prefetch({
+                          id: conversation.id,
+                        });
+                      }}
                     >
-                      <Link href={`/conversation/${conversation.id}`}>
+                      <Link
+                        href={`/conversation/${conversation.id}`}
+                        prefetch={!isCollapsed}
+                        className="w-full text-left"
+                      >
                         <span className="truncate font-normal">
                           {isStringEmpty(conversation.title)
                             ? t('conversation-title-missing')
@@ -82,6 +109,12 @@ export function ConversationsSidebar() {
                   <Button
                     className="w-full"
                     onClick={() => setIsDocumentPickerModalOpen(true)}
+                    onMouseEnter={() => {
+                      void utils.documents.getDocuments.prefetch();
+                    }}
+                    onFocus={() => {
+                      void utils.documents.getDocuments.prefetch();
+                    }}
                   >
                     <Plus className="mr-1 h-4 w-4" />
                     {t('newConversation')}

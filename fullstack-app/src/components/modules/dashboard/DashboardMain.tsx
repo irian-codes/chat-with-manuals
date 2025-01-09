@@ -14,6 +14,7 @@ import {useRouter} from 'next/router';
 export function DashboardMain() {
   const t = useTranslations('document-manager');
   const router = useRouter();
+  const utils = api.useUtils();
   const documentsQuery = api.documents.getDocuments.useQuery();
   const pendingDocumentsQuery =
     api.documents.onDocumentParsingUpdate.useSubscription(
@@ -31,7 +32,7 @@ export function DashboardMain() {
         onData: (data) => {
           // If a document finished parsing, it means now it's in the documents list, so we refetch it.
           if (data.action === 'finished') {
-            void documentsQuery.refetch();
+            void utils.documents.getDocuments.invalidate();
           }
         },
         onError: (error) => {
@@ -103,6 +104,10 @@ export function DashboardMain() {
                 onEditButtonClick={(ev) => {
                   ev.preventDefault();
                   handleEditDocument(doc);
+                }}
+                onEditDocumentPreview={(ev) => {
+                  ev.preventDefault();
+                  void utils.documents.getDocument.prefetch({id: doc.id});
                 }}
               />
             )
