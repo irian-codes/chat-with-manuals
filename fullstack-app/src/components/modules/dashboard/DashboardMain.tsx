@@ -10,12 +10,19 @@ import {STATUS} from '@prisma/client';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
+import {useState} from 'react';
+import {useDebounce} from 'use-debounce';
 
 export function DashboardMain() {
   const t = useTranslations('document-manager');
   const router = useRouter();
   const utils = api.useUtils();
-  const documentsQuery = api.documents.getDocuments.useQuery();
+  const [titleSearch, setTitleSearch] = useState('');
+  const [debouncedTitleSearch] = useDebounce(titleSearch, 1000);
+  const documentsQuery = api.documents.getDocuments.useQuery({
+    titleSearch:
+      debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
+  });
   const pendingDocumentsQuery =
     api.documents.onDocumentParsingUpdate.useSubscription(
       {
@@ -70,7 +77,12 @@ export function DashboardMain() {
       <Header>
         <div className="relative min-w-[250px] max-w-md flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={t('header.search')} className="pl-8" />
+          <Input
+            placeholder={t('header.search')}
+            className="pl-8"
+            value={titleSearch}
+            onChange={(ev) => setTitleSearch(ev.target.value)}
+          />
         </div>
 
         <div className="flex items-center gap-4">

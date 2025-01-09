@@ -10,6 +10,7 @@ export const conversationsRouter = createTRPCRouter({
     .input(
       z
         .object({
+          titleSearch: z.string().max(30).default(''),
           withMessages: z.boolean().optional(),
           withDocuments: z.boolean().optional(),
         })
@@ -21,7 +22,19 @@ export const conversationsRouter = createTRPCRouter({
 
       const conversations = await ctx.prisma.conversation.findMany({
         where: {
-          userId,
+          AND: {
+            userId,
+            ...(input == null ||
+            isStringEmpty(input.titleSearch) ||
+            input.titleSearch.length < 2
+              ? undefined
+              : {
+                  title: {
+                    mode: 'insensitive',
+                    contains: input.titleSearch.trim(),
+                  },
+                }),
+          },
         },
         include: {
           messages: input?.withMessages ? true : false,
