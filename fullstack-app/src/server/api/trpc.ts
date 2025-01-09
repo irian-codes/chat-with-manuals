@@ -206,7 +206,7 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
   } else {
     await rateLimiter.check({
       res: ctx.res,
-      limit: env.NODE_ENV === 'production' ? 20 : 1e12,
+      limit: env.API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT,
       token: id,
     });
   }

@@ -16,6 +16,11 @@ export const env = createEnv({
     OPENAI_API_KEY: z.string(),
     CHROMA_DB_HOST: z.string(),
     CHROMA_DB_TIMEOUT: z.coerce.number().min(100).max(10000).default(2000),
+    API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT: z.coerce
+      .number()
+      .min(1)
+      .max(Number.MAX_SAFE_INTEGER)
+      .default(30 * 60),
   },
 
   /**
@@ -41,6 +46,8 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     CHROMA_DB_HOST: process.env.CHROMA_DB_HOST,
     CHROMA_DB_TIMEOUT: process.env.CHROMA_DB_TIMEOUT,
+    API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT:
+      process.env.API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
