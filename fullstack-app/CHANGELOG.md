@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.8](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.7...v0.1.8) (2025-01-09)
+
+
+### Features
+
+* **app-state:** handling async state the React Query way and prefetching ([4523884](https://github.com/irian-codes/chat-with-manuals/commit/4523884a83ec1b2d7b0c7fc4ba864aa4e92a3e4e))
+* **search:** api level search ([2a5e1d1](https://github.com/irian-codes/chat-with-manuals/commit/2a5e1d13ccbecb68ff57ea35044f33407ef8ace5))
+
+
+### Bug Fixes
+
+* **conversation:** better error redirection on conversation not found ([acf87b5](https://github.com/irian-codes/chat-with-manuals/commit/acf87b5e9ea4defff564347199c3640b9ceadd12))
+* **conversation:** removed invalid links ([657c9ab](https://github.com/irian-codes/chat-with-manuals/commit/657c9ab0cdb205efc97794da9854937006d37b81))
+
 ## [0.1.7](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.6...v0.1.7) (2024-12-21)
 
 
