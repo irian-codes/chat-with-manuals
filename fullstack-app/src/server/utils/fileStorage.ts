@@ -120,7 +120,9 @@ export async function writeToTimestampedFile(params: {
     '_' +
     new Date().toISOString().slice(0, 10).replace(/-/g, '') +
     '-' +
-    new Date().toTimeString().slice(0, 5).replace(/:/g, '');
+    new Date().toTimeString().slice(0, 5).replace(/:/g, '') +
+    '-' +
+    new Date().toTimeString().slice(5, 8).replace(/:/g, '');
 
   const absolutePath = path.join(
     _destinationFolderPath,
