@@ -16,6 +16,9 @@ export const allowedAbsoluteDirPaths = {
   publicParsingResults: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'parsing-results')
   ),
+  publicLlmAnswers: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'llm-answers')
+  ),
   appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
 } as const;
 

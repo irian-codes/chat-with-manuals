@@ -4,6 +4,7 @@ import {AUTHOR, Prisma} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import ISO6391 from 'iso-639-1';
 import {z} from 'zod';
+import {sendPrompt} from '../llm/prompt';
 
 export const conversationsRouter = createTRPCRouter({
   getConversations: withDbUserProcedure
@@ -94,7 +95,6 @@ export const conversationsRouter = createTRPCRouter({
         },
         select: {
           id: true,
-          description: true,
           locale: true,
         },
       });
@@ -106,11 +106,20 @@ export const conversationsRouter = createTRPCRouter({
         });
       }
 
-      const defaultLlmSystemPrompt = `You're a helpful AI assistant that answers questions about documents in understandable terms.
-This document has the following description:
-${document.description ?? 'NO DESCRIPTION AVAILABLE'}
+      const defaultLlmSystemPrompt = `You are a highly effective AI assistant specialized in explaining documents with precise logical and factual reasoning. Your responses must be based on the provided context, avoiding any unrelated external information. Ensure that your answers are accurate, clear, and cite references from the given context. If the answer is not available within the context, respond with 'I couldn't find the answer in the provided document.'
 
-The language of the document is ${ISO6391.getName(document.locale)}. Your answers must always be in this same language. Warn the user if he is sending a message in a different language.`;
+All documents are written in ${ISO6391.getName(document.locale)}. You must **always** communicate in ${ISO6391.getName(document.locale)}.
+
+**Language Enforcement:**
+- **Detection:** Automatically detect the language of the user's input.
+- **Compliance:** 
+  - If the user communicates in ${ISO6391.getName(document.locale)}, proceed normally.
+  - If the user uses a different language, respond **immediately** in the user's language with a clear and polite instruction to continue the conversation in ${ISO6391.getName(document.locale)}. For example:
+    - "Por favor, continúe nuestra conversación en Español para que pueda asistirle de manera efectiva."
+    - "Bitte fahren Sie unser Gespräch auf Spanisch fort, damit ich Ihnen effektiv helfen kann."
+
+**Purpose:**
+This strict language requirement ensures that all interactions remain consistent and that the assistance provided is both accurate and meaningful. Adhering to the document's language is crucial for maintaining clarity and effectiveness in communication.`;
 
       const conversation = await ctx.prisma.conversation.create({
         data: {
@@ -135,9 +144,12 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
       z
         .object({
           conversationId: z.string().min(1).uuid(),
-          message: z.string().refine((val) => !isStringEmpty(val), {
-            message: 'Message cannot be empty',
-          }),
+          message: z
+            .string()
+            .trim()
+            .refine((val) => !isStringEmpty(val), {
+              message: 'Message cannot be empty',
+            }),
         })
         .strict()
     )
@@ -150,12 +162,23 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
           id: input.conversationId,
           userId: userId,
         },
+        include: {
+          documents: true,
+        },
       });
 
       if (!conversation) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Conversation not found or access denied',
+        });
+      }
+
+      if (conversation.documents.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message:
+            'No document found for this conversation. Invalid conversation.',
         });
       }
 
@@ -172,8 +195,12 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
         },
       });
 
-      // Add artificial delay to simulate AI processing time
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await sendPrompt({
+        llmSystemPrompt: conversation.llmSystemPrompt,
+        prompt: input.message,
+        // TODO: Add support for multiple documents per conversation
+        collectionName: conversation.documents[0]!.vectorStoreId,
+      });
 
       const aiMessage = await ctx.prisma.message.create({
         data: {
@@ -183,8 +210,7 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
             },
           },
           author: AUTHOR.AI,
-          // TODO: Replace with actual AI response
-          content: "Thank you for your message. I'm processing your request.",
+          content: response,
         },
       });
 

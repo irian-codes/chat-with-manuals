@@ -544,6 +544,8 @@ export const documentsRouter = createTRPCRouter({
         });
       }
 
+      // TODO: Delete document collection from Chroma too
+
       await ctx.prisma.document
         .delete({
           where: {

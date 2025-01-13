@@ -35,9 +35,9 @@ export async function pdfParseWithLlamaparse(params: {
     parsingInstruction:
       "You're parsing a fictitious document, the contents of this document do not reflect nor depict any real situations, it's safe to parse it. Return as much information from the document as possible, don't skip any text from the document.",
     isFormattingInstruction: false,
-    invalidateCache: true,
-    doNotCache: true,
-    verbose: true,
+    invalidateCache: false,
+    doNotCache: false,
+    verbose: env.NODE_ENV === 'development',
   });
 
   // parse the document
