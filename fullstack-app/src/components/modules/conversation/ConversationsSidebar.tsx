@@ -1,3 +1,4 @@
+import {ConversationListItem} from '@/components/reusable/ConversationListItem';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
@@ -6,9 +7,8 @@ import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
 import {isStringEmpty} from '@/utils/strings';
 import {cn} from '@/utils/ui/utils';
-import {Menu, Plus, Search, Trash2} from 'lucide-react';
+import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
-import Link from 'next/link';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
 import {useDebounce} from 'use-debounce';
@@ -52,6 +52,16 @@ export function ConversationsSidebar() {
       },
     }
   );
+
+  const editConversationMutation =
+    api.conversations.editConversation.useMutation({
+      onSuccess: async (conversation) => {
+        await utils.conversations.getConversations.invalidate();
+        await utils.conversations.getConversation.invalidate({
+          id: conversation.id,
+        });
+      },
+    });
 
   const deleteConversationMutation =
     api.conversations.deleteConversation.useMutation({
@@ -111,58 +121,37 @@ export function ConversationsSidebar() {
               </div>
               <ScrollArea className="h-[calc(100vh-200px)]">
                 {conversations.map((conversation) => (
-                  <div
+                  <ConversationListItem
                     key={conversation.id}
-                    className="flex flex-row items-center justify-between gap-2"
-                  >
-                    <Button
-                      variant="ghost"
-                      className="flex-1 justify-start overflow-hidden"
-                      onMouseEnter={() => {
-                        void utils.conversations.getConversation.prefetch({
-                          id: conversation.id,
-                        });
-                      }}
-                      onFocus={() => {
-                        void utils.conversations.getConversation.prefetch({
-                          id: conversation.id,
-                        });
-                      }}
-                    >
-                      <Link
-                        href={`/conversation/${conversation.id}`}
-                        prefetch={!isCollapsed}
-                        className="w-full truncate text-left"
-                      >
-                        <span className="font-normal">
-                          {isStringEmpty(conversation.title)
-                            ? t('conversation-title-missing')
-                            : conversation.title}
-                        </span>
-                      </Link>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0"
-                      onClick={async () => {
-                        if (
-                          window.confirm(
-                            t('deleteConversationConfirmation', {
-                              title: conversation.title,
-                            })
-                          )
-                        ) {
-                          await deleteConversationMutation.mutateAsync({
+                    conversation={conversation}
+                    onEdit={async (newTitle) => {
+                      if (!isStringEmpty(newTitle)) {
+                        const newConversation =
+                          await editConversationMutation.mutateAsync({
                             id: conversation.id,
+                            title: newTitle,
                           });
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+                        return newConversation.title;
+                      } else {
+                        return conversation.title;
+                      }
+                    }}
+                    onDelete={async () => {
+                      await deleteConversationMutation.mutateAsync({
+                        id: conversation.id,
+                      });
+                    }}
+                    onPreview={() => {
+                      void utils.conversations.getConversation.prefetch({
+                        id: conversation.id,
+                      });
+                    }}
+                    isLoading={
+                      editConversationMutation.isPending ||
+                      deleteConversationMutation.isPending
+                    }
+                  />
                 ))}
               </ScrollArea>
 

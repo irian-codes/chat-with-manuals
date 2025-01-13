@@ -226,4 +226,59 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
 
       return deletedConversation;
     }),
+
+  editConversation: withDbUserProcedure
+    .input(
+      z
+        .object({
+          id: z.string().min(1).uuid(),
+          title: z.string().trim().max(255).optional(),
+          llmSystemPrompt: z.string().trim().optional(),
+        })
+        .strict()
+        .refine((data) => data.title != null || data.llmSystemPrompt != null, {
+          message: 'At least one field must be provided for update',
+        })
+    )
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      const updatedData = Object.fromEntries(
+        Object.entries({
+          title: input?.title,
+          llmSystemPrompt: input?.llmSystemPrompt,
+        }).filter(([_, value]) => value != null && !isStringEmpty(value))
+      );
+
+      const updatedConversation = await ctx.prisma.conversation
+        .update({
+          where: {
+            id: input.id,
+            userId,
+          },
+          data: updatedData,
+        })
+        .catch(async (error) => {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Conversation not found or access denied',
+              });
+            } else {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to update conversation',
+              });
+            }
+          }
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to update conversation',
+          });
+        });
+
+      return updatedConversation;
+    }),
 });
