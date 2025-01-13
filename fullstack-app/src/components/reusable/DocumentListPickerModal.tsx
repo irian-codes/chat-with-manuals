@@ -11,23 +11,30 @@ import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import type {Document} from '@/types/Document';
 import {Search} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import {useDebounce} from 'use-debounce';
 
 interface DocumentPickerModalProps {
   isOpen: boolean;
   documents: Document[];
   onClose?: () => void;
   onDocumentClick?: (document: Document) => void;
-  searchFunction?: (searchQuery: string) => Document[];
+  onSearchQueryChangeDebounced?: (newSearchQuery: string) => void;
+  debounceTimeInMs?: number;
 }
 
 export function DocumentListPickerModal(props: DocumentPickerModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery] = useDebounce(
+    searchQuery,
+    props.debounceTimeInMs ?? 1000
+  );
   const format = useFormatter();
   const t = useTranslations('document-list-picker-modal');
 
-  const filteredDocuments =
-    props.searchFunction?.(searchQuery) ?? props.documents;
+  useEffect(() => {
+    props.onSearchQueryChangeDebounced?.(debouncedSearchQuery);
+  }, [debouncedSearchQuery]);
 
   return (
     <Dialog
@@ -45,21 +52,23 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
           <DialogDescription>{t('description')}</DialogDescription>
         </DialogHeader>
 
-        {props.searchFunction && (
+        {props.onSearchQueryChangeDebounced && (
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t('search-placeholder')}
               className="pl-8"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
             />
           </div>
         )}
 
         <ScrollArea className="h-[400px]">
           <div className="flex flex-col items-start gap-2">
-            {filteredDocuments.map((doc) => (
+            {props.documents.map((doc) => (
               <Button
                 key={doc.id}
                 variant="outline"

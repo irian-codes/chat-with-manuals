@@ -35,12 +35,10 @@ export function ConversationsSidebar() {
     }
   );
   const conversations = conversationsQuery.data ?? [];
-  const [titleSearch, setTitleSearch] = useState('');
-  const [debouncedTitleSearch] = useDebounce(titleSearch, 1000);
+  const [docTitleSearch, setDocTitleSearch] = useState('');
   const documentsQuery = api.documents.getDocuments.useQuery(
     {
-      titleSearch:
-        debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
+      titleSearch: docTitleSearch.length > 1 ? docTitleSearch : undefined,
     },
     {
       enabled: isDocumentPickerModalOpen,
@@ -155,11 +153,9 @@ export function ConversationsSidebar() {
           console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
-        searchFunction={(searchQuery) => {
-          setTitleSearch(searchQuery);
-
-          return documents;
-        }}
+        onSearchQueryChangeDebounced={(searchQuery) =>
+          setDocTitleSearch(searchQuery)
+        }
         onClose={() => setIsDocumentPickerModalOpen(false)}
       />
     </Fragment>
