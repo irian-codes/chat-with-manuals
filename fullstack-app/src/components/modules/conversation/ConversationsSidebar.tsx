@@ -6,7 +6,7 @@ import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
 import {isStringEmpty} from '@/utils/strings';
 import {cn} from '@/utils/ui/utils';
-import {Menu, Plus, Search} from 'lucide-react';
+import {Menu, Plus, Search, Trash2} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {useRouter} from 'next/router';
@@ -53,6 +53,20 @@ export function ConversationsSidebar() {
     }
   );
 
+  const deleteConversationMutation =
+    api.conversations.deleteConversation.useMutation({
+      onSuccess: async (conversation) => {
+        await utils.conversations.getConversations.invalidate();
+
+        // If conversation is the current conversation, redirect to home
+        if (
+          window.location.pathname.includes(`/conversation/${conversation.id}`)
+        ) {
+          await router.push('/conversation');
+        }
+      },
+    });
+
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
       documentId: doc.id,
@@ -95,13 +109,15 @@ export function ConversationsSidebar() {
                   onChange={(ev) => setConversationSearch(ev.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <ScrollArea className="h-[calc(100vh-200px)]">
-                  {conversations.map((conversation) => (
+              <ScrollArea className="h-[calc(100vh-200px)]">
+                {conversations.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    className="flex flex-row items-center justify-between gap-2"
+                  >
                     <Button
-                      key={conversation.id}
                       variant="ghost"
-                      className="w-full justify-start"
+                      className="flex-1 justify-start overflow-hidden"
                       onMouseEnter={() => {
                         void utils.conversations.getConversation.prefetch({
                           id: conversation.id,
@@ -116,32 +132,53 @@ export function ConversationsSidebar() {
                       <Link
                         href={`/conversation/${conversation.id}`}
                         prefetch={!isCollapsed}
-                        className="w-full text-left"
+                        className="w-full truncate text-left"
                       >
-                        <span className="truncate font-normal">
+                        <span className="font-normal">
                           {isStringEmpty(conversation.title)
                             ? t('conversation-title-missing')
                             : conversation.title}
                         </span>
                       </Link>
                     </Button>
-                  ))}
-                </ScrollArea>
 
-                <Button
-                  className="w-full"
-                  onClick={() => setIsDocumentPickerModalOpen(true)}
-                  onMouseEnter={() => {
-                    void utils.documents.getDocuments.prefetch();
-                  }}
-                  onFocus={() => {
-                    void utils.documents.getDocuments.prefetch();
-                  }}
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  {t('newConversation')}
-                </Button>
-              </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={async () => {
+                        if (
+                          window.confirm(
+                            t('deleteConversationConfirmation', {
+                              title: conversation.title,
+                            })
+                          )
+                        ) {
+                          await deleteConversationMutation.mutateAsync({
+                            id: conversation.id,
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </ScrollArea>
+
+              <Button
+                className="w-full"
+                onClick={() => setIsDocumentPickerModalOpen(true)}
+                onMouseEnter={() => {
+                  void utils.documents.getDocuments.prefetch();
+                }}
+                onFocus={() => {
+                  void utils.documents.getDocuments.prefetch();
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                {t('newConversation')}
+              </Button>
             </Fragment>
           )}
         </div>

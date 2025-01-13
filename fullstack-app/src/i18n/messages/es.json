@@ -11,6 +11,7 @@
   },
   "conversation-sidebar": {
     "conversation-title-missing": "Sin título",
+    "deleteConversationConfirmation": "Está usted seguro/a de que desea eliminar la conversación con título: {title} ?",
     "newConversation": "Nueva conversación",
     "search": "Buscar",
     "title": "Conversaciones"

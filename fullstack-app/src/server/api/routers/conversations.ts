@@ -1,6 +1,6 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
 import {isStringEmpty} from '@/utils/strings';
-import {AUTHOR} from '@prisma/client';
+import {AUTHOR, Prisma} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import ISO6391 from 'iso-639-1';
 import {z} from 'zod';
@@ -189,5 +189,41 @@ The language of the document is ${ISO6391.getName(document.locale)}. Your answer
       });
 
       return aiMessage;
+    }),
+
+  deleteConversation: withDbUserProcedure
+    .input(z.object({id: z.string().min(1).uuid()}))
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      const deletedConversation = await ctx.prisma.conversation
+        .delete({
+          where: {
+            id: input.id,
+            userId,
+          },
+        })
+        .catch(async (error) => {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Conversation not found or access denied',
+              });
+            } else {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to delete conversation',
+              });
+            }
+          }
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to delete conversation',
+          });
+        });
+
+      return deletedConversation;
     }),
 });

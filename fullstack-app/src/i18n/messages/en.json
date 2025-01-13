@@ -11,6 +11,7 @@
   },
   "conversation-sidebar": {
     "conversation-title-missing": "Untitled",
+    "deleteConversationConfirmation": "Are you sure you want to delete conversation titled: {title} ?",
     "newConversation": "New conversation",
     "search": "Search",
     "title": "Conversations"
