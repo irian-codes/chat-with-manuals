@@ -3,7 +3,6 @@ import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
-import type {UploadingDocument} from '@/types/UploadingDocument';
 import {api} from '@/utils/api';
 import {UserButton} from '@clerk/nextjs';
 import {STATUS} from '@prisma/client';
@@ -56,9 +55,9 @@ export function DashboardMain() {
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation();
 
-  function handleCancelDocumentParsing(doc: Document) {
+  function handleCancelDocumentParsing(docId: string) {
     cancelDocumentParsingMutation.mutate({
-      id: doc.id,
+      id: docId,
     });
 
     // TODO: Show notification (error and success) to the user
@@ -105,9 +104,9 @@ export function DashboardMain() {
           {[...pendingDocuments, ...documents].map((doc) =>
             'status' in doc ? (
               <DocumentCard
-                doc={doc as UploadingDocument}
+                doc={doc}
                 key={doc.id}
-                onCancelButtonClick={() => handleCancelDocumentParsing(doc)}
+                onCancelButtonClick={() => handleCancelDocumentParsing(doc.id)}
               />
             ) : (
               <DocumentCard
