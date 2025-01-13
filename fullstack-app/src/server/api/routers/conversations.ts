@@ -108,9 +108,9 @@ export const conversationsRouter = createTRPCRouter({
 
       const defaultLlmSystemPrompt = `You're a helpful AI assistant that answers questions about documents in understandable terms.
 This document has the following description:
-${document.description}
+${document.description ?? 'NO DESCRIPTION AVAILABLE'}
 
-The language of the document is ${ISO6391.getName(document.locale)}. Your answers must always be in this same language.`;
+The language of the document is ${ISO6391.getName(document.locale)}. Your answers must always be in this same language. Warn the user if he is sending a message in a different language.`;
 
       const conversation = await ctx.prisma.conversation.create({
         data: {

@@ -95,8 +95,8 @@ export function ConversationsSidebar() {
                   onChange={(ev) => setConversationSearch(ev.target.value)}
                 />
               </div>
-              <ScrollArea className="h-[calc(100vh-200px)]">
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <ScrollArea className="h-[calc(100vh-200px)]">
                   {conversations.map((conversation) => (
                     <Button
                       key={conversation.id}
@@ -126,21 +126,22 @@ export function ConversationsSidebar() {
                       </Link>
                     </Button>
                   ))}
-                  <Button
-                    className="w-full"
-                    onClick={() => setIsDocumentPickerModalOpen(true)}
-                    onMouseEnter={() => {
-                      void utils.documents.getDocuments.prefetch();
-                    }}
-                    onFocus={() => {
-                      void utils.documents.getDocuments.prefetch();
-                    }}
-                  >
-                    <Plus className="mr-1 h-4 w-4" />
-                    {t('newConversation')}
-                  </Button>
-                </div>
-              </ScrollArea>
+                </ScrollArea>
+
+                <Button
+                  className="w-full"
+                  onClick={() => setIsDocumentPickerModalOpen(true)}
+                  onMouseEnter={() => {
+                    void utils.documents.getDocuments.prefetch();
+                  }}
+                  onFocus={() => {
+                    void utils.documents.getDocuments.prefetch();
+                  }}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  {t('newConversation')}
+                </Button>
+              </div>
             </Fragment>
           )}
         </div>
@@ -150,7 +151,6 @@ export function ConversationsSidebar() {
         documents={documents}
         isOpen={isDocumentPickerModalOpen}
         onDocumentClick={async (document) => {
-          console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
         onSearchQueryChangeDebounced={(searchQuery) =>
