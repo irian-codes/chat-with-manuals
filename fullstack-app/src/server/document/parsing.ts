@@ -1,6 +1,11 @@
 import {env} from '@/env';
+import {decodeHTML} from 'entities';
 import ISO6391 from 'iso-639-1';
 import {LlamaParseReader} from 'llamaindex';
+import {applyFixes} from 'markdownlint';
+import {lint as lintSync} from 'markdownlint/sync';
+import {Marked} from 'marked';
+import markedPlaintify from 'marked-plaintify';
 import {z} from 'zod';
 import {validateAndResolvePath} from '../utils/fileStorage';
 
@@ -45,4 +50,30 @@ export async function pdfParseWithLlamaparse(params: {
   const markdown = documents.map((doc) => doc.getText()).join('') ?? '';
 
   return markdown;
+}
+
+export function lintAndFixMarkdown(markdown: string) {
+  // Sometimes the parser for whatever reason interprets the text as a code
+  // block, so we fix this issue.
+  if (markdown.startsWith('```') && markdown.endsWith('```')) {
+    markdown = markdown.trim().substring(3, markdown.length - 3);
+  }
+
+  const results = lintSync({
+    strings: {content: markdown},
+  });
+
+  if (!results.content) {
+    return markdown;
+  }
+
+  const fixedMarkdown = applyFixes(markdown, results.content);
+
+  return fixedMarkdown;
+}
+
+export async function plaintifyMarkdown(markdown: string) {
+  const plainMarked = new Marked().use({gfm: true}, markedPlaintify());
+
+  return decodeHTML(await plainMarked.parse(markdown));
 }

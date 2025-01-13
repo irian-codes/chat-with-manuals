@@ -10,16 +10,20 @@ export const debugRouter = createTRPCRouter({
     const markdown = 'Hello World TEST TEXT';
     const fileHash = '123';
 
-    const vectorStore = await embedPDF(fileHash, [
-      new Document({
-        pageContent: markdown,
-        metadata: {
-          title: 'Test Title 1',
-          description: 'Test Description 1',
-          locale: 'en',
-        },
-      }),
-    ]);
+    const vectorStore = await embedPDF({
+      fileHash,
+      locale: 'en',
+      docs: [
+        new Document({
+          pageContent: markdown,
+          metadata: {
+            title: 'Test Title 1',
+            description: 'Test Description 1',
+            locale: 'en',
+          },
+        }),
+      ],
+    });
 
     try {
       return await getDocs({
