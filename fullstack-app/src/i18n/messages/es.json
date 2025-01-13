@@ -4,8 +4,10 @@
     "title": "Chat With Manuals"
   },
   "conversation": {
+    "hallucination-alert": "En ocasiones, la IA puede producir respuestas inexactas. Consulte siempre el documento original para obtener información precisa.",
     "input-placeholder": "Escribe tu mensaje...",
     "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {locale, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
+    "language-alert-brief": "Idioma de la conversación: {locale, select, es {Spanish} en {English} other {Unknown}}",
     "send": "Enviar",
     "title": "Chat: {title}"
   },
