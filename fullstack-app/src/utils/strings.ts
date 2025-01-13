@@ -1,12 +1,12 @@
 import {z} from 'zod';
 
-export function isStringEmpty(str: string) {
-  const nonEmptyStringSchema = z
-    .string()
-    .trim()
-    .min(1)
-    .refine((value) => value.toWellFormed().length > 0);
+export const nonEmptyStringSchema = z
+  .string()
+  .trim()
+  .nonempty()
+  .refine((value) => value.toWellFormed().length > 0);
 
+export function isStringEmpty(str: string) {
   return !nonEmptyStringSchema.safeParse(str).success;
 }
 

@@ -4,13 +4,16 @@
     "title": "Chat With Manuals"
   },
   "conversation": {
+    "hallucination-alert": "The AI may sometimes produce inaccurate answers, please always refer back to the original document for accurate information.",
     "input-placeholder": "Type your message...",
     "language-alert": "Please use {locale, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
+    "language-alert-brief": "Conversation language: {locale, select, es {Spanish} en {English} other {Unknown}}",
     "send": "Send",
     "title": "Chat: {title}"
   },
   "conversation-sidebar": {
     "conversation-title-missing": "Untitled",
+    "deleteConversationConfirmation": "Are you sure you want to delete conversation titled: {title} ?",
     "newConversation": "New conversation",
     "search": "Search",
     "title": "Conversations"

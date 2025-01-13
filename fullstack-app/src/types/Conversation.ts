@@ -1,13 +1,3 @@
-import type {Document} from './Document';
-import type {Message} from './Message';
+import {type RouterOutputs} from '@/utils/api';
 
-export interface Conversation {
-  id: string;
-  title: string;
-  messages: Message[];
-  document: Document;
-}
-export type ConversationSimplified = Omit<
-  Conversation,
-  'messages' | 'document'
->;
+export type Conversation = RouterOutputs['conversations']['getConversation'];

@@ -35,11 +35,21 @@ function cacheClient() {
 
 const getChromaCachedClient = cacheClient();
 
-export async function embedPDF(fileHash: string, docs: Document[]) {
+export async function embedPDF({
+  fileHash,
+  locale,
+  docs,
+}: {
+  fileHash: string;
+  locale: string;
+  docs: Document[];
+}) {
   const vectorStore = await createVectorStore(docs, {
     collectionMetadata: {
-      'hnsw:space': 'cosine',
+      documentType: 'pdf',
       fileHash,
+      locale,
+      'hnsw:space': 'cosine',
     },
   });
 
@@ -135,7 +145,9 @@ export async function queryCollection({
   options?: Omit<ChromaLibArgs, 'collectionName'>;
 }) {
   if (!(await doesCollectionExists(collectionName))) {
-    throw new Error('Document not found in vector store');
+    throw new Error(
+      'Document not found in vector store. Collection name: ' + collectionName
+    );
   }
 
   const vectorStore = getChromaCachedClient({

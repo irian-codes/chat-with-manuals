@@ -5,7 +5,6 @@ import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
-import {UserButton} from '@clerk/nextjs';
 import {AUTHOR} from '@prisma/client';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
@@ -41,6 +40,15 @@ export function ConversationMain() {
     sendMessageMutation.isPending || conversationQuery.isPending;
   const conversation = conversationQuery.data;
   const messages = conversation?.messages ?? [];
+
+  const generateTitleMutation = api.conversations.generateTitle.useMutation({
+    onSuccess: async () => {
+      void utils.conversations.getConversation.invalidate({
+        id: conversationQuery.data?.id ?? '',
+      });
+      void utils.conversations.getConversations.invalidate();
+    },
+  });
 
   useEffect(() => {
     // Focus the input when the loading state changes
@@ -79,6 +87,13 @@ export function ConversationMain() {
         console.error('Could not send message', error);
         setMessageInput(_inputMessage);
       }
+
+      // Generate title if this is the first message
+      if (messages.length === 0) {
+        generateTitleMutation.mutate({
+          conversationId: conversation!.id,
+        });
+      }
     }
   }
 
@@ -93,70 +108,84 @@ export function ConversationMain() {
   return (
     <div className="flex flex-1 flex-col">
       <Header>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="line-clamp-2 text-2xl font-semibold">
           {t('title', {
             title: conversation.title,
           })}
         </h1>
-        <UserButton />
       </Header>
 
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {(sendMessageMutation.isPending
-            ? ([
-                ...messages,
-                // Optimistic update message
-                {
-                  id: crypto.randomUUID(),
-                  conversationId: conversation.id,
-                  author: AUTHOR.USER,
-                  content: sendMessageMutation.variables?.message ?? '',
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                },
-              ] satisfies Message[])
-            : messages
-          ).map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.author === AUTHOR.AI ? 'justify-start' : 'justify-end'
-              }`}
-            >
+        {messages.length > 0 || sendMessageMutation.isPending ? (
+          <div className="space-y-4">
+            {(sendMessageMutation.isPending
+              ? ([
+                  ...messages,
+                  // Optimistic update message
+                  {
+                    id: crypto.randomUUID(),
+                    conversationId: conversation.id,
+                    author: AUTHOR.USER,
+                    content: sendMessageMutation.variables?.message ?? '',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  },
+                ] satisfies Message[])
+              : messages
+            ).map((message) => (
               <div
-                className={`max-w-[70%] rounded-md p-4 ${
-                  message.author === AUTHOR.AI
-                    ? 'bg-muted'
-                    : 'bg-primary text-primary-foreground'
+                key={message.id}
+                className={`flex ${
+                  message.author === AUTHOR.AI ? 'justify-start' : 'justify-end'
                 }`}
               >
-                <p>{message.content}</p>
-                <p className="mt-2 text-xs opacity-70">
-                  {format.dateTime(new Date(message.updatedAt), 'full')}
-                </p>
-              </div>
-            </div>
-          ))}
-
-          {/* Loading animation */}
-          {isLoading && (
-            <div className="w-24">
-              <div className="rounded-md bg-muted p-4">
-                <div className="flex items-center justify-evenly gap-2">
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-300"></div>
+                <div
+                  className={`max-w-[70%] rounded-md p-4 ${
+                    message.author === AUTHOR.AI
+                      ? 'bg-muted'
+                      : 'bg-primary text-primary-foreground'
+                  }`}
+                >
+                  <p>{message.content}</p>
+                  <p className="mt-2 text-xs opacity-70">
+                    {format.dateTime(new Date(message.updatedAt), 'full')}
+                  </p>
                 </div>
               </div>
-            </div>
-          )}
+            ))}
 
-          <div
-            className="invisible h-[1px] w-full pt-6 sm:pt-4 md:pt-0"
-            ref={scrollAnchorRef}
-          />
-        </div>
+            {/* Loading animation */}
+            {isLoading && (
+              <div className="w-24">
+                <div className="rounded-md bg-muted p-4">
+                  <div className="flex items-center justify-evenly gap-2">
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-300"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div
+              className="invisible h-[1px] w-full pt-6 sm:pt-4 md:pt-0"
+              ref={scrollAnchorRef}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-row items-start justify-around gap-2 pr-2 text-sm text-muted-foreground">
+            <AlertTriangle className="h-6 w-6 flex-shrink-0" />
+            <div>
+              <p>
+                {t('language-alert', {
+                  locale: conversationQuery.data.documents[0]!.locale,
+                })}
+              </p>
+              <br />
+              <p>{t('hallucination-alert')}</p>
+            </div>
+          </div>
+        )}
       </ScrollArea>
 
       <footer className="border-t p-4">
@@ -197,7 +226,7 @@ export function ConversationMain() {
           </form>
           <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-6 w-6" />{' '}
-            {t('language-alert', {
+            {t('language-alert-brief', {
               locale: conversationQuery.data.documents[0]!.locale,
             })}
           </p>

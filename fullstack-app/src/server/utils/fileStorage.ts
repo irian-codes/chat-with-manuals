@@ -16,6 +16,9 @@ export const allowedAbsoluteDirPaths = {
   publicParsingResults: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'parsing-results')
   ),
+  publicLlmAnswers: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'llm-answers')
+  ),
   appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
 } as const;
 
@@ -120,7 +123,9 @@ export async function writeToTimestampedFile(params: {
     '_' +
     new Date().toISOString().slice(0, 10).replace(/-/g, '') +
     '-' +
-    new Date().toTimeString().slice(0, 5).replace(/:/g, '');
+    new Date().toTimeString().slice(0, 5).replace(/:/g, '') +
+    '-' +
+    new Date().toTimeString().slice(5, 8).replace(/:/g, '');
 
   const absolutePath = path.join(
     _destinationFolderPath,

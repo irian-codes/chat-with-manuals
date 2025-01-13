@@ -83,6 +83,7 @@ model Document {
     imageUrl      String         @default("")
     fileUrl       String         @unique @default("")
     fileHash      String         @unique @db.VarChar(64) // Sha256 hash
+    vectorStoreId String         @unique @db.Uuid()
     createdAt     DateTime       @default(now()) @db.Timestamptz(3)
     updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 

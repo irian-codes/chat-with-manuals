@@ -1,3 +1,4 @@
+import {ConversationListItem} from '@/components/reusable/ConversationListItem';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
@@ -8,7 +9,6 @@ import {isStringEmpty} from '@/utils/strings';
 import {cn} from '@/utils/ui/utils';
 import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
-import Link from 'next/link';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
 import {useDebounce} from 'use-debounce';
@@ -35,12 +35,10 @@ export function ConversationsSidebar() {
     }
   );
   const conversations = conversationsQuery.data ?? [];
-  const [titleSearch, setTitleSearch] = useState('');
-  const [debouncedTitleSearch] = useDebounce(titleSearch, 1000);
+  const [docTitleSearch, setDocTitleSearch] = useState('');
   const documentsQuery = api.documents.getDocuments.useQuery(
     {
-      titleSearch:
-        debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
+      titleSearch: docTitleSearch.length > 1 ? docTitleSearch : undefined,
     },
     {
       enabled: isDocumentPickerModalOpen,
@@ -54,6 +52,30 @@ export function ConversationsSidebar() {
       },
     }
   );
+
+  const editConversationMutation =
+    api.conversations.editConversation.useMutation({
+      onSuccess: async (conversation) => {
+        await utils.conversations.getConversations.invalidate();
+        await utils.conversations.getConversation.invalidate({
+          id: conversation.id,
+        });
+      },
+    });
+
+  const deleteConversationMutation =
+    api.conversations.deleteConversation.useMutation({
+      onSuccess: async (conversation) => {
+        await utils.conversations.getConversations.invalidate();
+
+        // If conversation is the current conversation, redirect to home
+        if (
+          window.location.pathname.includes(`/conversation/${conversation.id}`)
+        ) {
+          await router.push('/conversation');
+        }
+      },
+    });
 
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
@@ -98,51 +120,54 @@ export function ConversationsSidebar() {
                 />
               </div>
               <ScrollArea className="h-[calc(100vh-200px)]">
-                <div className="space-y-2">
-                  {conversations.map((conversation) => (
-                    <Button
-                      key={conversation.id}
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onMouseEnter={() => {
-                        void utils.conversations.getConversation.prefetch({
-                          id: conversation.id,
-                        });
-                      }}
-                      onFocus={() => {
-                        void utils.conversations.getConversation.prefetch({
-                          id: conversation.id,
-                        });
-                      }}
-                    >
-                      <Link
-                        href={`/conversation/${conversation.id}`}
-                        prefetch={!isCollapsed}
-                        className="w-full text-left"
-                      >
-                        <span className="truncate font-normal">
-                          {isStringEmpty(conversation.title)
-                            ? t('conversation-title-missing')
-                            : conversation.title}
-                        </span>
-                      </Link>
-                    </Button>
-                  ))}
-                  <Button
-                    className="w-full"
-                    onClick={() => setIsDocumentPickerModalOpen(true)}
-                    onMouseEnter={() => {
-                      void utils.documents.getDocuments.prefetch();
+                {conversations.map((conversation) => (
+                  <ConversationListItem
+                    key={conversation.id}
+                    conversation={conversation}
+                    onEdit={async (newTitle) => {
+                      if (!isStringEmpty(newTitle)) {
+                        const newConversation =
+                          await editConversationMutation.mutateAsync({
+                            id: conversation.id,
+                            title: newTitle,
+                          });
+
+                        return newConversation.title;
+                      } else {
+                        return conversation.title;
+                      }
                     }}
-                    onFocus={() => {
-                      void utils.documents.getDocuments.prefetch();
+                    onDelete={async () => {
+                      await deleteConversationMutation.mutateAsync({
+                        id: conversation.id,
+                      });
                     }}
-                  >
-                    <Plus className="mr-1 h-4 w-4" />
-                    {t('newConversation')}
-                  </Button>
-                </div>
+                    onPreview={() => {
+                      void utils.conversations.getConversation.prefetch({
+                        id: conversation.id,
+                      });
+                    }}
+                    isLoading={
+                      editConversationMutation.isPending ||
+                      deleteConversationMutation.isPending
+                    }
+                  />
+                ))}
               </ScrollArea>
+
+              <Button
+                className="w-full"
+                onClick={() => setIsDocumentPickerModalOpen(true)}
+                onMouseEnter={() => {
+                  void utils.documents.getDocuments.prefetch();
+                }}
+                onFocus={() => {
+                  void utils.documents.getDocuments.prefetch();
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                {t('newConversation')}
+              </Button>
             </Fragment>
           )}
         </div>
@@ -152,14 +177,11 @@ export function ConversationsSidebar() {
         documents={documents}
         isOpen={isDocumentPickerModalOpen}
         onDocumentClick={async (document) => {
-          console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
-        searchFunction={(searchQuery) => {
-          setTitleSearch(searchQuery);
-
-          return documents;
-        }}
+        onSearchQueryChangeDebounced={(searchQuery) =>
+          setDocTitleSearch(searchQuery)
+        }
         onClose={() => setIsDocumentPickerModalOpen(false)}
       />
     </Fragment>

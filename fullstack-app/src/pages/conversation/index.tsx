@@ -10,6 +10,7 @@ import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
 import {useRouter} from 'next/router';
+import {useState} from 'react';
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const authProviderUserId = getAuth(ctx.req).userId!;
@@ -64,7 +65,10 @@ export default function NewConversationPage() {
       },
     }
   );
-  const documentsQuery = api.documents.getDocuments.useQuery();
+  const [docTitleSearch, setDocTitleSearch] = useState('');
+  const documentsQuery = api.documents.getDocuments.useQuery({
+    titleSearch: docTitleSearch.length > 1 ? docTitleSearch : undefined,
+  });
   const router = useRouter();
 
   async function createNewConversation(doc: Document) {
@@ -85,17 +89,10 @@ export default function NewConversationPage() {
         documents={documentsQuery.data ?? []}
         isOpen={true}
         onDocumentClick={async (document) => {
-          console.log('NEW conversation started with document: ', document);
           await createNewConversation(document);
         }}
-        searchFunction={(searchQuery) => {
-          if (documentsQuery.data == null) {
-            return [];
-          }
-
-          return documentsQuery.data.filter((doc) =>
-            doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-          );
+        onSearchQueryChangeDebounced={(searchQuery) => {
+          setDocTitleSearch(searchQuery);
         }}
         onClose={() => {
           void router.push('/');

@@ -1,7 +1,12 @@
 import {env} from '@/env';
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import {embedPDF} from '@/server/db/chroma';
-import {pdfParseWithLlamaparse} from '@/server/document/parsing';
+import {embedPDF, getDocs} from '@/server/db/chroma';
+import {chunkString} from '@/server/document/chunking';
+import {
+  lintAndFixMarkdown,
+  pdfParseWithLlamaparse,
+  plaintifyMarkdown,
+} from '@/server/document/parsing';
 import {AppEventEmitter} from '@/server/utils/eventEmitter';
 import {
   allowedAbsoluteDirPaths,
@@ -15,8 +20,9 @@ import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {isStringEmpty} from '@/utils/strings';
 import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
+import {IncludeEnum} from 'chromadb';
 import crypto from 'crypto';
-import {Document} from 'langchain/document';
+import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {z} from 'zod';
 
 const ee = new AppEventEmitter();
@@ -233,7 +239,7 @@ export const documentsRouter = createTRPCRouter({
           });
 
           const markdown = await (async () => {
-            if (env.NODE_ENV === 'development' && true) {
+            if (env.NODE_ENV === 'development' && false) {
               await new Promise((resolve) => setTimeout(resolve, 1_500));
               return 'Mocked markdown';
             } else {
@@ -244,16 +250,28 @@ export const documentsRouter = createTRPCRouter({
             }
           })();
 
-          const vectorStore = await embedPDF(pendingDocument.fileHash, [
-            new Document({
-              pageContent: markdown,
-              metadata: {
-                title: pendingDocument.title,
-                description: pendingDocument.description,
-                locale: pendingDocument.locale,
-              },
+          const lintedMarkdown = lintAndFixMarkdown(markdown);
+
+          if (typeof lintedMarkdown !== 'string') {
+            throw new Error('Failed to lint and fix markdown');
+          }
+
+          const plaintifiedMarkdown = await plaintifyMarkdown(lintedMarkdown);
+
+          const chunks = await chunkString({
+            text: plaintifiedMarkdown,
+            splitter: new RecursiveCharacterTextSplitter({
+              chunkSize: 150,
+              chunkOverlap: 0,
+              keepSeparator: false,
             }),
-          ]);
+          });
+
+          const vectorStore = await embedPDF({
+            fileHash: pendingDocument.fileHash,
+            locale: pendingDocument.locale,
+            docs: chunks,
+          });
 
           if (env.NODE_ENV === 'development') {
             await writeToTimestampedFile({
@@ -264,9 +282,18 @@ export const documentsRouter = createTRPCRouter({
               fileName: pendingDocument.title,
               fileExtension: 'md',
             });
-          }
 
-          // TODO: Embed into Chroma DB the parsed text
+            const embeddedChunks = await getDocs({
+              collectionName: vectorStore.collectionName,
+              dbQuery: {
+                include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+                limit: 20,
+              },
+              throwOnEmptyReturn: true,
+            });
+
+            console.log('Retrieved chunks from Chroma:', embeddedChunks);
+          }
 
           // Creating the new 'document' db entry and deleting pending
           // document because when a document is done parsing we change its
@@ -280,6 +307,7 @@ export const documentsRouter = createTRPCRouter({
                 locale: pendingDocument.locale,
                 fileUrl: pendingDocument.fileUrl,
                 fileHash: pendingDocument.fileHash,
+                vectorStoreId: vectorStore.collectionName,
                 users: {
                   connect: {
                     id: userId,
@@ -515,6 +543,8 @@ export const documentsRouter = createTRPCRouter({
           cause: error,
         });
       }
+
+      // TODO: Delete document collection from Chroma too
 
       await ctx.prisma.document
         .delete({
