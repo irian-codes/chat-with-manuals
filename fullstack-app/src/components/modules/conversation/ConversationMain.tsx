@@ -5,7 +5,6 @@ import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
-import {UserButton} from '@clerk/nextjs';
 import {AUTHOR} from '@prisma/client';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
@@ -109,12 +108,11 @@ export function ConversationMain() {
   return (
     <div className="flex flex-1 flex-col">
       <Header>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="line-clamp-2 text-2xl font-semibold">
           {t('title', {
             title: conversation.title,
           })}
         </h1>
-        <UserButton />
       </Header>
 
       <ScrollArea className="flex-1 p-4">

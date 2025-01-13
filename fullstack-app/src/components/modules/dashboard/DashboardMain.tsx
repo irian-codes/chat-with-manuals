@@ -4,7 +4,6 @@ import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
-import {UserButton} from '@clerk/nextjs';
 import {STATUS} from '@prisma/client';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
@@ -74,28 +73,28 @@ export function DashboardMain() {
   return (
     <div className="flex-1">
       <Header>
-        <div className="relative min-w-[250px] max-w-md flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('header.search')}
-            className="pl-8"
-            value={titleSearch}
-            onChange={(ev) => setTitleSearch(ev.target.value)}
-          />
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() =>
-              void router.push('/?uploadingDocument=true', undefined, {
-                shallow: true,
-              })
-            }
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            {t('header.upload')}
-          </Button>
-          <UserButton />
+        <div className="flex flex-row flex-wrap gap-4">
+          <div className="relative min-w-[200px] max-w-md flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('header.search')}
+              className="pl-8"
+              value={titleSearch}
+              onChange={(ev) => setTitleSearch(ev.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() =>
+                void router.push('/?uploadingDocument=true', undefined, {
+                  shallow: true,
+                })
+              }
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {t('header.upload')}
+            </Button>
+          </div>
         </div>
       </Header>
 

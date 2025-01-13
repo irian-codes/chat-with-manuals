@@ -1,5 +1,6 @@
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
+import {UserButton} from '@clerk/nextjs';
 import {type ReactNode} from 'react';
 import {LanguageSwitcher} from './LanguageSwitcher';
 
@@ -14,15 +15,12 @@ export function Header({children}: HeaderProps) {
 
   return (
     <header className="border-b">
-      <div className="relative w-full">
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 pr-16">
-          {children}
+      <div className="flex flex-nowrap items-center justify-between gap-4 overflow-hidden p-4">
+        {children}
+        <div className="flex flex-col gap-2 pr-4 sm:flex-row-reverse">
+          {showLanguageSwitcher && <LanguageSwitcher />}
+          <UserButton />
         </div>
-        {showLanguageSwitcher && (
-          <div className="absolute right-6 top-4 sm:right-4">
-            <LanguageSwitcher />
-          </div>
-        )}
       </div>
     </header>
   );
