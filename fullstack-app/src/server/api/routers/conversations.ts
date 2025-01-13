@@ -4,7 +4,7 @@ import {AUTHOR, Prisma} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import ISO6391 from 'iso-639-1';
 import {z} from 'zod';
-import {sendPrompt} from '../llm/prompt';
+import {generateConversationTitle, sendPrompt} from '../llm/prompt';
 
 export const conversationsRouter = createTRPCRouter({
   getConversations: withDbUserProcedure
@@ -306,5 +306,44 @@ This strict language requirement ensures that all interactions remain consistent
         });
 
       return updatedConversation;
+    }),
+
+  generateTitle: withDbUserProcedure
+    .input(z.object({conversationId: z.string().min(1).uuid()}))
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      const conversation = await ctx.prisma.conversation.findUnique({
+        where: {
+          id: input.conversationId,
+          userId,
+        },
+        include: {
+          messages: {
+            take: 2,
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+      });
+
+      if (!conversation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Conversation not found or access denied',
+        });
+      }
+
+      const newTitle = await generateConversationTitle(conversation.messages);
+
+      if (!isStringEmpty(newTitle)) {
+        await ctx.prisma.conversation.update({
+          where: {id: conversation.id},
+          data: {title: newTitle},
+        });
+      }
+
+      return newTitle;
     }),
 });

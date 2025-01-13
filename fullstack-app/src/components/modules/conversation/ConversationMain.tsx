@@ -42,6 +42,15 @@ export function ConversationMain() {
   const conversation = conversationQuery.data;
   const messages = conversation?.messages ?? [];
 
+  const generateTitleMutation = api.conversations.generateTitle.useMutation({
+    onSuccess: async () => {
+      void utils.conversations.getConversation.invalidate({
+        id: conversationQuery.data?.id ?? '',
+      });
+      void utils.conversations.getConversations.invalidate();
+    },
+  });
+
   useEffect(() => {
     // Focus the input when the loading state changes
     if (!isLoading) {
@@ -78,6 +87,13 @@ export function ConversationMain() {
       } catch (error) {
         console.error('Could not send message', error);
         setMessageInput(_inputMessage);
+      }
+
+      // Generate title if this is the first message
+      if (messages.length === 0) {
+        generateTitleMutation.mutate({
+          conversationId: conversation!.id,
+        });
       }
     }
   }

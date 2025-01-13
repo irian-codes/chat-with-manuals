@@ -8,7 +8,15 @@ import {nonEmptyStringSchema} from '@/utils/strings';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
+import {type Message} from '@prisma/client';
 import {type Document} from 'langchain/document';
+
+const miniLlm = new ChatOpenAI({
+  model: 'gpt-4o-mini',
+  temperature: 0,
+  apiKey: env.OPENAI_API_KEY,
+  timeout: 10 * 1000,
+});
 
 export async function sendPrompt({
   prompt,
@@ -66,18 +74,11 @@ export async function sendPrompt({
 
   const systemMessage = new SystemMessage(_llmSystemPrompt);
 
-  const llm = new ChatOpenAI({
-    model: 'gpt-4o-mini',
-    temperature: 0,
-    apiKey: env.OPENAI_API_KEY,
-    timeout: 10 * 1000,
-  });
-
   console.log('Sending message to LLM...');
 
   // TODO: Send part of the conversation to the LLM as well, since now
   // we're only sending the last message.
-  const response = await llm.invoke([
+  const response = await miniLlm.invoke([
     systemMessage,
     ...chatTemplate.toChatMessages(),
   ]);
@@ -155,4 +156,53 @@ export async function retrieveContext({
 
     return chunks;
   }
+}
+
+export async function generateConversationTitle(
+  messages: Message[]
+): Promise<string> {
+  if (messages.length === 0) {
+    return '';
+  }
+
+  const systemMessage = new SystemMessage(
+    'You are an online chat conversation title generator. You will be given a chat conversation between a human and an AI and you will need to generate a title for it. Be precise and concise.'
+  );
+
+  const chatText = `Generate a title for the following conversation:
+  
+  CONVERSATION:
+  {conversation}
+  
+  TITLE: `;
+
+  let responseContent = await (async () => {
+    try {
+      const chatTemplate = await ChatPromptTemplate.fromTemplate(
+        chatText
+      ).invoke({
+        conversation: messages
+          .map((msg) => {
+            return `${msg.author.toUpperCase()}: ${msg.content}`;
+          })
+          .join('\n\n'),
+      });
+
+      const response = await miniLlm.invoke([
+        systemMessage,
+        ...chatTemplate.toChatMessages(),
+      ]);
+
+      return response.content.toString();
+    } catch (error) {
+      console.error('Error generating conversation title: ', error);
+
+      return '';
+    }
+  })();
+
+  // Removing surrounding quotes
+  responseContent = responseContent.trim().replace(/^["|'](.*)["|']$/g, '$1');
+
+  return responseContent?.slice(0, 255) ?? '';
 }
