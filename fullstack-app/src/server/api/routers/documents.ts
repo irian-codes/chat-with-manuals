@@ -383,11 +383,6 @@ export const documentsRouter = createTRPCRouter({
                 code: 'NOT_FOUND',
                 message: 'Document not found or access denied',
               });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to update document',
-              });
             }
           }
 
@@ -468,11 +463,6 @@ export const documentsRouter = createTRPCRouter({
               throw new TRPCError({
                 code: 'NOT_FOUND',
                 message: 'Pending document not found or access denied',
-              });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to delete pending document',
               });
             }
           }
@@ -569,11 +559,6 @@ export const documentsRouter = createTRPCRouter({
               throw new TRPCError({
                 code: 'NOT_FOUND',
                 message: 'Document not found or access denied',
-              });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to delete document',
               });
             }
           }

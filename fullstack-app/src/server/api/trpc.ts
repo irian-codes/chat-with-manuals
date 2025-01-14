@@ -60,7 +60,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
       return null;
     }
 
-    return await prisma.user.findFirst({
+    return await prisma.user.findUnique({
       where: {
         authProviderId: authProviderUserId,
       },
@@ -216,7 +216,10 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
 
 const authorizationMiddleware = t.middleware(({next, ctx}) => {
   if (!ctx.authProviderUserId) {
-    throw new TRPCError({code: 'UNAUTHORIZED'});
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'No valid auth provider user ID found',
+    });
   }
 
   return next({

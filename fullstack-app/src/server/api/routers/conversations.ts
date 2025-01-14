@@ -236,11 +236,6 @@ This strict language requirement ensures that all interactions remain consistent
                 code: 'NOT_FOUND',
                 message: 'Conversation not found or access denied',
               });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to delete conversation',
-              });
             }
           }
 
@@ -290,11 +285,6 @@ This strict language requirement ensures that all interactions remain consistent
               throw new TRPCError({
                 code: 'NOT_FOUND',
                 message: 'Conversation not found or access denied',
-              });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to update conversation',
               });
             }
           }
