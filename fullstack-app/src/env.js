@@ -21,6 +21,10 @@ export const env = createEnv({
       .min(1)
       .max(Number.MAX_SAFE_INTEGER)
       .default(30 * 60),
+    MOCK_FILE_PARSING: z.preprocess(
+      (val) => val === 'true',
+      z.boolean().default(false)
+    ),
   },
 
   /**
@@ -48,6 +52,7 @@ export const env = createEnv({
     CHROMA_DB_TIMEOUT: process.env.CHROMA_DB_TIMEOUT,
     API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT:
       process.env.API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT,
+    MOCK_FILE_PARSING: process.env.MOCK_FILE_PARSING,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

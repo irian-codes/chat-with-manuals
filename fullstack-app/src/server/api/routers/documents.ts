@@ -239,7 +239,7 @@ export const documentsRouter = createTRPCRouter({
           });
 
           const markdown = await (async () => {
-            if (env.NODE_ENV === 'development' && false) {
+            if (env.NODE_ENV === 'development' && env.MOCK_FILE_PARSING) {
               await new Promise((resolve) => setTimeout(resolve, 1_500));
               return 'Mocked markdown';
             } else {
