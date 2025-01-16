@@ -5,6 +5,7 @@ import {prisma} from '@/server/db/prisma';
 import rateLimit from '@/server/middleware/rateLimit';
 import {
   allowedAbsoluteDirPaths,
+  deleteFile,
   FileAlreadyExistsError,
   getFile,
   saveUploadedFile,
@@ -16,6 +17,7 @@ import {
 import {truncateFilename} from '@/utils/files';
 import {isStringEmpty} from '@/utils/strings';
 import {getAuth} from '@clerk/nextjs/server';
+import NodeClam from 'clamscan';
 import formidable, {type File as FileInfo} from 'formidable';
 import type {NextApiRequest, NextApiResponse} from 'next';
 
@@ -31,11 +33,28 @@ const rateLimiter = rateLimit({
   uniqueTokenPerInterval: 500, // Max 500 users per minute
 });
 
+const clamScan = await (async () => {
+  try {
+    return await new NodeClam().init({
+      debugMode: env.NODE_ENV === 'development',
+      clamdscan: {
+        host: '127.0.0.1',
+        port: 3310,
+        timeout: 5 * 60 * 1000,
+        multiscan: true,
+      },
+    });
+  } catch (error) {
+    console.error('ClamScan init error:', error);
+
+    return null;
+  }
+})();
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // TODO #18: Ensure this endpoint is secure.
   if (req.method !== 'POST') {
     return res.status(405).json({error: 'Method not allowed'});
   }
@@ -103,8 +122,38 @@ export default async function handler(
     await form.parse(req);
   } catch (error) {
     console.error('FormData upload error:', error);
+    await cleanup({fileUrls: [parsedFormData.file.filepath]});
 
     return res.status(500).json({error: 'Upload failed'});
+  }
+
+  // FILE VIRUS SCANNING
+  if (clamScan == null) {
+    console.error('Virus engine not initialized. Cannot scan file.');
+    await cleanup({fileUrls: [parsedFormData.file.filepath]});
+
+    return res
+      .status(500)
+      .json({error: 'Virus engine not initialized. Cannot scan file.'});
+  }
+
+  try {
+    const {isInfected} = await clamScan.isInfected(
+      parsedFormData.file.filepath
+    );
+
+    if (isInfected) {
+      return res.status(400).json({
+        error: 'File is infected with malware.',
+      });
+    }
+  } catch (error) {
+    console.error('Virus scan error: ', error);
+    await cleanup({fileUrls: [parsedFormData.file.filepath]});
+
+    return res
+      .status(500)
+      .json({error: 'File virus scanning failed. Cannot proceed securely.'});
   }
 
   const file = await getFile(parsedFormData.file.filepath);
@@ -116,6 +165,7 @@ export default async function handler(
 
   if (!zodResult.success) {
     console.error(zodResult.error);
+    await cleanup({fileUrls: [parsedFormData.file.filepath]});
 
     return res.status(400).json({error: 'Invalid request body'});
   }
@@ -129,16 +179,21 @@ export default async function handler(
     fileHash = result.fileHash;
 
     if (!fileUrl || !fileHash) {
+      await cleanup({fileUrls: [parsedFormData.file.filepath, fileUrl]});
+
       throw new Error('File upload failed');
     }
   } catch (error) {
     if (error instanceof FileAlreadyExistsError) {
       console.error(error);
+      await cleanup({fileUrls: [parsedFormData.file.filepath]});
 
       return res.status(400).json({error: 'File already exists'});
     }
 
     console.error('Document file upload error:', error);
+    // @ts-expect-error - it's fine since the function is robust against empty undefined values
+    await cleanup({fileUrls: [parsedFormData.file.filepath, fileUrl]});
 
     return res.status(500).json({error: 'Upload failed'});
   }
@@ -161,4 +216,21 @@ export default async function handler(
   });
 
   return res.status(200).json(trpcResponse);
+}
+
+async function cleanup({fileUrls}: {fileUrls: string[]}) {
+  await Promise.allSettled(
+    fileUrls
+      .filter((url) => !isStringEmpty(url))
+      .map(async (fileUrl) => {
+        try {
+          await deleteFile(fileUrl);
+        } catch (error) {
+          console.error(
+            `Failed to delete file '${fileUrl}' during /api/uploadDocument cleanup process: `,
+            error
+          );
+        }
+      })
+  );
 }

@@ -50,6 +50,7 @@
     "@trpc/server": "^11.0.0-rc.621",
     "chromadb": "^1.9.1",
     "chromadb-default-embed": "^2.13.2",
+    "clamscan": "^2.4.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "entities": "^6.0.0",
@@ -79,6 +80,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
+    "@types/clamscan": "^2.4.0",
     "@types/eslint": "^8.56.10",
     "@types/formidable": "^3.4.5",
     "@types/node": "^22.9.0",
