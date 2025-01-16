@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.10](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.8...v0.1.10) (2025-01-16)
+
+
+### Features
+
+* **conversation:** generate title automatically with llm ([566e993](https://github.com/irian-codes/chat-with-manuals/commit/566e99322cd797b5afc5c186de0ccaf5fdfde237))
+* **conversation:** prompting the LLM and retrieving chunks for context ([bcb4010](https://github.com/irian-codes/chat-with-manuals/commit/bcb401008e22b42fab0bff5ae9c707428b853b62))
+* **conversations:** deleting conversation from sidebar ([af4c12a](https://github.com/irian-codes/chat-with-manuals/commit/af4c12aebdfc24515c2482a4010655587ac472f1))
+* **conversations:** edit conversation title ([b90852d](https://github.com/irian-codes/chat-with-manuals/commit/b90852deb683e06adff4f2a80070ad9f26924ddb))
+* **conversation:** showing a disclaimer about LLM hallucinations ([34afe8f](https://github.com/irian-codes/chat-with-manuals/commit/34afe8f878440f5cfd218e171cc2ba5578d32c52))
+* **document-upload:** implemented rate limiter in API Route for document upload ([319af8b](https://github.com/irian-codes/chat-with-manuals/commit/319af8b91082ab9e0a54b542abc68e8f04a1e763))
+* **document-upload:** scanning for viruses in uploaded documents ([d3abdec](https://github.com/irian-codes/chat-with-manuals/commit/d3abdec2fd017bae53107c6d53eeb45d8feea2ff))
+* **parsing:** chunking, linting and storing into vector db ([21f2d0a](https://github.com/irian-codes/chat-with-manuals/commit/21f2d0afb1d63caacb79b19b34b4937fcb9c60c6))
+
+
+### Bug Fixes
+
+* **conversation:** minor conversation fixes ([19295f7](https://github.com/irian-codes/chat-with-manuals/commit/19295f7da33317ed9b26e71131f3939b4674b961))
+* **conversations:** api level search on new conversation modal fixed ([9393c5e](https://github.com/irian-codes/chat-with-manuals/commit/9393c5e108a3d560a10ec27ea728b37b02fb3233))
+* **conversations:** deleting conversations that have no documents ([b9fce75](https://github.com/irian-codes/chat-with-manuals/commit/b9fce75b70a6c77f963fd4105f56b3a5f8e14b92))
+* **documents:** gracefully handle document parsing errors ([60e1fa6](https://github.com/irian-codes/chat-with-manuals/commit/60e1fa63d651aa30e2622b8a9012eb4f11341b0a))
+* **header:** fixed space and missplacement issues ([6f25ba6](https://github.com/irian-codes/chat-with-manuals/commit/6f25ba6b104f2a1b456f80ef4f41020de9ae7d82))
+* **trpc:** minor fix and better logs ([83c19e2](https://github.com/irian-codes/chat-with-manuals/commit/83c19e2d96f26d98b99176002af7e855f4c8fc54))
+
 ## [0.1.9](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.8...v0.1.9) (2025-01-13)
 
 
