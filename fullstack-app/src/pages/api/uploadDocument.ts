@@ -1,6 +1,8 @@
+import {env} from '@/env';
 import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {prisma} from '@/server/db/prisma';
+import rateLimit from '@/server/middleware/rateLimit';
 import {
   allowedAbsoluteDirPaths,
   FileAlreadyExistsError,
@@ -22,6 +24,11 @@ export const config = {
   },
 };
 
+const rateLimiter = rateLimit({
+  interval: 60 * 1000, // 60 seconds
+  uniqueTokenPerInterval: 500, // Max 500 users per minute
+});
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -36,6 +43,16 @@ export default async function handler(
 
   if (!userAuthId) {
     return res.status(401).json({error: 'Unauthorized'});
+  }
+
+  const isRateLimited = await rateLimiter.check({
+    res,
+    limit: env.API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT,
+    token: userAuthId,
+  });
+
+  if (isRateLimited) {
+    return res.status(429).json({error: 'Rate limit exceeded'});
   }
 
   const prismaUser = await prisma.user.findFirst({

@@ -1,4 +1,3 @@
-import {TRPCError} from '@trpc/server';
 import {LRUCache} from 'lru-cache';
 import type {NextApiResponse} from 'next';
 
@@ -30,7 +29,7 @@ export default function rateLimit(options?: Options) {
      * @param params.res Optional NextApiResponse to set rate limit headers on
      * @param params.limit Maximum number of requests allowed per interval
      * @param params.token Unique identifier for the requester (e.g. IP address or user ID)
-     * @returns Promise that resolves if under limit, rejects if rate limited
+     * @returns Promise that resolves to true if under limit, false if rate limited
      */
     check: ({
       res,
@@ -41,7 +40,7 @@ export default function rateLimit(options?: Options) {
       limit: number;
       token: string;
     }) =>
-      new Promise<void>((resolve, reject) => {
+      new Promise<boolean>((resolve, reject) => {
         const tokenCount = tokenCache.get(token) ?? 0;
         const currentUsage = tokenCount + 1;
 
@@ -57,14 +56,7 @@ export default function rateLimit(options?: Options) {
           );
         }
 
-        return isRateLimited
-          ? reject(
-              new TRPCError({
-                code: 'TOO_MANY_REQUESTS',
-                message: 'Rate limit exceeded',
-              })
-            )
-          : resolve();
+        return resolve(isRateLimited);
       }),
   };
 }
