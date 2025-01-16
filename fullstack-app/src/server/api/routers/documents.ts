@@ -496,6 +496,23 @@ export const documentsRouter = createTRPCRouter({
         );
       }
 
+      // Deleting all conversations that are left without a document
+      // @see https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries#filter-on-absence-of--to-many-records
+      try {
+        await ctx.prisma.conversation.deleteMany({
+          where: {
+            documents: {
+              none: {},
+            },
+          },
+        });
+      } catch (error) {
+        console.error(
+          'Error deleting leftover conversations with zero documents. Please manually delete them.',
+          error
+        );
+      }
+
       return document;
     }),
 });
