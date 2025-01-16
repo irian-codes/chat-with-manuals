@@ -37,6 +37,7 @@ export function DashboardModals() {
       // matter if we don't invalidate the document since we cannot select
       // it anyway in the UI.
       await utils.documents.getDocuments.invalidate();
+      await utils.conversations.getConversations.invalidate();
     },
   });
 

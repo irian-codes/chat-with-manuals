@@ -21,17 +21,10 @@ export function DashboardMain() {
     titleSearch:
       debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
   });
-  const pendingDocumentsQuery =
+  const pendingDocumentsSubs =
     api.documents.onDocumentParsingUpdate.useSubscription(
       {
-        includedStatuses: [
-          STATUS.PENDING,
-          STATUS.RUNNING,
-          // TODO: Handle error ones on the UI to indicate they're errors.
-          // Or maybe send an email about it and that's enough. For now we
-          // don't fetch them.
-          // STATUS.ERROR,
-        ],
+        includedStatuses: [STATUS.PENDING, STATUS.RUNNING],
       },
       {
         onData: (data) => {
@@ -39,6 +32,11 @@ export function DashboardMain() {
           if (data.action === 'finished') {
             void utils.documents.getDocuments.invalidate();
           }
+
+          // TODO: Handle error ones on the UI to indicate they're errors.
+          // Or maybe send an email about it and that's enough. For now we
+          // don't fetch them.
+          // if (data.action === 'error') {}
         },
         onError: (error) => {
           console.error(
@@ -50,7 +48,7 @@ export function DashboardMain() {
     );
 
   const documents = documentsQuery.data ?? [];
-  const pendingDocuments = pendingDocumentsQuery.data?.docs ?? [];
+  const pendingDocuments = pendingDocumentsSubs.data?.docs ?? [];
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation();
 

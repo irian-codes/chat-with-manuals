@@ -60,7 +60,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
       return null;
     }
 
-    return await prisma.user.findFirst({
+    return await prisma.user.findUnique({
       where: {
         authProviderId: authProviderUserId,
       },
@@ -198,17 +198,24 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
 
   if (id == null || typeof id !== 'string' || id.trim().length === 0) {
     // TODO: Use anonymous rate limiter for when we know if we have or not have DDOS protections on the server.
-    // await limiter.check({
+    // const isRateLimited = await limiter.check({
     //   res: ctx.res,
     //   limit: 50,
     //   token: 'anonymous',
     // });
   } else {
-    await rateLimiter.check({
+    const isRateLimited = await rateLimiter.check({
       res: ctx.res,
       limit: env.API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT,
       token: id,
     });
+
+    if (isRateLimited) {
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Rate limit exceeded',
+      });
+    }
   }
 
   return next();
@@ -216,7 +223,10 @@ const rateLimitMiddleware = t.middleware(async ({ctx, next}) => {
 
 const authorizationMiddleware = t.middleware(({next, ctx}) => {
   if (!ctx.authProviderUserId) {
-    throw new TRPCError({code: 'UNAUTHORIZED'});
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'No valid auth provider user ID found',
+    });
   }
 
   return next({

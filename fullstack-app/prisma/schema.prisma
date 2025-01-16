@@ -50,7 +50,6 @@ enum STATUS {
     PENDING
     RUNNING
     DONE
-    ERROR
 }
 
 model PendingDocument {

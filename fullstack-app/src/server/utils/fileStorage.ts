@@ -237,6 +237,11 @@ function isPathSafe(filePath: string): boolean {
   try {
     z.string().trim().min(1).parse(filePath);
   } catch (error) {
+    console.error(
+      'Filepath validation error: Invalid file path format',
+      filePath,
+      error
+    );
     return false;
   }
 
@@ -244,28 +249,48 @@ function isPathSafe(filePath: string): boolean {
 
   // Check for null bytes
   if (_filePath.includes('\0')) {
+    console.error(
+      'Filepath validation error: File path contains null bytes',
+      _filePath
+    );
     return false;
   }
 
   // Only allow alphanumeric characters, dots, dashes and forward slashes
-  if (!/^[a-zA-Z0-9\-\.\/]+$/.test(_filePath)) {
+  if (!/^[ a-z0-9\-_()\[\]\.\/]+$/i.test(_filePath)) {
+    console.error(
+      'Filepath validation error: File path contains invalid characters',
+      _filePath
+    );
     return false;
   }
 
   // Prevent directory traversal
   const normalizedPath = path.normalize(_filePath);
   if (normalizedPath.includes('..')) {
+    console.error(
+      'Filepath validation error: Directory traversal attempt detected',
+      _filePath
+    );
     return false;
   }
 
   // Check for hidden files (starting with dot)
   if (_filePath.split('/').some((part) => part.startsWith('.'))) {
+    console.error(
+      'Filepath validation error: File path contains hidden files',
+      _filePath
+    );
     return false;
   }
 
   // Check maximum path length (prevent potential DoS)
   const MAX_PATH_LENGTH = 255; // Adjust based on your requirements
   if (_filePath.length > MAX_PATH_LENGTH) {
+    console.error(
+      'Filepath validation error: File path exceeds maximum length',
+      _filePath
+    );
     return false;
   }
 

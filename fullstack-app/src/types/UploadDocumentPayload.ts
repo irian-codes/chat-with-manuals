@@ -22,18 +22,6 @@ export const UploadDocumentPayloadSchema = z
       .refine(
         (file) => file.size > 0,
         'File must have a size greater than 0. Maybe the file is corrupted.'
-      )
-      .refine(
-        (file) => file.name.length >= 3 && file.name.length <= 255,
-        (file) => ({
-          message: `File name must be between 2 and 255 characters. Got: ${file.name}`,
-        })
-      )
-      // TODO: Get this from the database instead of hardcoding it.
-      // Maybe we'll need to move the validation on the backend itself though.
-      .refine(
-        (file) => file.size <= 1000 * 1024 * 1024,
-        'File size must be less than 1000MB'
       ),
   })
   .strict();

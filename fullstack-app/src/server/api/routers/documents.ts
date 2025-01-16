@@ -1,6 +1,6 @@
 import {env} from '@/env';
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import {embedPDF, getDocs} from '@/server/db/chroma';
+import {deleteCollection, embedPDF, getDocs} from '@/server/db/chroma';
 import {chunkString} from '@/server/document/chunking';
 import {
   lintAndFixMarkdown,
@@ -10,14 +10,14 @@ import {
 import {AppEventEmitter} from '@/server/utils/eventEmitter';
 import {
   allowedAbsoluteDirPaths,
-  copyFile,
-  copyFileToTempDir,
   deleteFile,
   fileExists,
+  getFile,
   writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
 import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
 import {isStringEmpty} from '@/utils/strings';
+import {type Chroma} from '@langchain/community/vectorstores/chroma';
 import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import {IncludeEnum} from 'chromadb';
@@ -195,24 +195,42 @@ export const documentsRouter = createTRPCRouter({
       const userId = ctx.prismaUser.id;
 
       // Create pending document
-      const pendingDocument = await ctx.prisma.pendingDocument.create({
-        data: {
-          // TODO: Add real imageUrl, for now using default value
-          title: input.title,
-          description: input.description ?? '',
-          locale: input.locale,
-          fileUrl: input.fileUrl,
-          fileHash: input.fileHash,
-          llmParsingJobId: crypto.randomUUID(), // Placeholder for now
-          codeParsingJobId: crypto.randomUUID(), // Placeholder for now
-          status: STATUS.PENDING,
-          user: {
-            connect: {
-              id: userId,
+      const pendingDocument = await ctx.prisma.pendingDocument
+        .create({
+          data: {
+            // TODO: Add real imageUrl, for now using default value
+            title: input.title,
+            description: input.description ?? '',
+            locale: input.locale,
+            fileUrl: input.fileUrl,
+            fileHash: input.fileHash,
+            llmParsingJobId: crypto.randomUUID(), // Placeholder for now
+            codeParsingJobId: crypto.randomUUID(), // Placeholder for now
+            status: STATUS.PENDING,
+            user: {
+              connect: {
+                id: userId,
+              },
             },
           },
-        },
-      });
+        })
+        .catch(async (error) => {
+          // Deleting file
+          try {
+            await deleteFile(input.fileUrl);
+          } catch (error) {
+            console.error(
+              `Failed to delete document file: ${input.fileUrl}. This file should be deleted manually.`,
+              error
+            );
+          }
+
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to create pending document on database',
+            cause: error,
+          });
+        });
 
       ee.emit('pendingDocument', 'added');
 
@@ -225,11 +243,12 @@ export const documentsRouter = createTRPCRouter({
       // @see
       // https://stackoverflow.com/questions/46914025/node-exits-without-error-and-doesnt-await-promise-event-callback
       // @see https://github.com/nodejs/node/issues/22088
+      let vectorStore: Chroma | null = null;
       void (async () => {
         try {
           // Update pending document status to RUNNING
 
-          const _pendingDocument = await ctx.prisma.pendingDocument.update({
+          await ctx.prisma.pendingDocument.update({
             where: {id: pendingDocument.id},
             data: {status: STATUS.RUNNING},
             select: {
@@ -239,9 +258,14 @@ export const documentsRouter = createTRPCRouter({
           });
 
           const markdown = await (async () => {
-            if (env.NODE_ENV === 'development' && false) {
-              await new Promise((resolve) => setTimeout(resolve, 1_500));
-              return 'Mocked markdown';
+            if (env.NODE_ENV === 'development' && env.MOCK_FILE_PARSING) {
+              await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+              const file = getFile(
+                'public/temp/parsing-results/Fun facts about canada_llamaParse_20250110-1653.md'
+              );
+
+              return (await file).text();
             } else {
               return await pdfParseWithLlamaparse({
                 filePath: pendingDocument.fileUrl,
@@ -256,6 +280,7 @@ export const documentsRouter = createTRPCRouter({
             throw new Error('Failed to lint and fix markdown');
           }
 
+          // TODO: This operations could be CPU intensive and we should move them to something like Trigger.dev
           const plaintifiedMarkdown = await plaintifyMarkdown(lintedMarkdown);
 
           const chunks = await chunkString({
@@ -267,7 +292,7 @@ export const documentsRouter = createTRPCRouter({
             }),
           });
 
-          const vectorStore = await embedPDF({
+          vectorStore = await embedPDF({
             fileHash: pendingDocument.fileHash,
             locale: pendingDocument.locale,
             docs: chunks,
@@ -325,22 +350,54 @@ export const documentsRouter = createTRPCRouter({
 
           ee.emit('pendingDocument', 'finished');
         } catch (error) {
-          // Update pending document status to ERROR
-          const _pendingDocument = await ctx.prisma.pendingDocument.update({
-            where: {id: pendingDocument.id},
-            data: {status: STATUS.ERROR},
-            select: {
-              id: true,
-              status: true,
-            },
-          });
+          // TODO: We should take care of these error somehow in the
+          // frontend. Because TRPC cannot return any errors at this point
+          // since the procedure already returned as this is a Promise
+          // that's being processed but not awaited.
+          console.error('Error processing document:', error);
+
+          // CLEANUP
+          // Deleting pending document entry
+          try {
+            await ctx.prisma.pendingDocument.delete({
+              where: {id: pendingDocument.id},
+            });
+          } catch (error) {
+            if (
+              error instanceof Prisma.PrismaClientKnownRequestError &&
+              error.code === 'P2025'
+            ) {
+              // If the document entry is not found, we don't need to delete it nor log an error.
+            } else {
+              console.error(
+                `Failed to delete pending document ID ${pendingDocument.id}. This pending document entry should be deleted manually.`,
+                error
+              );
+            }
+          }
+          // Delete from vector store
+          if (vectorStore != null) {
+            try {
+              await deleteCollection(vectorStore.collectionName);
+            } catch (error) {
+              console.error(
+                `Failed to delete collection ${vectorStore.collectionName} for document ID ${pendingDocument.id}. This collection should be deleted manually.`,
+                error
+              );
+            }
+          }
+
+          // Delete original file
+          try {
+            await deleteFile(pendingDocument.fileUrl);
+          } catch (error) {
+            console.error(
+              `Failed to delete document file: ${pendingDocument.fileUrl}. This file should be deleted manually.`,
+              error
+            );
+          }
 
           ee.emit('pendingDocument', 'error');
-
-          // TODO: We should take care of these error results because
-          // otherwise they'll pile up. And TRPC cannot return any errors
-          // at this point.
-          console.error('Error processing document:', error);
         }
       })();
 
@@ -383,11 +440,6 @@ export const documentsRouter = createTRPCRouter({
                 code: 'NOT_FOUND',
                 message: 'Document not found or access denied',
               });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to update document',
-              });
             }
           }
 
@@ -403,76 +455,25 @@ export const documentsRouter = createTRPCRouter({
   cancelDocumentParsing: withDbUserProcedure
     .input(
       z.object({
-        id: z.string().min(1).uuid(),
+        id: z.string().trim().min(1).uuid(),
       })
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const pendingDocument = await getPendingDocument(
-        ctx.prisma,
-        input.id,
-        userId
-      );
-
-      if (pendingDocument == null) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Pending document not found or access denied',
-        });
-      }
-
-      let tempPath: string;
-      try {
-        // Store it in case we need to rollback
-        tempPath = await copyFileToTempDir(pendingDocument.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to backup document file: ${pendingDocument.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      try {
-        // Delete original file
-        await deleteFile(pendingDocument.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to delete document file: ${pendingDocument.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      await ctx.prisma.pendingDocument
+      const pendingDocument = await ctx.prisma.pendingDocument
         .delete({
           where: {
             id: input.id,
             userId,
           },
         })
-        .catch(async (error) => {
-          // Rollback the deletion of the original file
-          if (tempPath != null) {
-            await copyFile(tempPath, pendingDocument.fileUrl);
-          }
-
-          // Throw errors
+        .catch((error) => {
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               throw new TRPCError({
                 code: 'NOT_FOUND',
                 message: 'Pending document not found or access denied',
-              });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to delete pending document',
               });
             }
           }
@@ -483,15 +484,14 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      if (tempPath != null) {
-        // Delete temp file since we successfully deleted the original file
-        try {
-          await deleteFile(tempPath);
-        } catch (error) {
-          console.warn(
-            `Failed to delete temp file: ${tempPath}. This is not critical and can be ignored.`
-          );
-        }
+      // Finally delete the file
+      try {
+        await deleteFile(pendingDocument.fileUrl);
+      } catch (error) {
+        console.error(
+          `Failed to delete document file: ${pendingDocument.fileUrl}. It should be deleted manually.`,
+          error
+        );
       }
 
       ee.emit('pendingDocument', 'cancelled');
@@ -502,51 +502,13 @@ export const documentsRouter = createTRPCRouter({
   deleteDocument: withDbUserProcedure
     .input(
       z.object({
-        id: z.string().min(1).uuid(),
+        id: z.string().trim().min(1).uuid(),
       })
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const document = await getDocument(ctx.prisma, input.id, userId);
-
-      if (document == null) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Document not found or access denied',
-        });
-      }
-
-      let tempPath: string;
-      try {
-        // Store it in case we need to rollback
-        tempPath = await copyFileToTempDir(document.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to backup document file: ${document.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      try {
-        // Delete original file
-        await deleteFile(document.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to delete document file: ${document.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      // TODO: Delete document collection from Chroma too
-
-      await ctx.prisma.document
+      const document = await ctx.prisma.document
         .delete({
           where: {
             id: input.id,
@@ -558,22 +520,11 @@ export const documentsRouter = createTRPCRouter({
           },
         })
         .catch(async (error) => {
-          // Rollback the deletion of the original file
-          if (tempPath != null) {
-            await copyFile(tempPath, document.fileUrl);
-          }
-
-          // Throw errors
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               throw new TRPCError({
                 code: 'NOT_FOUND',
                 message: 'Document not found or access denied',
-              });
-            } else {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to delete document',
               });
             }
           }
@@ -584,15 +535,41 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      if (tempPath != null) {
-        // Delete temp file since we successfully deleted the original file
-        try {
-          await deleteFile(tempPath);
-        } catch (error) {
-          console.warn(
-            `Failed to delete temp file: ${tempPath}. This is not critical and can be ignored.`
-          );
-        }
+      // Delete from vector store
+      try {
+        await deleteCollection(document.vectorStoreId);
+      } catch (error) {
+        console.error(
+          `Failed to delete collection for document ID ${document.id}. This collection should be deleted manually.`,
+          error
+        );
+      }
+
+      // Delete original file
+      try {
+        await deleteFile(document.fileUrl);
+      } catch (error) {
+        console.error(
+          `Failed to delete document file: ${document.fileUrl}. This file should be deleted manually.`,
+          error
+        );
+      }
+
+      // Deleting all conversations that are left without a document
+      // @see https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries#filter-on-absence-of--to-many-records
+      try {
+        await ctx.prisma.conversation.deleteMany({
+          where: {
+            documents: {
+              none: {},
+            },
+          },
+        });
+      } catch (error) {
+        console.error(
+          'Error deleting leftover conversations with zero documents. These conversations should be deleted manually.',
+          error
+        );
       }
 
       return document;
