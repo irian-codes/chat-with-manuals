@@ -1,6 +1,6 @@
 import {env} from '@/env';
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import {embedPDF, getDocs} from '@/server/db/chroma';
+import {deleteCollection, embedPDF, getDocs} from '@/server/db/chroma';
 import {chunkString} from '@/server/document/chunking';
 import {
   lintAndFixMarkdown,
@@ -10,8 +10,6 @@ import {
 import {AppEventEmitter} from '@/server/utils/eventEmitter';
 import {
   allowedAbsoluteDirPaths,
-  copyFile,
-  copyFileToTempDir,
   deleteFile,
   fileExists,
   writeToTimestampedFile,
@@ -398,66 +396,20 @@ export const documentsRouter = createTRPCRouter({
   cancelDocumentParsing: withDbUserProcedure
     .input(
       z.object({
-        id: z.string().min(1).uuid(),
+        id: z.string().trim().min(1).uuid(),
       })
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const pendingDocument = await getPendingDocument(
-        ctx.prisma,
-        input.id,
-        userId
-      );
-
-      if (pendingDocument == null) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Pending document not found or access denied',
-        });
-      }
-
-      let tempPath: string;
-      try {
-        // Store it in case we need to rollback
-        tempPath = await copyFileToTempDir(pendingDocument.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to backup document file: ${pendingDocument.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      try {
-        // Delete original file
-        await deleteFile(pendingDocument.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to delete document file: ${pendingDocument.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      await ctx.prisma.pendingDocument
+      const pendingDocument = await ctx.prisma.pendingDocument
         .delete({
           where: {
             id: input.id,
             userId,
           },
         })
-        .catch(async (error) => {
-          // Rollback the deletion of the original file
-          if (tempPath != null) {
-            await copyFile(tempPath, pendingDocument.fileUrl);
-          }
-
-          // Throw errors
+        .catch((error) => {
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               throw new TRPCError({
@@ -473,15 +425,14 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      if (tempPath != null) {
-        // Delete temp file since we successfully deleted the original file
-        try {
-          await deleteFile(tempPath);
-        } catch (error) {
-          console.warn(
-            `Failed to delete temp file: ${tempPath}. This is not critical and can be ignored.`
-          );
-        }
+      // Finally delete the file
+      try {
+        await deleteFile(pendingDocument.fileUrl);
+      } catch (error) {
+        console.error(
+          `Failed to delete document file: ${pendingDocument.fileUrl}`,
+          error
+        );
       }
 
       ee.emit('pendingDocument', 'cancelled');
@@ -492,51 +443,13 @@ export const documentsRouter = createTRPCRouter({
   deleteDocument: withDbUserProcedure
     .input(
       z.object({
-        id: z.string().min(1).uuid(),
+        id: z.string().trim().min(1).uuid(),
       })
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const document = await getDocument(ctx.prisma, input.id, userId);
-
-      if (document == null) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Document not found or access denied',
-        });
-      }
-
-      let tempPath: string;
-      try {
-        // Store it in case we need to rollback
-        tempPath = await copyFileToTempDir(document.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to backup document file: ${document.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      try {
-        // Delete original file
-        await deleteFile(document.fileUrl);
-      } catch (error) {
-        console.error(error);
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to delete document file: ${document.fileUrl}`,
-          cause: error,
-        });
-      }
-
-      // TODO: Delete document collection from Chroma too
-
-      await ctx.prisma.document
+      const document = await ctx.prisma.document
         .delete({
           where: {
             id: input.id,
@@ -548,12 +461,6 @@ export const documentsRouter = createTRPCRouter({
           },
         })
         .catch(async (error) => {
-          // Rollback the deletion of the original file
-          if (tempPath != null) {
-            await copyFile(tempPath, document.fileUrl);
-          }
-
-          // Throw errors
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               throw new TRPCError({
@@ -569,15 +476,24 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      if (tempPath != null) {
-        // Delete temp file since we successfully deleted the original file
-        try {
-          await deleteFile(tempPath);
-        } catch (error) {
-          console.warn(
-            `Failed to delete temp file: ${tempPath}. This is not critical and can be ignored.`
-          );
-        }
+      // Delete from vector store
+      try {
+        await deleteCollection(document.vectorStoreId);
+      } catch (error) {
+        console.error(
+          `Failed to delete collection for document ID ${document.id}:`,
+          error
+        );
+      }
+
+      // Delete original file
+      try {
+        await deleteFile(document.fileUrl);
+      } catch (error) {
+        console.error(
+          `Failed to delete document file: ${document.fileUrl}`,
+          error
+        );
       }
 
       return document;
