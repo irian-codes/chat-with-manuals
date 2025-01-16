@@ -13,6 +13,8 @@ import {
   type UploadDocumentPayload,
   UploadDocumentPayloadSchema,
 } from '@/types/UploadDocumentPayload';
+import {truncateFilename} from '@/utils/files';
+import {isStringEmpty} from '@/utils/strings';
 import {getAuth} from '@clerk/nextjs/server';
 import formidable, {type File as FileInfo} from 'formidable';
 import type {NextApiRequest, NextApiResponse} from 'next';
@@ -76,6 +78,15 @@ export default async function handler(
     uploadDir: allowedAbsoluteDirPaths.appTempDir,
     hashAlgorithm: 'sha256',
     keepExtensions: true,
+    // TODO: Get this from the database instead of hardcoding it.
+    maxTotalFileSize: 1000 * 1024 * 1024, // 1000MB
+    filename: (name, ext, path, form) => {
+      if (isStringEmpty(name)) {
+        name = 'untitled';
+      }
+
+      return truncateFilename(name) + ext;
+    },
   });
 
   form
