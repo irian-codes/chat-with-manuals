@@ -5,11 +5,13 @@ import {Textarea} from '@/components/shadcn-ui/textarea';
 import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
+import {isStringEmpty} from '@/utils/strings';
 import {AUTHOR} from '@prisma/client';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {ChatMessage} from './ChatMessage';
 
 export function ConversationMain() {
   const t = useTranslations('conversation');
@@ -36,8 +38,20 @@ export function ConversationMain() {
       });
     },
   });
+
+  const editMessageMutation = api.conversations.editMessage.useMutation({
+    onSuccess: async () => {
+      return await utils.conversations.getConversation.invalidate({
+        id: conversationQuery.data?.id ?? '',
+      });
+    },
+  });
+
   const isLoading =
-    sendMessageMutation.isPending || conversationQuery.isPending;
+    sendMessageMutation.isPending ||
+    conversationQuery.isPending ||
+    editMessageMutation.isPending;
+
   const conversation = conversationQuery.data;
   const messages = conversation?.messages ?? [];
 
@@ -97,6 +111,51 @@ export function ConversationMain() {
     }
   }
 
+  async function handleSaveMsgEdit(messageId: string, content: string) {
+    if (isStringEmpty(content)) {
+      return;
+    }
+
+    const _content = content.trim();
+
+    const editedMessage = conversation!.messages.find(
+      (message) => message.id === messageId
+    );
+
+    if (editedMessage == null) {
+      return;
+    }
+
+    editedMessage.content = _content;
+    editedMessage.updatedAt = new Date();
+
+    // Update the conversation in the cache to reflect the edited message immediately
+    utils.conversations.getConversation.setData(
+      {id: conversation!.id},
+      (oldData) => {
+        if (oldData == null) return oldData;
+
+        return {
+          ...oldData,
+          messages: oldData.messages
+            .filter((msg) => msg.createdAt <= editedMessage.createdAt)
+            .map((msg) => (msg.id === messageId ? {...editedMessage} : msg)),
+        };
+      }
+    );
+
+    try {
+      await editMessageMutation.mutateAsync({
+        messageId,
+        content: _content,
+      });
+    } catch (error) {
+      console.error('Could not edit message', error);
+    }
+  }
+
+  // RENDERING
+
   if (conversation == null) {
     if (typeof window !== 'undefined') {
       return router.push('/404');
@@ -133,25 +192,13 @@ export function ConversationMain() {
                 ] satisfies Message[])
               : messages
             ).map((message) => (
-              <div
+              <ChatMessage
                 key={message.id}
-                className={`flex ${
-                  message.author === AUTHOR.AI ? 'justify-start' : 'justify-end'
-                }`}
-              >
-                <div
-                  className={`max-w-[70%] rounded-md p-4 ${
-                    message.author === AUTHOR.AI
-                      ? 'bg-muted'
-                      : 'bg-primary text-primary-foreground'
-                  }`}
-                >
-                  <p>{message.content}</p>
-                  <p className="mt-2 text-xs opacity-70">
-                    {format.dateTime(new Date(message.updatedAt), 'full')}
-                  </p>
-                </div>
-              </div>
+                message={message}
+                isLoading={isLoading}
+                onMessageEditSave={handleSaveMsgEdit}
+                formatDate={(date) => format.dateTime(date, 'full')}
+              />
             ))}
 
             {/* Loading animation */}
@@ -193,6 +240,7 @@ export function ConversationMain() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (isLoading) return;
               void handleSendMessage();
             }}
             className="flex items-start space-x-2"

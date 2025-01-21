@@ -57,7 +57,11 @@ export const conversationsRouter = createTRPCRouter({
           userId,
         },
         include: {
-          messages: true,
+          messages: {
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
           documents: true,
         },
       });
@@ -340,5 +344,90 @@ This strict language requirement ensures that all interactions remain consistent
       }
 
       return newTitle;
+    }),
+
+  editMessage: withDbUserProcedure
+    .input(
+      z
+        .object({
+          messageId: z.string().min(1).uuid(),
+          content: z.string().trim().min(1),
+        })
+        .strict()
+    )
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      // Get the message and verify ownership
+      const message = await ctx.prisma.message.findFirst({
+        where: {
+          id: input.messageId,
+          author: AUTHOR.USER,
+          conversation: {
+            userId,
+          },
+        },
+        include: {
+          conversation: {
+            include: {
+              documents: true,
+            },
+          },
+        },
+      });
+
+      if (!message) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Message not found or access denied',
+        });
+      }
+
+      // Delete all messages after this one
+      await ctx.prisma.message.deleteMany({
+        where: {
+          conversationId: message.conversation.id,
+          createdAt: {
+            gt: message.createdAt,
+          },
+        },
+      });
+
+      // Update the message
+      const updatedMessage = await ctx.prisma.message.update({
+        where: {
+          id: input.messageId,
+        },
+        data: {
+          content: input.content,
+          updatedAt: new Date(),
+        },
+      });
+
+      const response = await sendPrompt({
+        llmSystemPrompt: message.conversation.llmSystemPrompt,
+        prompt: updatedMessage.content,
+        // TODO: Add support for multiple documents per conversation
+        collectionName: message.conversation.documents[0]!.vectorStoreId,
+        conversationHistory: await ctx.prisma.message.findMany({
+          where: {conversationId: message.conversation.id},
+          orderBy: {createdAt: 'asc'},
+        }),
+        documentDescription: message.conversation.documents[0]!.description,
+      });
+
+      const aiMessage = await ctx.prisma.message.create({
+        data: {
+          conversation: {
+            connect: {
+              id: message.conversation.id,
+            },
+          },
+          author: AUTHOR.AI,
+          content: response,
+        },
+      });
+
+      return updatedMessage;
     }),
 });
