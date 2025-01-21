@@ -172,10 +172,14 @@ export function ConversationsSidebar() {
                 className="w-full"
                 onClick={() => setIsDocumentPickerModalOpen(true)}
                 onMouseEnter={() => {
-                  void utils.documents.getDocuments.prefetch();
+                  void utils.documents.getDocuments.prefetch({
+                    titleSearch: undefined,
+                  });
                 }}
                 onFocus={() => {
-                  void utils.documents.getDocuments.prefetch();
+                  void utils.documents.getDocuments.prefetch({
+                    titleSearch: undefined,
+                  });
                 }}
               >
                 <Plus className="mr-1 h-4 w-4" />
