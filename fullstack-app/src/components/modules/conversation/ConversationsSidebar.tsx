@@ -11,8 +11,9 @@ import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
-import {useDebounce} from 'use-debounce';
+import {useDebounceValue} from 'usehooks-ts';
 import {DocumentListPickerModal} from '../../reusable/DocumentListPickerModal';
+import {DEFAULT_MESSAGES_LIMIT} from './ConversationMain';
 
 export function ConversationsSidebar() {
   const t = useTranslations('conversation-sidebar');
@@ -22,7 +23,10 @@ export function ConversationsSidebar() {
   const router = useRouter();
   const utils = api.useUtils();
   const [conversationSearch, setConversationSearch] = useState('');
-  const [debouncedConversationSearch] = useDebounce(conversationSearch, 1000);
+  const [debouncedConversationSearch] = useDebounceValue(
+    conversationSearch,
+    1000
+  );
   const conversationsQuery = api.conversations.getConversations.useQuery(
     {
       titleSearch:
@@ -58,9 +62,7 @@ export function ConversationsSidebar() {
     api.conversations.editConversation.useMutation({
       onSuccess: async (conversation) => {
         await utils.conversations.getConversations.invalidate();
-        await utils.conversations.getConversation.invalidate({
-          id: conversation.id,
-        });
+        await utils.conversations.getConversation.invalidate();
       },
     });
 
@@ -147,7 +149,16 @@ export function ConversationsSidebar() {
                     onPreview={() => {
                       void utils.conversations.getConversation.prefetch({
                         id: conversation.id,
+                        withDocuments: true,
+                        withMessages: false,
                       });
+
+                      void utils.conversations.getConversationMessages.prefetchInfinite(
+                        {
+                          conversationId: conversation.id,
+                          limit: DEFAULT_MESSAGES_LIMIT,
+                        }
+                      );
                     }}
                     isLoading={
                       editConversationMutation.isPending ||

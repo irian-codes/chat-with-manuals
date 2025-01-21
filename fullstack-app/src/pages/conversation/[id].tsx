@@ -1,4 +1,7 @@
-import {ConversationMain} from '@/components/modules/conversation/ConversationMain';
+import {
+  ConversationMain,
+  DEFAULT_MESSAGES_LIMIT,
+} from '@/components/modules/conversation/ConversationMain';
 import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
@@ -43,7 +46,15 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   await Promise.all([
     helpers.conversations.getConversations.prefetch(),
-    helpers.conversations.getConversation.prefetch({id: conversationId}),
+    helpers.conversations.getConversation.prefetch({
+      id: conversationId,
+      withDocuments: true,
+      withMessages: false,
+    }),
+    helpers.conversations.getConversationMessages.prefetchInfinite({
+      conversationId,
+      limit: DEFAULT_MESSAGES_LIMIT,
+    }),
   ]);
 
   return {

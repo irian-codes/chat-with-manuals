@@ -1,96 +1,268 @@
 import {Header} from '@/components/reusable/Header';
-import {Button} from '@/components/shadcn-ui/button';
+import {InfiniteScrollAnchor} from '@/components/reusable/InfiniteScrollAnchor';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
-import {Textarea} from '@/components/shadcn-ui/textarea';
-import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
 import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
 import {isStringEmpty} from '@/utils/strings';
 import {AUTHOR} from '@prisma/client';
-import {AlertTriangle, Send} from 'lucide-react';
+import {AlertTriangle, Loader2} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
+import {useIsomorphicLayoutEffect} from 'usehooks-ts';
+import {z} from 'zod';
 import {ChatMessage} from './ChatMessage';
+import {ChatMessageInput} from './ChatMessageInput';
+import {ChatMessageLoadAnimation} from './ChatMessageLoadAnimation';
+
+// TODO #54: This should be a default setting in the database and load it on a global app settings.
+export const DEFAULT_MESSAGES_LIMIT = 8;
 
 export function ConversationMain() {
   const t = useTranslations('conversation');
   const format = useFormatter();
-  const [messageInput, setMessageInput] = useState('');
-  const scrollAnchorRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const isTouchDevice = useIsTouchDevice();
-  const isMacOs = useIsMacOs();
+  const scrollTopAnchorRef = useRef<HTMLDivElement>(null);
+  const scrollBottomAnchorRef = useRef<HTMLDivElement>(null);
+  const msgInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesListUpdateReasonRef = useRef<'edit' | 'send' | 'scroll' | null>(
+    null
+  );
   const router = useRouter();
+  const utils = api.useUtils();
+
   const conversationQuery = api.conversations.getConversation.useQuery(
     {
       id: router.query.id as string,
+      withDocuments: true,
+      withMessages: false,
     },
-    {enabled: router.query.id != null}
+    {
+      enabled: router.query.id != null,
+    }
   );
-  const utils = api.useUtils();
+
+  const messagesQuery =
+    api.conversations.getConversationMessages.useInfiniteQuery(
+      {
+        conversationId: router.query.id as string,
+        limit: DEFAULT_MESSAGES_LIMIT,
+      },
+      {
+        enabled: router.query.id != null,
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+        // Getting the messages correctly ordered, since each page now gets prepended in the array, as a chat is inverse order.
+        select(data) {
+          const messages: Message[] = [];
+
+          (data?.pages ?? []).forEach((page) =>
+            messages.unshift(...page.messages)
+          );
+
+          return messages;
+        },
+      }
+    );
+
+  const conversation = conversationQuery.data;
+  const messages = messagesQuery.data ?? [];
+
   const sendMessageMutation = api.conversations.sendMessage.useMutation({
-    // New way of Tanstack Query of doing optimistic updates
-    // @see https://tanstack.com/query/v5/docs/framework/react/guides/optimistic-updates
-    onSettled: async () => {
-      return await utils.conversations.getConversation.invalidate({
-        id: conversationQuery.data?.id ?? '',
+    onMutate: async (newPayload) => {
+      // Cancel any outgoing refetches
+      await utils.conversations.getConversationMessages.cancel({
+        conversationId: newPayload.conversationId,
+        limit: DEFAULT_MESSAGES_LIMIT,
       });
+
+      // Snapshot the previous value in case we have an error and we need to rollback
+      const previousReturnPayload =
+        utils.conversations.getConversationMessages.getInfiniteData({
+          conversationId: newPayload.conversationId,
+          limit: DEFAULT_MESSAGES_LIMIT,
+        });
+
+      // Optimistically update messages
+      utils.conversations.getConversationMessages.setInfiniteData(
+        {
+          conversationId: newPayload.conversationId,
+          limit: DEFAULT_MESSAGES_LIMIT,
+        },
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          const optimisticMessage = {
+            id: crypto.randomUUID(),
+            conversationId: newPayload.conversationId,
+            author: AUTHOR.USER,
+            content: newPayload.message,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          const newPages = oldData.pages.slice();
+
+          if (newPages[0]?.messages) {
+            newPages[0].messages = [...newPages[0].messages, optimisticMessage];
+          }
+
+          return {
+            ...oldData,
+            pages: newPages,
+          };
+        }
+      );
+
+      messagesListUpdateReasonRef.current = 'send';
+
+      // Return a context with the previous messages
+      return {previousReturnPayload};
+    },
+    onError: (err, newPayload, context) => {
+      // If the mutation fails, roll back to the previous value
+      if (context?.previousReturnPayload) {
+        utils.conversations.getConversationMessages.setInfiniteData(
+          {
+            conversationId: newPayload.conversationId,
+            limit: DEFAULT_MESSAGES_LIMIT,
+          },
+          context.previousReturnPayload
+        );
+      }
+    },
+    onSettled: async () => {
+      // Always refetch after error or success
+      await utils.conversations.getConversationMessages.invalidate();
+
+      messagesListUpdateReasonRef.current = 'send';
     },
   });
 
   const editMessageMutation = api.conversations.editMessage.useMutation({
-    onSuccess: async () => {
-      return await utils.conversations.getConversation.invalidate({
-        id: conversationQuery.data?.id ?? '',
+    onMutate: async (newPayload) => {
+      if (!conversation?.id) return;
+
+      // Cancel any outgoing refetches
+      await utils.conversations.getConversationMessages.cancel({
+        conversationId: conversation.id,
+        limit: DEFAULT_MESSAGES_LIMIT,
       });
+
+      // Snapshot the previous value in case we have an error and we need to rollback
+      const previousReturnPayload =
+        utils.conversations.getConversationMessages.getInfiniteData({
+          conversationId: conversation.id,
+          limit: DEFAULT_MESSAGES_LIMIT,
+        });
+
+      const editedMessage = messages.find(
+        (message) => message.id === newPayload.messageId
+      );
+
+      if (editedMessage == null) {
+        return;
+      }
+
+      // Optimistically update messages
+      utils.conversations.getConversationMessages.setInfiniteData(
+        {conversationId: conversation.id, limit: DEFAULT_MESSAGES_LIMIT},
+        (oldData) => {
+          if (!oldData || oldData.pages.length === 0) return oldData;
+
+          const newPages = oldData.pages.slice();
+
+          // Filter out messages that come after the edited message
+          newPages.forEach((page) => {
+            page.messages = page.messages.filter(
+              (msg) => msg.createdAt <= editedMessage.createdAt
+            );
+          });
+
+          // Update the edited message
+          const lastPage = newPages[newPages.length - 1]!;
+          const lastMessage = lastPage.messages[lastPage.messages.length - 1]!;
+
+          if (lastMessage.id !== newPayload.messageId) {
+            return oldData;
+          }
+
+          lastMessage.content = newPayload.content;
+          lastMessage.updatedAt = new Date();
+
+          return {
+            ...oldData,
+            pages: newPages,
+          };
+        }
+      );
+
+      messagesListUpdateReasonRef.current = 'edit';
+
+      // Return a context with the previous messages
+      return {previousReturnPayload};
+    },
+    onError: (err, newPayload, context) => {
+      // If the mutation fails, roll back to the previous value
+      if (context?.previousReturnPayload && conversation?.id) {
+        utils.conversations.getConversationMessages.setInfiniteData(
+          {
+            conversationId: conversation.id,
+            limit: DEFAULT_MESSAGES_LIMIT,
+          },
+          context.previousReturnPayload
+        );
+      }
+    },
+    onSettled: async () => {
+      // Always refetch after error or success
+      await utils.conversations.getConversationMessages.invalidate();
+
+      messagesListUpdateReasonRef.current = 'edit';
     },
   });
+
+  const isLoadingMessages = messagesQuery.isFetching;
 
   const isLoading =
     sendMessageMutation.isPending ||
     conversationQuery.isPending ||
-    editMessageMutation.isPending;
-
-  const conversation = conversationQuery.data;
-  const messages = conversation?.messages ?? [];
+    editMessageMutation.isPending ||
+    messagesQuery.isPending;
 
   const generateTitleMutation = api.conversations.generateTitle.useMutation({
     onSuccess: async () => {
-      void utils.conversations.getConversation.invalidate({
-        id: conversationQuery.data?.id ?? '',
-      });
-      void utils.conversations.getConversations.invalidate();
+      if (conversation?.id) {
+        await utils.conversations.getConversation.invalidate();
+        void utils.conversations.getConversations.invalidate();
+      }
     },
   });
 
   useEffect(() => {
     // Focus the input when the loading state changes
     if (!isLoading) {
-      inputRef.current?.focus();
+      msgInputRef.current?.focus();
     }
-  }, [isLoading, inputRef]);
+  }, [isLoading]);
 
-  useLayoutEffect(() => {
+  // Scroll to the corresponding anchor when messages list changes, even on first page load
+  useIsomorphicLayoutEffect(() => {
+    const anchor =
+      messagesListUpdateReasonRef.current === 'scroll'
+        ? scrollTopAnchorRef
+        : scrollBottomAnchorRef;
+
     setTimeout(() => {
-      scrollAnchorRef.current?.scrollIntoView({behavior: 'instant'});
-    }, 150);
-  }, []);
+      anchor.current?.scrollIntoView({behavior: 'smooth'});
+    }, 300);
 
-  useLayoutEffect(() => {
-    // Scroll to the bottom of the conversation when a new message is added
-    scrollAnchorRef.current?.scrollIntoView({behavior: 'smooth'});
-  }, [
-    sendMessageMutation.variables?.message,
-    messages.length,
-    scrollAnchorRef,
-  ]);
+    messagesListUpdateReasonRef.current = null;
+  }, [messages.length]);
 
-  async function handleSendMessage() {
-    const _inputMessage = messageInput.trim();
+  async function handleSendMessage(inputMessage: string) {
+    const _inputMessage = z.string().trim().parse(inputMessage);
 
     if (_inputMessage) {
-      setMessageInput('');
+      msgInputRef.current?.form?.reset();
 
       try {
         await sendMessageMutation.mutateAsync({
@@ -99,7 +271,10 @@ export function ConversationMain() {
         });
       } catch (error) {
         console.error('Could not send message', error);
-        setMessageInput(_inputMessage);
+
+        if (msgInputRef.current) {
+          msgInputRef.current.value = _inputMessage;
+        }
       }
 
       // Generate title if this is the first message
@@ -116,43 +291,26 @@ export function ConversationMain() {
       return;
     }
 
-    const _content = content.trim();
-
-    const editedMessage = conversation!.messages.find(
-      (message) => message.id === messageId
-    );
-
-    if (editedMessage == null) {
-      return;
-    }
-
-    editedMessage.content = _content;
-    editedMessage.updatedAt = new Date();
-
-    // Update the conversation in the cache to reflect the edited message immediately
-    utils.conversations.getConversation.setData(
-      {id: conversation!.id},
-      (oldData) => {
-        if (oldData == null) return oldData;
-
-        return {
-          ...oldData,
-          messages: oldData.messages
-            .filter((msg) => msg.createdAt <= editedMessage.createdAt)
-            .map((msg) => (msg.id === messageId ? {...editedMessage} : msg)),
-        };
-      }
-    );
-
     try {
       await editMessageMutation.mutateAsync({
         messageId,
-        content: _content,
+        content: content.trim(),
       });
     } catch (error) {
       console.error('Could not edit message', error);
     }
   }
+
+  // Memoize the onChange callback
+  const handleIntersectionChange = useCallback(
+    async (isIntersecting: boolean, entry: IntersectionObserverEntry) => {
+      if (isIntersecting) {
+        await messagesQuery.fetchNextPage();
+        messagesListUpdateReasonRef.current = 'scroll';
+      }
+    },
+    []
+  );
 
   // RENDERING
 
@@ -175,23 +333,30 @@ export function ConversationMain() {
       </Header>
 
       <ScrollArea className="flex-1 p-4">
-        {messages.length > 0 || sendMessageMutation.isPending ? (
+        {messages.length > 0 ? (
           <div className="space-y-4">
-            {(sendMessageMutation.isPending
-              ? ([
-                  ...messages,
-                  // Optimistic update message
-                  {
-                    id: crypto.randomUUID(),
-                    conversationId: conversation.id,
-                    author: AUTHOR.USER,
-                    content: sendMessageMutation.variables?.message ?? '',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  },
-                ] satisfies Message[])
-              : messages
-            ).map((message) => (
+            <InfiniteScrollAnchor
+              hasMoreItems={messagesQuery.hasNextPage}
+              isLoading={isLoadingMessages}
+              runOnClientOnly
+              observerOptions={{
+                threshold: 0.5,
+                initialIsIntersecting: false,
+              }}
+              memoizedOnChange={handleIntersectionChange}
+              debounceInMs={1_000}
+            >
+              {messagesQuery.hasNextPage && (
+                <Loader2 className="mx-auto mb-2 mt-4 h-8 w-8 animate-spin" />
+              )}
+            </InfiniteScrollAnchor>
+
+            <div
+              className="invisible h-[1px] w-full pt-6 sm:pt-4"
+              ref={scrollTopAnchorRef}
+            />
+
+            {messages.map((message) => (
               <ChatMessage
                 key={message.id}
                 message={message}
@@ -201,22 +366,12 @@ export function ConversationMain() {
               />
             ))}
 
-            {/* Loading animation */}
-            {isLoading && (
-              <div className="w-24">
-                <div className="rounded-md bg-muted p-4">
-                  <div className="flex items-center justify-evenly gap-2">
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-primary"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-150"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-primary delay-300"></div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* AI answer loading animation */}
+            <ChatMessageLoadAnimation isLoading={isLoading} />
 
             <div
               className="invisible h-[1px] w-full pt-6 sm:pt-4 md:pt-0"
-              ref={scrollAnchorRef}
+              ref={scrollBottomAnchorRef}
             />
           </div>
         ) : (
@@ -225,7 +380,7 @@ export function ConversationMain() {
             <div>
               <p>
                 {t('language-alert', {
-                  locale: conversationQuery.data.documents[0]!.locale,
+                  locale: conversation.documents[0]!.locale,
                 })}
               </p>
               <br />
@@ -235,50 +390,31 @@ export function ConversationMain() {
         )}
       </ScrollArea>
 
-      <footer className="border-t p-4">
-        <div className="mx-auto flex min-w-[250px] max-w-[750px] flex-col gap-2 lg:w-[calc(100%-12rem)]">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (isLoading) return;
-              void handleSendMessage();
-            }}
-            className="flex items-start space-x-2"
-          >
-            <Textarea
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              placeholder={t('input-placeholder')}
-              className="flex-1 resize-none"
-              disabled={isLoading}
-              autoFocus
-              ref={inputRef}
-              draggable={false}
-              onKeyDown={(e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
-                  void handleSendMessage();
-                }
-              }}
-            />
-            <div className="flex flex-col items-center justify-center gap-1">
-              <Button type="submit" disabled={isLoading}>
-                <Send className="mr-2 h-4 w-4" />
-                {t('send')}
-              </Button>
-              {!isTouchDevice && (
-                <div className="text-sm">
-                  {isMacOs ? '⌘ + Enter' : 'Ctrl + Enter'}
-                </div>
-              )}
-            </div>
-          </form>
-          <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-6 w-6" />{' '}
-            {t('language-alert-brief', {
-              locale: conversationQuery.data.documents[0]!.locale,
-            })}
-          </p>
-        </div>
+      <footer>
+        <ChatMessageInput
+          ref={msgInputRef}
+          conversationLocale={conversation.documents[0]!.locale}
+          onSubmit={(e) => {
+            e.preventDefault();
+
+            const inputMessage = msgInputRef.current?.value ?? '';
+            void handleSendMessage(inputMessage);
+          }}
+          textAreaProps={{
+            disabled: isLoading,
+            autoFocus: true,
+            draggable: false,
+            onKeyDown: (e) => {
+              if (e.ctrlKey && e.key === 'Enter') {
+                const inputMessage = msgInputRef.current?.value ?? '';
+                void handleSendMessage(inputMessage);
+              }
+            },
+          }}
+          sendButtonProps={{
+            disabled: isLoading,
+          }}
+        />
       </footer>
     </div>
   );

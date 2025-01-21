@@ -47,7 +47,15 @@ export const conversationsRouter = createTRPCRouter({
     }),
 
   getConversation: withDbUserProcedure
-    .input(z.object({id: z.string().min(1).uuid()}))
+    .input(
+      z
+        .object({
+          id: z.string().min(1).uuid(),
+          withMessages: z.boolean().optional(),
+          withDocuments: z.boolean().optional(),
+        })
+        .strict()
+    )
     .query(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
@@ -57,12 +65,8 @@ export const conversationsRouter = createTRPCRouter({
           userId,
         },
         include: {
-          messages: {
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
-          documents: true,
+          documents: input?.withDocuments ? true : false,
+          messages: input?.withMessages ? true : false,
         },
       });
 
@@ -74,6 +78,61 @@ export const conversationsRouter = createTRPCRouter({
       }
 
       return conversation;
+    }),
+
+  getConversationMessages: withDbUserProcedure
+    .input(
+      z.object({
+        conversationId: z.string().min(1).uuid(),
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(50).default(20),
+      })
+    )
+    .query(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      // Verify user has access to this conversation
+      const conversation = await ctx.prisma.conversation.findUnique({
+        where: {
+          id: input.conversationId,
+          userId,
+        },
+        select: {id: true},
+      });
+
+      if (!conversation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Conversation not found or access denied',
+        });
+      }
+
+      const messages = await ctx.prisma.message.findMany({
+        // Getting one more to use as next cursor
+        take: input.limit + 1,
+        where: {
+          conversationId: input.conversationId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        cursor: input.cursor
+          ? {
+              id: input.cursor,
+            }
+          : undefined,
+      });
+
+      let nextCursor: typeof input.cursor | undefined;
+      if (messages.length > input.limit) {
+        const nextItem = messages.pop();
+        nextCursor = nextItem!.id;
+      }
+
+      return {
+        messages: messages.reverse(),
+        nextCursor,
+      };
     }),
 
   addConversation: withDbUserProcedure

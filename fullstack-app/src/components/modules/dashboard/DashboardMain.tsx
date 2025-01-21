@@ -9,14 +9,14 @@ import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {useState} from 'react';
-import {useDebounce} from 'use-debounce';
+import {useDebounceValue} from 'usehooks-ts';
 
 export function DashboardMain() {
   const t = useTranslations('document-manager');
   const router = useRouter();
   const utils = api.useUtils();
   const [titleSearch, setTitleSearch] = useState('');
-  const [debouncedTitleSearch] = useDebounce(titleSearch, 1000);
+  const [debouncedTitleSearch] = useDebounceValue(titleSearch, 1000);
   const documentsQuery = api.documents.getDocuments.useQuery({
     titleSearch:
       debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
