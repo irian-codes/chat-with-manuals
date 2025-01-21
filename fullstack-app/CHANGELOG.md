@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.11](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.10...v0.1.11) (2025-01-21)
+
+
+### Features
+
+* **conversation-trpc:** sending the document description to LLM when messaging ([a9f0047](https://github.com/irian-codes/chat-with-manuals/commit/a9f004765e8a25c9f28b9602f881764724d35ff7))
+* **conversation-trpc:** sending the whole conversation to LLM ([f1cfd51](https://github.com/irian-codes/chat-with-manuals/commit/f1cfd5142498b70a1f3fbc84f0eefcfe433f6067))
+* **conversation:** allow editing message ([3824718](https://github.com/irian-codes/chat-with-manuals/commit/3824718a99d1c58aff01ed936e228a4ce3e005c2))
+* **conversation:** infinite chat scroll ([fd192d9](https://github.com/irian-codes/chat-with-manuals/commit/fd192d9eb129f4768bf1c6762792c9399e87cedb))
+
+
+### Bug Fixes
+
+* **frontend-trpc:** prefetching with the right keys ([83a6477](https://github.com/irian-codes/chat-with-manuals/commit/83a6477edd43f88dc8e8e19b12a1101b44ac3d69))
+* **sidebar:** indicating current conversation on sidebar ([2f61190](https://github.com/irian-codes/chat-with-manuals/commit/2f611904f4bd5db604d4219675b77febdfbec952))
+* **sidebar:** sidebar collapse behaviour between routes corrected ([e3322ca](https://github.com/irian-codes/chat-with-manuals/commit/e3322ca2d5186134d09f66f00d8b379b71584d11))
+
 ## [0.1.10](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.8...v0.1.10) (2025-01-16)
 
 
