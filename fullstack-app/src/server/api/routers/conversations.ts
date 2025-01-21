@@ -182,6 +182,17 @@ This strict language requirement ensures that all interactions remain consistent
         });
       }
 
+      const response = await sendPrompt({
+        llmSystemPrompt: conversation.llmSystemPrompt,
+        prompt: input.message,
+        // TODO: Add support for multiple documents per conversation
+        collectionName: conversation.documents[0]!.vectorStoreId,
+        conversationHistory: await ctx.prisma.message.findMany({
+          where: {conversationId: conversation.id},
+          orderBy: {createdAt: 'asc'},
+        }),
+      });
+
       // Create user message
       const userMessage = await ctx.prisma.message.create({
         data: {
@@ -193,13 +204,6 @@ This strict language requirement ensures that all interactions remain consistent
           author: AUTHOR.USER,
           content: input.message,
         },
-      });
-
-      const response = await sendPrompt({
-        llmSystemPrompt: conversation.llmSystemPrompt,
-        prompt: input.message,
-        // TODO: Add support for multiple documents per conversation
-        collectionName: conversation.documents[0]!.vectorStoreId,
       });
 
       const aiMessage = await ctx.prisma.message.create({
