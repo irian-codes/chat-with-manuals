@@ -1,5 +1,4 @@
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
-import {useRouter} from 'next/router';
 import {
   createContext,
   useContext,
@@ -7,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import {useIsClient} from 'usehooks-ts';
 
 interface SidebarContextType {
   isCollapsed: boolean;
@@ -16,23 +16,15 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({children}: {children: ReactNode}) {
-  const isNotMobile = useTailwindBreakpoint('sm');
-  const [isCollapsed, setIsCollapsed] = useState(!isNotMobile);
-  const router = useRouter();
+  const isClient = useIsClient();
+  const isMobile = !useTailwindBreakpoint('sm');
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const pathname = isClient ? window.location.pathname : undefined;
 
-  // Track previous pathname to detect real route changes
-  const [prevPathname, setPrevPathname] = useState(router.pathname);
-  if (router.pathname !== prevPathname) {
-    setPrevPathname(router.pathname);
-    setIsCollapsed(!isNotMobile);
-  }
-
-  // Needed because useTailwindBreakpoint hook runs on the server and
-  // always returns false. So when we actually hydrate the app, we need to
-  // set the state again
+  // URL changed! So we toggle the sidebar
   useEffect(() => {
-    setIsCollapsed(!isNotMobile);
-  }, [isNotMobile]);
+    setIsCollapsed(isMobile);
+  }, [pathname, isMobile]);
 
   return (
     <SidebarContext.Provider value={{isCollapsed, setIsCollapsed}}>

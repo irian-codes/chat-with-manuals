@@ -12,7 +12,7 @@ import type {Document} from '@/types/Document';
 import {Search} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useEffect, useState} from 'react';
-import {useDebounce} from 'use-debounce';
+import {useDebounceValue} from 'usehooks-ts';
 
 interface DocumentPickerModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ interface DocumentPickerModalProps {
 
 export function DocumentListPickerModal(props: DocumentPickerModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery] = useDebounce(
+  const [debouncedSearchQuery] = useDebounceValue(
     searchQuery,
     props.debounceTimeInMs ?? 1000
   );

@@ -9,6 +9,7 @@ import {Input} from '../shadcn-ui/input';
 
 interface ConversationListItemProps {
   conversation: Conversation;
+  isHighlighted?: boolean;
   onEdit: (newTitle: string) => Promise<string>;
   onDelete: () => Promise<void>;
   onPreview: () => void;
@@ -44,7 +45,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
         />
       ) : (
         <Button
-          variant="ghost"
+          variant={props.isHighlighted ? 'default' : 'ghost'}
           className="flex-1 justify-start overflow-hidden"
           disabled={props.isLoading || isEditing}
         >

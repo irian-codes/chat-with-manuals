@@ -47,7 +47,15 @@ export const conversationsRouter = createTRPCRouter({
     }),
 
   getConversation: withDbUserProcedure
-    .input(z.object({id: z.string().min(1).uuid()}))
+    .input(
+      z
+        .object({
+          id: z.string().min(1).uuid(),
+          withMessages: z.boolean().optional(),
+          withDocuments: z.boolean().optional(),
+        })
+        .strict()
+    )
     .query(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
@@ -57,8 +65,8 @@ export const conversationsRouter = createTRPCRouter({
           userId,
         },
         include: {
-          messages: true,
-          documents: true,
+          documents: input?.withDocuments ? true : false,
+          messages: input?.withMessages ? true : false,
         },
       });
 
@@ -70,6 +78,61 @@ export const conversationsRouter = createTRPCRouter({
       }
 
       return conversation;
+    }),
+
+  getConversationMessages: withDbUserProcedure
+    .input(
+      z.object({
+        conversationId: z.string().min(1).uuid(),
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(50).default(20),
+      })
+    )
+    .query(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      // Verify user has access to this conversation
+      const conversation = await ctx.prisma.conversation.findUnique({
+        where: {
+          id: input.conversationId,
+          userId,
+        },
+        select: {id: true},
+      });
+
+      if (!conversation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Conversation not found or access denied',
+        });
+      }
+
+      const messages = await ctx.prisma.message.findMany({
+        // Getting one more to use as next cursor
+        take: input.limit + 1,
+        where: {
+          conversationId: input.conversationId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        cursor: input.cursor
+          ? {
+              id: input.cursor,
+            }
+          : undefined,
+      });
+
+      let nextCursor: typeof input.cursor | undefined;
+      if (messages.length > input.limit) {
+        const nextItem = messages.pop();
+        nextCursor = nextItem!.id;
+      }
+
+      return {
+        messages: messages.reverse(),
+        nextCursor,
+      };
     }),
 
   addConversation: withDbUserProcedure
@@ -182,6 +245,18 @@ This strict language requirement ensures that all interactions remain consistent
         });
       }
 
+      const response = await sendPrompt({
+        llmSystemPrompt: conversation.llmSystemPrompt,
+        prompt: input.message,
+        // TODO: Add support for multiple documents per conversation
+        collectionName: conversation.documents[0]!.vectorStoreId,
+        conversationHistory: await ctx.prisma.message.findMany({
+          where: {conversationId: conversation.id},
+          orderBy: {createdAt: 'asc'},
+        }),
+        documentDescription: conversation.documents[0]!.description,
+      });
+
       // Create user message
       const userMessage = await ctx.prisma.message.create({
         data: {
@@ -193,13 +268,6 @@ This strict language requirement ensures that all interactions remain consistent
           author: AUTHOR.USER,
           content: input.message,
         },
-      });
-
-      const response = await sendPrompt({
-        llmSystemPrompt: conversation.llmSystemPrompt,
-        prompt: input.message,
-        // TODO: Add support for multiple documents per conversation
-        collectionName: conversation.documents[0]!.vectorStoreId,
       });
 
       const aiMessage = await ctx.prisma.message.create({
@@ -335,5 +403,90 @@ This strict language requirement ensures that all interactions remain consistent
       }
 
       return newTitle;
+    }),
+
+  editMessage: withDbUserProcedure
+    .input(
+      z
+        .object({
+          messageId: z.string().min(1).uuid(),
+          content: z.string().trim().min(1),
+        })
+        .strict()
+    )
+    .mutation(async ({ctx, input}) => {
+      const userId = ctx.prismaUser.id;
+
+      // Get the message and verify ownership
+      const message = await ctx.prisma.message.findFirst({
+        where: {
+          id: input.messageId,
+          author: AUTHOR.USER,
+          conversation: {
+            userId,
+          },
+        },
+        include: {
+          conversation: {
+            include: {
+              documents: true,
+            },
+          },
+        },
+      });
+
+      if (!message) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Message not found or access denied',
+        });
+      }
+
+      // Delete all messages after this one
+      await ctx.prisma.message.deleteMany({
+        where: {
+          conversationId: message.conversation.id,
+          createdAt: {
+            gt: message.createdAt,
+          },
+        },
+      });
+
+      // Update the message
+      const updatedMessage = await ctx.prisma.message.update({
+        where: {
+          id: input.messageId,
+        },
+        data: {
+          content: input.content,
+          updatedAt: new Date(),
+        },
+      });
+
+      const response = await sendPrompt({
+        llmSystemPrompt: message.conversation.llmSystemPrompt,
+        prompt: updatedMessage.content,
+        // TODO: Add support for multiple documents per conversation
+        collectionName: message.conversation.documents[0]!.vectorStoreId,
+        conversationHistory: await ctx.prisma.message.findMany({
+          where: {conversationId: message.conversation.id},
+          orderBy: {createdAt: 'asc'},
+        }),
+        documentDescription: message.conversation.documents[0]!.description,
+      });
+
+      const aiMessage = await ctx.prisma.message.create({
+        data: {
+          conversation: {
+            connect: {
+              id: message.conversation.id,
+            },
+          },
+          author: AUTHOR.AI,
+          content: response,
+        },
+      });
+
+      return updatedMessage;
     }),
 });

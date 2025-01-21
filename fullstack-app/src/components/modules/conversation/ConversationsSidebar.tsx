@@ -11,8 +11,9 @@ import {Menu, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
-import {useDebounce} from 'use-debounce';
+import {useDebounceValue} from 'usehooks-ts';
 import {DocumentListPickerModal} from '../../reusable/DocumentListPickerModal';
+import {DEFAULT_MESSAGES_LIMIT} from './ConversationMain';
 
 export function ConversationsSidebar() {
   const t = useTranslations('conversation-sidebar');
@@ -22,7 +23,10 @@ export function ConversationsSidebar() {
   const router = useRouter();
   const utils = api.useUtils();
   const [conversationSearch, setConversationSearch] = useState('');
-  const [debouncedConversationSearch] = useDebounce(conversationSearch, 1000);
+  const [debouncedConversationSearch] = useDebounceValue(
+    conversationSearch,
+    1000
+  );
   const conversationsQuery = api.conversations.getConversations.useQuery(
     {
       titleSearch:
@@ -34,6 +38,7 @@ export function ConversationsSidebar() {
       enabled: !isCollapsed,
     }
   );
+  const currentConversationId = router.query.id as string;
   const conversations = conversationsQuery.data ?? [];
   const [docTitleSearch, setDocTitleSearch] = useState('');
   const documentsQuery = api.documents.getDocuments.useQuery(
@@ -57,9 +62,7 @@ export function ConversationsSidebar() {
     api.conversations.editConversation.useMutation({
       onSuccess: async (conversation) => {
         await utils.conversations.getConversations.invalidate();
-        await utils.conversations.getConversation.invalidate({
-          id: conversation.id,
-        });
+        await utils.conversations.getConversation.invalidate();
       },
     });
 
@@ -124,6 +127,7 @@ export function ConversationsSidebar() {
                   <ConversationListItem
                     key={conversation.id}
                     conversation={conversation}
+                    isHighlighted={currentConversationId === conversation.id}
                     onEdit={async (newTitle) => {
                       if (!isStringEmpty(newTitle)) {
                         const newConversation =
@@ -145,7 +149,16 @@ export function ConversationsSidebar() {
                     onPreview={() => {
                       void utils.conversations.getConversation.prefetch({
                         id: conversation.id,
+                        withDocuments: true,
+                        withMessages: false,
                       });
+
+                      void utils.conversations.getConversationMessages.prefetchInfinite(
+                        {
+                          conversationId: conversation.id,
+                          limit: DEFAULT_MESSAGES_LIMIT,
+                        }
+                      );
                     }}
                     isLoading={
                       editConversationMutation.isPending ||
@@ -159,10 +172,14 @@ export function ConversationsSidebar() {
                 className="w-full"
                 onClick={() => setIsDocumentPickerModalOpen(true)}
                 onMouseEnter={() => {
-                  void utils.documents.getDocuments.prefetch();
+                  void utils.documents.getDocuments.prefetch({
+                    titleSearch: undefined,
+                  });
                 }}
                 onFocus={() => {
-                  void utils.documents.getDocuments.prefetch();
+                  void utils.documents.getDocuments.prefetch({
+                    titleSearch: undefined,
+                  });
                 }}
               >
                 <Plus className="mr-1 h-4 w-4" />
