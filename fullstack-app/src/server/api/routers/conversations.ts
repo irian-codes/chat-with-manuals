@@ -191,6 +191,7 @@ This strict language requirement ensures that all interactions remain consistent
           where: {conversationId: conversation.id},
           orderBy: {createdAt: 'asc'},
         }),
+        documentDescription: conversation.documents[0]!.description,
       });
 
       // Create user message

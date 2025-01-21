@@ -31,6 +31,7 @@ const miniLlm = new ChatOpenAI({
 
 const CHAT_TEMPLATES = {
   conversationHistory: 'CONVERSATION HISTORY (CONTEXT):\n{history}',
+  documentDescription: 'DOCUMENT DESCRIPTION (CONTEXT):\n{description}',
   documentFragments: 'DOCUMENT FRAGMENTS (CONTEXT):\n{context}',
   userQuestion: 'USER QUESTION (PROMPT): {prompt}',
   answerPrefix: 'ANSWER:',
@@ -41,11 +42,13 @@ export async function sendPrompt({
   collectionName,
   llmSystemPrompt,
   conversationHistory,
+  documentDescription,
 }: {
   prompt: string;
   collectionName: string;
   llmSystemPrompt: string;
   conversationHistory: Message[];
+  documentDescription: string;
 }) {
   const _prompt = nonEmptyStringSchema.parse(prompt, {
     errorMap: (_) => {
@@ -73,6 +76,10 @@ export async function sendPrompt({
     },
   });
 
+  const _documentDescription = nonEmptyStringSchema
+    .safeParse(documentDescription)
+    .data?.trim();
+
   console.log('Retrieving context...');
 
   const retrievedContext = await retrieveContext({
@@ -92,6 +99,7 @@ export async function sendPrompt({
     trimmedHistory,
     retrievedContext,
     prompt: _prompt,
+    documentDescription: _documentDescription,
   });
 
   const systemMessage = new SystemMessage(_llmSystemPrompt);
@@ -304,16 +312,20 @@ async function createChatTemplate({
   trimmedHistory,
   retrievedContext,
   prompt,
+  documentDescription,
 }: {
   trimmedHistory: Message[];
   retrievedContext: string;
   prompt: string;
+  documentDescription?: string;
 }) {
   // Build template parts dynamically
   const templateParts = [
     // Add conversation history if it exists
-    ...(trimmedHistory.length > 0 ? [CHAT_TEMPLATES.conversationHistory] : []),
-    '',
+    ...(trimmedHistory.length > 0
+      ? [CHAT_TEMPLATES.conversationHistory, '']
+      : []),
+    ...(documentDescription ? [CHAT_TEMPLATES.documentDescription, ''] : []),
     CHAT_TEMPLATES.documentFragments,
     '',
     CHAT_TEMPLATES.userQuestion,
@@ -329,6 +341,7 @@ async function createChatTemplate({
         .map((msg) => `${msg.author.toUpperCase()}: ${msg.content}`)
         .join('\n\n'),
     }),
+    ...(documentDescription ? {description: documentDescription} : {}),
     context: retrievedContext,
     prompt,
   });
