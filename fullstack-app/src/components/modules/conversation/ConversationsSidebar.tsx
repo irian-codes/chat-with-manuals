@@ -34,6 +34,7 @@ export function ConversationsSidebar() {
       enabled: !isCollapsed,
     }
   );
+  const currentConversationId = router.query.id as string;
   const conversations = conversationsQuery.data ?? [];
   const [docTitleSearch, setDocTitleSearch] = useState('');
   const documentsQuery = api.documents.getDocuments.useQuery(
@@ -124,6 +125,7 @@ export function ConversationsSidebar() {
                   <ConversationListItem
                     key={conversation.id}
                     conversation={conversation}
+                    isHighlighted={currentConversationId === conversation.id}
                     onEdit={async (newTitle) => {
                       if (!isStringEmpty(newTitle)) {
                         const newConversation =
