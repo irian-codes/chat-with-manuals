@@ -25,7 +25,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     <div className="flex flex-row items-center justify-between gap-2">
       {isEditing ? (
         <Input
-          className="w-full overflow-hidden text-left focus-visible:ring-0"
+          className="w-full flex-grow overflow-hidden text-left focus-visible:ring-0"
           value={newTitle}
           onChange={(ev) => setNewTitle(ev.target.value)}
           autoFocus
@@ -44,25 +44,25 @@ export function ConversationListItem(props: ConversationListItemProps) {
           disabled={props.isLoading}
         />
       ) : (
-        <Button
-          variant={props.isHighlighted ? 'default' : 'ghost'}
-          className="flex-1 justify-start overflow-hidden"
-          disabled={props.isLoading || isEditing}
+        <Link
+          href={`/conversation/${props.conversation.id}`}
+          className="flex-grow overflow-hidden"
+          prefetch={false}
+          onMouseEnter={props.onPreview}
+          onFocus={props.onPreview}
         >
-          <Link
-            href={`/conversation/${props.conversation.id}`}
-            className="w-full truncate text-left"
-            prefetch={false}
-            onMouseEnter={props.onPreview}
-            onFocus={props.onPreview}
+          <Button
+            variant={props.isHighlighted ? 'default' : 'ghost'}
+            className="w-full justify-start"
+            disabled={props.isLoading || isEditing}
           >
-            <span className="font-normal">
+            <p className="w-full truncate text-left font-normal">
               {isStringEmpty(props.conversation.title)
                 ? t('conversation-title-missing')
                 : props.conversation.title}
-            </span>
-          </Link>
-        </Button>
+            </p>
+          </Button>
+        </Link>
       )}
 
       {isEditing ? (
