@@ -1,4 +1,5 @@
-import {ConversationListItem} from '@/components/reusable/ConversationListItem';
+import {DEFAULT_MESSAGES_LIMIT} from '@/components/modules/conversation/ConversationMain';
+import {DocumentListPickerModal} from '@/components/reusable/DocumentListPickerModal';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
@@ -12,8 +13,7 @@ import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {Fragment, useState} from 'react';
 import {useDebounceValue} from 'usehooks-ts';
-import {DocumentListPickerModal} from '../../reusable/DocumentListPickerModal';
-import {DEFAULT_MESSAGES_LIMIT} from './ConversationMain';
+import {ConversationListItem} from './ConversationListItem';
 
 export function ConversationsSidebar() {
   const t = useTranslations('conversation-sidebar');

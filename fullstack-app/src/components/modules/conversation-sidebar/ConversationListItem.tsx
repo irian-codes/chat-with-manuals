@@ -1,11 +1,11 @@
 import {Button} from '@/components/shadcn-ui/button';
+import {Input} from '@/components/shadcn-ui/input';
 import type {Conversation} from '@/types/Conversation';
 import {isStringEmpty} from '@/utils/strings';
 import {Check, Pencil, Trash2, X} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import Link from 'next/link';
 import {Fragment, useState} from 'react';
-import {Input} from '../shadcn-ui/input';
 
 interface ConversationListItemProps {
   conversation: Conversation;

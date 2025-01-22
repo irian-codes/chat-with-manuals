@@ -1,4 +1,4 @@
-import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
+import {ConversationsSidebar} from '@/components/modules/conversation-sidebar/ConversationsSidebar';
 import {DashboardMain} from '@/components/modules/dashboard/DashboardMain';
 import {DashboardModals} from '@/components/modules/dashboard/DashboardModals';
 import MainLayout from '@/components/reusable/MainLayout';

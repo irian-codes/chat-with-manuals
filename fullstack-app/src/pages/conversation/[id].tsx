@@ -1,8 +1,8 @@
+import {ConversationsSidebar} from '@/components/modules/conversation-sidebar/ConversationsSidebar';
 import {
   ConversationMain,
   DEFAULT_MESSAGES_LIMIT,
 } from '@/components/modules/conversation/ConversationMain';
-import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
