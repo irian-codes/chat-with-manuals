@@ -1,5 +1,4 @@
 import {type Config} from 'tailwindcss';
-import animate from 'tailwindcss-animate';
 import {fontFamily} from 'tailwindcss/defaultTheme';
 
 export default {
@@ -59,5 +58,6 @@ export default {
       },
     },
   },
-  plugins: [animate],
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  plugins: [require('tailwindcss-motion')],
 } satisfies Config;
