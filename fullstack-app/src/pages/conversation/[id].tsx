@@ -4,8 +4,6 @@ import {
   DEFAULT_MESSAGES_LIMIT,
 } from '@/components/modules/conversation/ConversationMain';
 import MainLayout from '@/components/reusable/MainLayout';
-import {useSidebar} from '@/contexts/ConversationsSidebarContext';
-import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {prisma} from '@/server/db/prisma';
@@ -68,14 +66,11 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 export default function ConversationPage() {
-  const {isCollapsed} = useSidebar();
-  const isNotMobile = useTailwindBreakpoint('sm');
-
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
         <ConversationsSidebar />
-        {(isCollapsed || isNotMobile) && <ConversationMain />}
+        <ConversationMain />
       </div>
     </MainLayout>
   );
