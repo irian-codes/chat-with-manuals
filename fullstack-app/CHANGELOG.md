@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.12](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.11...v0.1.12) (2025-01-26)
+
+
+### Features
+
+* **document-image:** implemented support for uploading document images ([74f8a2c](https://github.com/irian-codes/chat-with-manuals/commit/74f8a2c99057eb3bc7757fc1a759925ba1b4d0af))
+* **sidebar:** added header into the sidebar ([5f75fe7](https://github.com/irian-codes/chat-with-manuals/commit/5f75fe7727456c8d963db0fcb6d397f02d299821))
+
+
+### Bug Fixes
+
+* **conversation-sidebar:** click area of the conversation button fills the whole button ([d9f02ad](https://github.com/irian-codes/chat-with-manuals/commit/d9f02ad509ef2491882c0267e9852b85d4259de6))
+* **upload-document-modal:** fixed filesize calculation ([d24e165](https://github.com/irian-codes/chat-with-manuals/commit/d24e1652b14352422beaaa052e9465e38e5578a8))
+
 ## [0.1.11](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.10...v0.1.11) (2025-01-21)
 
 
