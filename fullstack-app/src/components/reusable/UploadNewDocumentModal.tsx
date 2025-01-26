@@ -6,24 +6,32 @@ import {
   DialogTitle,
 } from '@/components/shadcn-ui/dialog';
 import {Input} from '@/components/shadcn-ui/input';
-import type {UploadDocumentPayload} from '@/types/UploadDocumentPayload';
+import {
+  acceptedImageTypes,
+  type UploadNewDocumentPayload,
+} from '@/types/UploadNewDocumentPayload';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
+import {useRef} from 'react';
 import {type SubmitHandler, useForm, type UseFormReturn} from 'react-hook-form';
 import {Label} from '../shadcn-ui/label';
 import {Textarea} from '../shadcn-ui/textarea';
 
 // Seems that on the frontend the type for the file picker must be
 // FileList, while on the backend we want to use File.
-export type UploadFormInputs = Omit<UploadDocumentPayload, 'file'> & {
+export type UploadFormInputs = Omit<
+  UploadNewDocumentPayload,
+  'file' | 'image'
+> & {
   file: FileList;
+  image?: FileList;
 };
 
 interface UploadNewDocumentModalProps {
   isOpen: boolean;
   onSubmit: (
-    data: UploadFormInputs,
-    form: UseFormReturn<UploadFormInputs>
+    form: UseFormReturn<UploadFormInputs>,
+    htmlForm: HTMLFormElement
   ) => Promise<void>;
   onClose?: (form: UseFormReturn<UploadFormInputs>) => Promise<void>;
 }
@@ -31,9 +39,10 @@ interface UploadNewDocumentModalProps {
 export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
   const t = useTranslations('upload-new-document-modal');
   const form = useForm<UploadFormInputs>();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const onSubmit: SubmitHandler<UploadFormInputs> = (data) => {
-    void props.onSubmit(data, form);
+  const onSubmit: SubmitHandler<UploadFormInputs> = () => {
+    void props.onSubmit(form, formRef.current!);
   };
 
   function handleCloseButtonClick() {
@@ -55,7 +64,11 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
         </DialogHeader>
 
         {/* TODO: This could be even nicer if we create the form with the Shacn/ui integration: https://ui.shadcn.com/docs/components/form */}
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4"
+          ref={formRef}
+        >
           <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="title">{t('document-title')}</Label>
@@ -162,7 +175,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                     // This should be checked on the backend too, but
                     // checking here first to avoid unnecessary processing.
                     const MAX_FILE_SIZE_MB = 800;
-                    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1000 * 1000;
+                    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
                     const errorFileSizeMessage = t(
                       'form-errors.file-max-size',
                       {
@@ -177,12 +190,53 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                     return true;
                   },
                 })}
-                accept=".pdf,application/pdf"
+                accept={'application/pdf'}
                 multiple={false}
               />
               {form.formState.errors.file && (
                 <p className="text-sm text-red-500">
                   {form.formState.errors.file.message}
+                </p>
+              )}
+            </div>
+
+            <div className="relative space-y-1">
+              <Label htmlFor="image">{t('image-input-label')}</Label>
+              <Input
+                id="image"
+                type="file"
+                {...form.register('image', {
+                  required: false,
+                  validate: (value): string | boolean => {
+                    const file = value?.[0];
+
+                    if (file == null) {
+                      return true; // Optional field
+                    }
+
+                    if (!acceptedImageTypes.includes(file.type)) {
+                      return t('form-errors.image-must-be-valid');
+                    }
+
+                    const MAX_IMAGE_SIZE_MB = 1;
+                    const MAX_IMAGE_SIZE_BYTES =
+                      MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+                    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                      return t('form-errors.image-max-size', {
+                        maxSizeInMB: Math.floor(MAX_IMAGE_SIZE_MB),
+                      });
+                    }
+
+                    return true;
+                  },
+                })}
+                accept={acceptedImageTypes.join(',')}
+                multiple={false}
+              />
+              {form.formState.errors.image && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.image.message}
                 </p>
               )}
             </div>

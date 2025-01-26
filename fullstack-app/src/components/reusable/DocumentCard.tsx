@@ -2,6 +2,7 @@ import {Button} from '@/components/shadcn-ui/button';
 import {Card, CardContent} from '@/components/shadcn-ui/card';
 import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
+import {isStringEmpty} from '@/utils/strings';
 import {cn} from '@/utils/ui/utils';
 import {FilePenLine, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
@@ -14,8 +15,8 @@ type UploadingDocumentCardProps = {
 
 type UploadedDocumentCardProps = {
   doc: Document;
-  onEditButtonClick: (ev: React.MouseEvent<HTMLButtonElement>) => void;
-  onEditDocumentPreview?: (
+  onUpdateButtonClick: (ev: React.MouseEvent<HTMLButtonElement>) => void;
+  onUpdateDocumentPreview?: (
     ev:
       | React.MouseEvent<HTMLButtonElement>
       | React.FocusEvent<HTMLButtonElement>,
@@ -29,12 +30,15 @@ export function DocumentCard(props: DocumentCardProps) {
   const t = useTranslations('document-manager');
   const format = useFormatter();
   const docIsUploading = 'onCancelButtonClick' in props;
+  const imageUrl = !isStringEmpty(props.doc.imageUrl)
+    ? props.doc.imageUrl.replace('/public/', '/')
+    : '/default-doc-image.jpg';
 
   return (
     <Card className={cn('max-w-[14rem]', docIsUploading && 'animate-pulse')}>
       <CardContent className="p-0">
         <Image
-          src="https://picsum.photos/400"
+          src={imageUrl}
           alt={t('image-alt')}
           className="aspect-[1/1] rounded-t-xl object-cover"
           width={400}
@@ -62,18 +66,18 @@ export function DocumentCard(props: DocumentCardProps) {
               onClick={
                 docIsUploading
                   ? props.onCancelButtonClick
-                  : props.onEditButtonClick
+                  : props.onUpdateButtonClick
               }
               onMouseEnter={(ev) => {
                 // Prefetching for the edit modal
-                if ('onEditDocumentPreview' in props) {
-                  props.onEditDocumentPreview?.(ev, props.doc);
+                if ('onUpdateDocumentPreview' in props) {
+                  props.onUpdateDocumentPreview?.(ev, props.doc);
                 }
               }}
               onFocus={(ev) => {
                 // Prefetching for the edit modal
-                if ('onEditDocumentPreview' in props) {
-                  props.onEditDocumentPreview?.(ev, props.doc);
+                if ('onUpdateDocumentPreview' in props) {
+                  props.onUpdateDocumentPreview?.(ev, props.doc);
                 }
               }}
             >

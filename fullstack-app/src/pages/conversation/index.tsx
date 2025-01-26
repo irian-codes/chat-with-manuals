@@ -1,4 +1,4 @@
-import {ConversationsSidebar} from '@/components/modules/conversation/ConversationsSidebar';
+import {Sidebar} from '@/components/modules/sidebar/Sidebar';
 import {DocumentListPickerModal} from '@/components/reusable/DocumentListPickerModal';
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';
@@ -82,7 +82,7 @@ export default function NewConversationPage() {
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
-        <ConversationsSidebar />
+        <Sidebar />
       </div>
 
       <DocumentListPickerModal

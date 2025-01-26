@@ -13,13 +13,6 @@
     "send": "Send",
     "title": "Chat: {title}"
   },
-  "conversation-sidebar": {
-    "conversation-title-missing": "Untitled",
-    "deleteConversationConfirmation": "Are you sure you want to delete conversation titled: {title} ?",
-    "newConversation": "New conversation",
-    "search": "Search",
-    "title": "Conversations"
-  },
   "document-list-picker-modal": {
     "description": "Select a document to open a new conversation with it.",
     "search-placeholder": "Search document...",
@@ -33,22 +26,37 @@
     "image-alt": "Document preview",
     "uploading-document": "Uploading..."
   },
-  "edit-document-modal": {
+  "locale-switcher": {
+    "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
+  },
+  "sidebar": {
+    "conversations": {
+      "conversation-title-missing": "Untitled",
+      "deleteConversationConfirmation": "Are you sure you want to delete conversation titled: {title} ?",
+      "newConversation": "New conversation",
+      "search": "Search",
+      "title": "Conversations"
+    },
+    "home": {
+      "title": "Documents"
+    }
+  },
+  "update-document-modal": {
     "cancel": "Cancel",
     "delete": "Delete document",
     "delete-confirmation": "Are you sure you want to delete this document? This action cannot be undone.",
     "description": "Description",
     "document-title": "Title",
     "form-errors": {
-      "title-max-length": "Title must be at most 255 characters long",
-      "title-min-length": "Title must be at least 3 characters long",
+      "image-max-size": "Image must be smaller than {maxSizeInMB}MB.",
+      "image-must-be-valid": "Image must be a JPEG, PNG or WebP file.",
+      "title-max-length": "Title must be at most 255 characters long.",
+      "title-min-length": "Title must be at least 3 characters long.",
       "title-required": "Title is required"
     },
+    "image-input-label": "Cover image",
     "save": "Save",
     "title": "Edit document information"
-  },
-  "locale-switcher": {
-    "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
   },
   "upload-new-document-modal": {
     "cancel": "Cancel",
@@ -56,14 +64,17 @@
     "document-title": "Title",
     "file-input-label": "PDF file",
     "form-errors": {
-      "file-max-size": "File must be less than {maxSizeInMB}MB",
+      "file-max-size": "File must be smaller than {maxSizeInMB}MB",
       "file-must-be-pdf": "File must be a PDF",
       "file-required": "File is required",
-      "language-required": "Language is required",
-      "title-max-length": "Title must be at most 255 characters long",
-      "title-min-length": "Title must be at least 3 characters long",
+      "image-max-size": "Image must be smaller than {maxSizeInMB}MB.",
+      "image-must-be-valid": "Image must be a JPEG, PNG or WebP file.",
+      "language-required": "Language is required.",
+      "title-max-length": "Title must be at most 255 characters long.",
+      "title-min-length": "Title must be at least 3 characters long.",
       "title-required": "Title is required"
     },
+    "image-input-label": "Cover image",
     "language-label": "Document language",
     "upload": "Upload new document"
   }

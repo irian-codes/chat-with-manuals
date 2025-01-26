@@ -7,39 +7,47 @@ import {
 } from '@/components/shadcn-ui/dialog';
 import {Input} from '@/components/shadcn-ui/input';
 import type {Document} from '@/types/Document';
-import {type RouterInputs} from '@/utils/api';
+import {
+  acceptedImageTypes,
+  type UpdateDocumentPayload,
+} from '@/types/UpdateDocumentPayload';
+import {} from '@/types/UploadNewDocumentPayload';
 import {useTranslations} from 'next-intl';
+import {useRef} from 'react';
 import {type SubmitHandler, useForm, type UseFormReturn} from 'react-hook-form';
 import {Label} from '../shadcn-ui/label';
 import {Textarea} from '../shadcn-ui/textarea';
 
-export type EditDocumentFormInputs = Omit<
-  RouterInputs['documents']['updateDocument'],
-  'id'
->;
+export type UpdateDocumentFormInputs = Omit<
+  UpdateDocumentPayload,
+  'id' | 'image'
+> & {
+  image?: FileList;
+};
 
-interface EditDocumentModalProps {
+interface UpdateDocumentModalProps {
   isOpen: boolean;
   document?: Document | null;
   onSubmit: (
-    formData: EditDocumentFormInputs,
-    form: UseFormReturn<EditDocumentFormInputs>
+    form: UseFormReturn<UpdateDocumentFormInputs>,
+    htmlForm: HTMLFormElement
   ) => Promise<void>;
-  onDelete: (form: UseFormReturn<EditDocumentFormInputs>) => Promise<void>;
-  onClose?: (form: UseFormReturn<EditDocumentFormInputs>) => Promise<void>;
+  onDelete: (form: UseFormReturn<UpdateDocumentFormInputs>) => Promise<void>;
+  onClose?: (form: UseFormReturn<UpdateDocumentFormInputs>) => Promise<void>;
 }
 
-export function EditDocumentModal(props: EditDocumentModalProps) {
-  const t = useTranslations('edit-document-modal');
-  const form = useForm<EditDocumentFormInputs>({
+export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
+  const t = useTranslations('update-document-modal');
+  const form = useForm<UpdateDocumentFormInputs>({
     defaultValues: {
       title: props.document?.title ?? '',
       description: props.document?.description ?? '',
     },
   });
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const onSubmit: SubmitHandler<EditDocumentFormInputs> = (data) => {
-    void props.onSubmit(data, form);
+  const onSubmit: SubmitHandler<UpdateDocumentFormInputs> = () => {
+    void props.onSubmit(form, formRef.current!);
   };
 
   function handleCloseButtonClick() {
@@ -65,7 +73,11 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
         </DialogHeader>
 
         {/* TODO: This could be even nicer if we create the form with the Shacn/ui integration: https://ui.shadcn.com/docs/components/form */}
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4"
+          ref={formRef}
+        >
           <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="title">{t('document-title')}</Label>
@@ -110,6 +122,47 @@ export function EditDocumentModal(props: EditDocumentModalProps) {
               {form.formState.errors.description && (
                 <p className="text-sm text-red-500">
                   {form.formState.errors.description.message}
+                </p>
+              )}
+            </div>
+
+            <div className="relative space-y-1">
+              <Label htmlFor="image">{t('image-input-label')}</Label>
+              <Input
+                id="image"
+                type="file"
+                {...form.register('image', {
+                  required: false,
+                  validate: (value): string | boolean => {
+                    const file = value?.[0];
+
+                    if (file == null) {
+                      return true; // Optional field
+                    }
+
+                    if (!acceptedImageTypes.includes(file.type)) {
+                      return t('form-errors.image-must-be-valid');
+                    }
+
+                    const MAX_IMAGE_SIZE_MB = 1;
+                    const MAX_IMAGE_SIZE_BYTES =
+                      MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+                    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                      return t('form-errors.image-max-size', {
+                        maxSizeInMB: Math.floor(MAX_IMAGE_SIZE_MB),
+                      });
+                    }
+
+                    return true;
+                  },
+                })}
+                accept={acceptedImageTypes.join(',')}
+                multiple={false}
+              />
+              {form.formState.errors.image && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.image.message}
                 </p>
               )}
             </div>
