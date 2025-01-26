@@ -1,6 +1,6 @@
-import {ConversationsSidebar} from '@/components/modules/conversation-sidebar/ConversationsSidebar';
 import {DashboardMain} from '@/components/modules/dashboard/DashboardMain';
 import {DashboardModals} from '@/components/modules/dashboard/DashboardModals';
+import {Sidebar} from '@/components/modules/sidebar/Sidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
@@ -59,7 +59,7 @@ export default function DashboardPage() {
     <MainLayout>
       <Fragment>
         <div className="flex h-screen w-full flex-row bg-background">
-          <ConversationsSidebar />
+          <Sidebar />
           <DashboardMain />
         </div>
 

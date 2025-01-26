@@ -13,13 +13,6 @@
     "send": "Enviar",
     "title": "Chat: {title}"
   },
-  "conversation-sidebar": {
-    "conversation-title-missing": "Sin título",
-    "deleteConversationConfirmation": "Está usted seguro/a de que desea eliminar la conversación con título: {title} ?",
-    "newConversation": "Nueva conversación",
-    "search": "Buscar",
-    "title": "Conversaciones"
-  },
   "document-list-picker-modal": {
     "description": "Seleccione un documento para abrir una nueva conversación.",
     "search-placeholder": "Buscar documento...",
@@ -49,6 +42,18 @@
   },
   "locale-switcher": {
     "locale": "{locale, select, es {Castellano} en {Inglés} other {Otro}}"
+  },
+  "sidebar": {
+    "conversations": {
+      "conversation-title-missing": "Sin título",
+      "deleteConversationConfirmation": "Está usted seguro/a de que desea eliminar la conversación con título: {title} ?",
+      "newConversation": "Nueva conversación",
+      "search": "Buscar",
+      "title": "Conversaciones"
+    },
+    "home": {
+      "title": "Documentos"
+    }
   },
   "upload-new-document-modal": {
     "cancel": "Cancelar",

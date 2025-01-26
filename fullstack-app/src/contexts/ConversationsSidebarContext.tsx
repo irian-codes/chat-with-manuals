@@ -1,3 +1,4 @@
+import {usePathname} from '@/hooks/usePathname';
 import {useTailwindBreakpoint} from '@/hooks/useTailwindBreakpoint';
 import {
   createContext,
@@ -6,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {useIsClient} from 'usehooks-ts';
 
 interface SidebarContextType {
   isCollapsed: boolean;
@@ -30,10 +30,9 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
  * context provider.
  */
 export function SidebarProvider({children}: {children: ReactNode}) {
-  const isClient = useIsClient();
   const isMobile = !useTailwindBreakpoint('sm');
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
-  const pathname = isClient ? window.location.pathname : undefined;
+  const pathname = usePathname();
 
   // URL changed! So we toggle the sidebar
   useEffect(() => {

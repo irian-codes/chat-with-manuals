@@ -1,8 +1,8 @@
-import {ConversationsSidebar} from '@/components/modules/conversation-sidebar/ConversationsSidebar';
 import {
   ConversationMain,
   DEFAULT_MESSAGES_LIMIT,
 } from '@/components/modules/conversation/ConversationMain';
+import {Sidebar} from '@/components/modules/sidebar/Sidebar';
 import MainLayout from '@/components/reusable/MainLayout';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
@@ -69,7 +69,7 @@ export default function ConversationPage() {
   return (
     <MainLayout>
       <div className="flex h-screen w-full flex-row bg-background">
-        <ConversationsSidebar />
+        <Sidebar />
         <ConversationMain />
       </div>
     </MainLayout>

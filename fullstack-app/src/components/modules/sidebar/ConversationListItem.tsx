@@ -17,7 +17,7 @@ interface ConversationListItemProps {
 }
 
 export function ConversationListItem(props: ConversationListItemProps) {
-  const t = useTranslations('conversation-sidebar');
+  const t = useTranslations('sidebar.conversations');
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(props.conversation.title);
 
