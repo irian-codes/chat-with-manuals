@@ -1,9 +1,11 @@
 import {env} from '@/env';
 import {isStringEmpty} from '@/utils/strings';
+import mime from 'mime';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 
 // TODO #17: Move this to a SECURE storage solution.
@@ -12,6 +14,9 @@ const isDevEnv = env.NODE_ENV === 'development';
 export const allowedAbsoluteDirPaths = {
   publicUploadedFiles: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'uploads/files')
+  ),
+  publicUploadedImages: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'uploads/images')
   ),
   publicParsingResults: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'parsing-results')
@@ -36,10 +41,13 @@ export class FileAlreadyExistsError extends Error {
   }
 }
 
-export async function saveUploadedFile(
-  file: File,
-  fileHash?: string
-): Promise<{
+export async function saveUploadedDocFile({
+  file,
+  fileHash,
+}: {
+  file: File;
+  fileHash?: string;
+}): Promise<{
   fileUrl: string;
   fileHash: string;
 }> {
@@ -69,6 +77,46 @@ export async function saveUploadedFile(
   return {
     fileUrl: filePath.replace(process.cwd(), ''),
     fileHash: _fileHash,
+  };
+}
+
+export async function saveUploadedImageFile({
+  imageFile,
+}: {
+  imageFile: File;
+}): Promise<{
+  fileUrl: string;
+}> {
+  const _file = z.instanceof(File).parse(imageFile);
+  const _extension = z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine(
+      (val) => val.startsWith('image/') && mime.getExtension(val) != null,
+      {
+        message: 'Invalid file type',
+      }
+    )
+    .transform((val) => mime.getExtension(val))
+    .parse(_file.type);
+
+  await fs.mkdir(allowedAbsoluteDirPaths.publicUploadedImages, {
+    recursive: true,
+  });
+
+  const fileBuffer = Buffer.from(await _file.arrayBuffer());
+
+  const fileName = `${uuidv4()}.${_extension}`;
+  const filePath = path.join(
+    allowedAbsoluteDirPaths.publicUploadedImages,
+    fileName
+  );
+
+  await fs.writeFile(filePath, fileBuffer);
+
+  return {
+    fileUrl: filePath.replace(process.cwd(), ''),
   };
 }
 
@@ -149,12 +197,72 @@ export async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-export async function getFile(filePath: string): Promise<File> {
+export async function getFile({
+  filePath,
+  mimeType,
+}: {
+  filePath: string;
+  mimeType: string;
+}): Promise<File> {
   const absolutePath = validateAndResolvePath(filePath);
   const fileBuffer = await fs.readFile(absolutePath);
   const fileName = path.basename(absolutePath);
 
-  return new File([fileBuffer], fileName, {type: 'application/pdf'});
+  return new File([fileBuffer], fileName, {type: mimeType});
+}
+
+export async function getMostRecentFile({
+  dirPath,
+  extensions = [],
+}: {
+  dirPath: string;
+  extensions?: string[];
+}): Promise<File> {
+  const absolutePath = validateAndResolvePath(dirPath);
+  const _extensions = z
+    .array(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .refine((ext) => ext.startsWith('.'), {
+          message: 'Extension must start with a dot',
+        })
+    )
+    .parse(extensions);
+
+  const files = await fs.readdir(absolutePath);
+  if (files.length === 0) {
+    throw new Error(`No files found in directory: ${dirPath}`);
+  }
+
+  const fileStats = await Promise.all(
+    files.map(async (file) => ({
+      name: file,
+      path: path.join(absolutePath, file),
+      stats: await fs.stat(path.join(absolutePath, file)),
+    }))
+  );
+
+  const mostRecentFile = fileStats
+    .filter((file) => file.stats.isFile())
+    .filter((file) => {
+      if (_extensions.length === 0) {
+        return true;
+      }
+
+      return _extensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+    })
+    .sort((a, b) => b.stats.mtime.getTime() - a.stats.mtime.getTime())[0];
+
+  if (!mostRecentFile) {
+    throw new Error(`No valid files found in directory: ${dirPath}`);
+  }
+
+  return getFile({
+    filePath: mostRecentFile.path,
+    mimeType: mime.getType(mostRecentFile.name) ?? 'application/octet-stream',
+  });
 }
 
 export async function deleteFile(filePath: string): Promise<void> {
@@ -163,10 +271,13 @@ export async function deleteFile(filePath: string): Promise<void> {
   await fs.unlink(absolutePath);
 }
 
-export async function copyFile(
-  sourcePath: string,
-  destinationPath: string
-): Promise<void> {
+export async function copyFile({
+  sourcePath,
+  destinationPath,
+}: {
+  sourcePath: string;
+  destinationPath: string;
+}): Promise<void> {
   const absoluteSourcePath = validateAndResolvePath(sourcePath);
   const absoluteDestinationPath = validateAndResolvePath(destinationPath);
 
@@ -188,7 +299,7 @@ export async function copyFileToTempDir(filePath: string): Promise<string> {
     path.basename(absoluteSourcePath)
   );
 
-  await copyFile(absoluteSourcePath, tempPath);
+  await copyFile({sourcePath: absoluteSourcePath, destinationPath: tempPath});
 
   return tempPath;
 }

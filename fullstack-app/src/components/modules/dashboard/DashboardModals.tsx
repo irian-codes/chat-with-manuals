@@ -1,13 +1,12 @@
 import {
-  type EditDocumentFormInputs,
-  EditDocumentModal,
-} from '@/components/reusable/EditDocumentModal';
+  UpdateDocumentModal,
+  type UpdateDocumentFormInputs,
+} from '@/components/reusable/UpdateDocumentModal';
 import {
-  type UploadFormInputs,
   UploadNewDocumentModal,
+  type UploadFormInputs,
 } from '@/components/reusable/UploadNewDocumentModal';
 import {api} from '@/utils/api';
-import {truncateFilename} from '@/utils/files';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {Fragment} from 'react';
@@ -24,11 +23,6 @@ export function DashboardModals() {
     }
   );
   const utils = api.useUtils();
-  const updateDocumentMutation = api.documents.updateDocument.useMutation({
-    onSuccess: async () => {
-      await utils.documents.invalidate();
-    },
-  });
   const deleteDocumentMutation = api.documents.deleteDocument.useMutation({
     onSuccess: async () => {
       // Note: We cannot invalidate the whole documents router because it
@@ -43,26 +37,15 @@ export function DashboardModals() {
 
   const document = documentQuery.data;
   const uploadingDocument = router.query.uploadingDocument === 'true';
-  const tEditDocModal = useTranslations('edit-document-modal');
+  const tUpdateDocModal = useTranslations('update-document-modal');
 
   async function handleUploadNewDocument(
-    data: UploadFormInputs,
-    form: UseFormReturn<UploadFormInputs>
+    form: UseFormReturn<UploadFormInputs>,
+    htmlForm: HTMLFormElement
   ) {
-    if (!data?.file?.[0]) {
+    if (!form.getValues().file?.[0]) {
       throw new Error('No file provided');
     }
-
-    const originalFile = data.file[0];
-
-    const formData = new FormData();
-    // TODO: Add real imageUrl, for now using default value so we aren't sending any
-    formData.set('title', data.title);
-    formData.set('locale', data.locale);
-    if (data.description) {
-      formData.set('description', data.description);
-    }
-    formData.set('file', originalFile, truncateFilename(originalFile.name));
 
     // TRPC is incompatible with File objects, so we need to use fetch to
     // send the form data and then the server will call TRPC.
@@ -70,34 +53,38 @@ export function DashboardModals() {
     // @see https://github.com/trpc/trpc/issues/1937
     await fetch('/api/uploadDocument', {
       method: 'POST',
-      body: formData,
+      body: new FormData(htmlForm),
     });
 
     await handleCloseDocumentModal(form);
   }
 
   async function handleUpdateDocument(
-    formData: EditDocumentFormInputs,
-    form: UseFormReturn<EditDocumentFormInputs>
+    form: UseFormReturn<UpdateDocumentFormInputs>,
+    htmlForm: HTMLFormElement
   ) {
-    await updateDocumentMutation.mutateAsync({
-      ...formData,
-      id: document!.id,
+    const formData = new FormData(htmlForm);
+    formData.append('id', document!.id);
+
+    await fetch('/api/updateDocument', {
+      method: 'PATCH',
+      body: formData,
     });
 
+    await utils.documents.invalidate();
     await handleCloseDocumentModal(form);
 
     // TODO: Show notification (error and success) to the user
   }
 
   async function handleDeleteDocument(
-    form: UseFormReturn<EditDocumentFormInputs>
+    form: UseFormReturn<UpdateDocumentFormInputs>
   ) {
     if (!document) {
       return;
     }
 
-    if (!window.confirm(tEditDocModal('delete-confirmation'))) {
+    if (!window.confirm(tUpdateDocModal('delete-confirmation'))) {
       return;
     }
 
@@ -122,7 +109,7 @@ export function DashboardModals() {
 
   return (
     <Fragment>
-      <EditDocumentModal
+      <UpdateDocumentModal
         // Each modal is for a different document, so we need a unique key to avoid a shared state.
         key={document?.id}
         isOpen={document != null}

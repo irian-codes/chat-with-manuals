@@ -6,7 +6,7 @@ export const nonEmptyStringSchema = z
   .nonempty()
   .refine((value) => value.toWellFormed().length > 0);
 
-export function isStringEmpty(str: string) {
+export function isStringEmpty(str?: string | null) {
   return !nonEmptyStringSchema.safeParse(str).success;
 }
 

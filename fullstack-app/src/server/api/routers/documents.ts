@@ -12,13 +12,15 @@ import {
   allowedAbsoluteDirPaths,
   deleteFile,
   fileExists,
-  getFile,
+  getMostRecentFile,
+  validateAndResolvePath,
   writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
-import {UploadDocumentPayloadSchema} from '@/types/UploadDocumentPayload';
+import {UpdateDocumentPayloadSchema} from '@/types/UpdateDocumentPayload';
+import {UploadNewDocumentPayloadSchema} from '@/types/UploadNewDocumentPayload';
 import {isStringEmpty} from '@/utils/strings';
 import {type Chroma} from '@langchain/community/vectorstores/chroma';
-import {Prisma, type PrismaClient, STATUS} from '@prisma/client';
+import {Prisma, STATUS, type PrismaClient} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import {IncludeEnum} from 'chromadb';
 import crypto from 'crypto';
@@ -73,7 +75,11 @@ export const documentsRouter = createTRPCRouter({
     .query(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const document = await getDocument(ctx.prisma, input.id, userId);
+      const document = await getDocument({
+        prisma: ctx.prisma,
+        documentId: input.id,
+        userId,
+      });
 
       if (document == null) {
         throw new TRPCError({
@@ -178,18 +184,49 @@ export const documentsRouter = createTRPCRouter({
 
   parseDocument: withDbUserProcedure
     .input(
-      UploadDocumentPayloadSchema.extend({
-        fileUrl: z
-          .string()
-          .trim()
-          .min(1)
-          .refine((val) => fileExists(val), {
-            message: 'File does not exist or path is invalid',
-          }),
-        fileHash: z.string().trim().length(64, {
-          message: 'Invalid file hash. Must be a SHA256 string',
-        }),
+      UploadNewDocumentPayloadSchema.omit({
+        file: true,
+        image: true,
       })
+        .extend({
+          fileUrl: z
+            .string()
+            .trim()
+            .min(1)
+            .refine(
+              async (val) => {
+                try {
+                  return await fileExists(val);
+                } catch (error) {
+                  return false;
+                }
+              },
+              {
+                message: 'File does not exist or path is invalid',
+              }
+            ),
+          fileHash: z.string().trim().length(64, {
+            message: 'Invalid file hash. Must be a SHA256 string',
+          }),
+          imageUrl: z
+            .string()
+            .trim()
+            .min(1)
+            .refine(
+              async (val) => {
+                try {
+                  return await fileExists(val);
+                } catch (error) {
+                  return false;
+                }
+              },
+              {
+                message: 'Image does not exist or path is invalid',
+              }
+            )
+            .optional(),
+        })
+        .strict()
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
@@ -204,6 +241,7 @@ export const documentsRouter = createTRPCRouter({
             locale: input.locale,
             fileUrl: input.fileUrl,
             fileHash: input.fileHash,
+            imageUrl: input.imageUrl,
             llmParsingJobId: crypto.randomUUID(), // Placeholder for now
             codeParsingJobId: crypto.randomUUID(), // Placeholder for now
             status: STATUS.PENDING,
@@ -215,12 +253,20 @@ export const documentsRouter = createTRPCRouter({
           },
         })
         .catch(async (error) => {
-          // Deleting file
+          // Delete original file and image
           try {
             await deleteFile(input.fileUrl);
+
+            if (!isStringEmpty(input.imageUrl)) {
+              await deleteFile(input.imageUrl!);
+            }
           } catch (error) {
+            const imageUrlErrorMsgPart = isStringEmpty(input.imageUrl)
+              ? ''
+              : ', image: ' + input.imageUrl;
+
             console.error(
-              `Failed to delete document file: ${input.fileUrl}. This file should be deleted manually.`,
+              `Failed to delete document file: ${input.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
               error
             );
           }
@@ -261,11 +307,12 @@ export const documentsRouter = createTRPCRouter({
             if (env.NODE_ENV === 'development' && env.MOCK_FILE_PARSING) {
               await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-              const file = getFile(
-                'public/temp/parsing-results/Fun facts about canada_llamaParse_20250110-1653.md'
-              );
+              const file = await getMostRecentFile({
+                dirPath: 'public/temp/parsing-results',
+                extensions: ['.md'],
+              });
 
-              return (await file).text();
+              return file.text();
             } else {
               return await pdfParseWithLlamaparse({
                 filePath: pendingDocument.fileUrl,
@@ -332,6 +379,7 @@ export const documentsRouter = createTRPCRouter({
                 locale: pendingDocument.locale,
                 fileUrl: pendingDocument.fileUrl,
                 fileHash: pendingDocument.fileHash,
+                imageUrl: pendingDocument.imageUrl,
                 vectorStoreId: vectorStore.collectionName,
                 users: {
                   connect: {
@@ -387,12 +435,20 @@ export const documentsRouter = createTRPCRouter({
             }
           }
 
-          // Delete original file
+          // Delete original file and image
           try {
             await deleteFile(pendingDocument.fileUrl);
+
+            if (!isStringEmpty(pendingDocument.imageUrl)) {
+              await deleteFile(pendingDocument.imageUrl);
+            }
           } catch (error) {
+            const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
+              ? ''
+              : ', image: ' + pendingDocument.imageUrl;
+
             console.error(
-              `Failed to delete document file: ${pendingDocument.fileUrl}. This file should be deleted manually.`,
+              `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
               error
             );
           }
@@ -406,11 +462,21 @@ export const documentsRouter = createTRPCRouter({
 
   updateDocument: withDbUserProcedure
     .input(
-      z.object({
-        id: z.string().min(1).uuid(),
-        title: z.string().trim().min(2).max(255).optional(),
-        description: z.string().trim().max(2000).optional(),
-      })
+      UpdateDocumentPayloadSchema.omit({image: true})
+        .extend({
+          imageUrl: z
+            .string()
+            .trim()
+            .refine((val) => {
+              try {
+                return typeof validateAndResolvePath(val) === 'string';
+              } catch (error) {
+                return false;
+              }
+            })
+            .optional(),
+        })
+        .strict()
     )
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
@@ -419,9 +485,35 @@ export const documentsRouter = createTRPCRouter({
         Object.entries(input).filter(
           ([key, value]) => key !== 'id' && value != null
         )
-      );
+      ) as Omit<typeof input, 'id'>;
 
-      const document = await ctx.prisma.document
+      const oldImageUrl = await (async () => {
+        // Saving a database request if the imageUrl is not modified
+        if (_modifiedFields.imageUrl == null) {
+          return undefined;
+        }
+
+        try {
+          const doc = await getDocument({
+            prisma: ctx.prisma,
+            documentId: input.id,
+            userId,
+            select: {
+              imageUrl: true,
+            },
+          });
+
+          return isStringEmpty(doc?.imageUrl) ? undefined : doc!.imageUrl;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to update document',
+            cause: error,
+          });
+        }
+      })();
+
+      const updatedDocument = await ctx.prisma.document
         .update({
           where: {
             id: input.id,
@@ -449,7 +541,18 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      return document;
+      if (oldImageUrl != null && _modifiedFields.imageUrl != null) {
+        try {
+          await deleteFile(oldImageUrl);
+        } catch (error) {
+          console.error(
+            `Failed to delete image file: ${oldImageUrl}. This file should be deleted manually.`,
+            error
+          );
+        }
+      }
+
+      return updatedDocument;
     }),
 
   cancelDocumentParsing: withDbUserProcedure
@@ -484,12 +587,20 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      // Finally delete the file
+      // Delete original file and image
       try {
         await deleteFile(pendingDocument.fileUrl);
+
+        if (!isStringEmpty(pendingDocument.imageUrl)) {
+          await deleteFile(pendingDocument.imageUrl);
+        }
       } catch (error) {
+        const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
+          ? ''
+          : ', image: ' + pendingDocument.imageUrl;
+
         console.error(
-          `Failed to delete document file: ${pendingDocument.fileUrl}. It should be deleted manually.`,
+          `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
           error
         );
       }
@@ -545,12 +656,20 @@ export const documentsRouter = createTRPCRouter({
         );
       }
 
-      // Delete original file
+      // Delete original file and image
       try {
         await deleteFile(document.fileUrl);
+
+        if (!isStringEmpty(document.imageUrl)) {
+          await deleteFile(document.imageUrl);
+        }
       } catch (error) {
+        const imageUrlErrorMsgPart = isStringEmpty(document.imageUrl)
+          ? ''
+          : ', image: ' + document.imageUrl;
+
         console.error(
-          `Failed to delete document file: ${document.fileUrl}. This file should be deleted manually.`,
+          `Failed to delete document file: ${document.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
           error
         );
       }
@@ -578,29 +697,38 @@ export const documentsRouter = createTRPCRouter({
 
 // REUSABLE FUNCTIONS
 
-async function getDocument(
-  prisma: PrismaClient,
-  documentId: string,
-  userId: string
-) {
-  const _userId = z.string().trim().min(1).uuid().safeParse(userId).success
-    ? userId.trim()
-    : undefined;
+async function getDocument(params: {
+  prisma: PrismaClient;
+  documentId: string;
+  userId: string;
+  select?: Prisma.DocumentFindUniqueArgs['select'];
+  include?: Prisma.DocumentFindUniqueArgs['include'];
+}) {
+  const _userId = z
+    .string()
+    .trim()
+    .min(1)
+    .uuid()
+    .parse(params.userId, {
+      errorMap: (issue) => ({
+        message: `User ID is required or is invalid. ${issue.message}`,
+      }),
+    });
 
-  if (_userId == null) {
-    throw new Error('User ID is required or is invalid');
-  }
-
-  const document = await prisma.document.findUnique({
+  const _options = {
     where: {
-      id: documentId,
+      id: params.documentId,
       users: {
         some: {
           id: _userId,
         },
       },
     },
-  });
+    ...(params.select ? {select: params.select} : {}),
+    ...(params.include ? {include: params.include} : {}),
+  };
+
+  const document = await params.prisma.document.findUnique(_options);
 
   return document;
 }

@@ -1,3 +1,4 @@
+// src/pages/api/updateDocument.ts
 import {env} from '@/env';
 import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
@@ -6,15 +7,13 @@ import rateLimit from '@/server/middleware/rateLimit';
 import {
   allowedAbsoluteDirPaths,
   deleteFile,
-  FileAlreadyExistsError,
   getFile,
-  saveUploadedDocFile,
   saveUploadedImageFile,
 } from '@/server/utils/fileStorage';
 import {
-  type UploadNewDocumentPayload,
-  UploadNewDocumentPayloadSchema,
-} from '@/types/UploadNewDocumentPayload';
+  type UpdateDocumentPayload,
+  UpdateDocumentPayloadSchema,
+} from '@/types/UpdateDocumentPayload';
 import {truncateFilename} from '@/utils/files';
 import {isStringEmpty} from '@/utils/strings';
 import {getAuth} from '@clerk/nextjs/server';
@@ -66,7 +65,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== 'POST') {
+  if (req.method !== 'PATCH') {
     return res.status(405).json({error: 'Method not allowed'});
   }
 
@@ -98,22 +97,18 @@ export default async function handler(
   }
 
   // Parse the form data
-  const parsedFormData = {} as Omit<
-    UploadNewDocumentPayload,
-    'file' | 'image'
-  > & {
-    file: FileInfo;
+  const parsedFormData = {} as Omit<UpdateDocumentPayload, 'image'> & {
     image?: FileInfo;
   };
 
   const form = formidable({
     allowEmptyFiles: false,
-    maxFiles: 2, // Allow both PDF and image
+    maxFiles: 1,
     uploadDir: allowedAbsoluteDirPaths.appTempDir,
-    hashAlgorithm: 'sha256',
+    hashAlgorithm: false,
     keepExtensions: true,
     // TODO: Get this from the database instead of hardcoding it.
-    maxTotalFileSize: 1000 * 1024 * 1024, // 1000MB
+    maxTotalFileSize: 1 * 1024 * 1024, // 1 MB
     filename: (name, ext, path, form) => {
       if (isStringEmpty(name)) {
         name = 'untitled';
@@ -122,10 +117,9 @@ export default async function handler(
       return truncateFilename(name) + ext;
     },
     filter: (part) => {
-      // Keep only images and pdfs
+      // Keep only images
       const valid =
-        !isStringEmpty(part.mimetype) &&
-        (part.mimetype!.includes('image') || part.mimetype!.includes('pdf'));
+        !isStringEmpty(part.mimetype) && part.mimetype!.includes('image');
 
       return valid;
     },
@@ -146,67 +140,56 @@ export default async function handler(
   } catch (error) {
     console.error('FormData upload error:', error);
     await cleanup({
-      fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
+      fileUrls: [parsedFormData.image?.filepath],
     });
 
     return res.status(500).json({error: 'Upload failed'});
   }
 
-  if (
-    parsedFormData.file == null ||
-    parsedFormData.file.mimetype !== 'application/pdf'
-  ) {
-    return res.status(400).json({error: 'A PDF file is required'});
-  }
-
   // FILE VIRUS SCANNING
-  if (clamScan == null) {
-    console.error('Virus engine not initialized. Cannot scan file.');
-    await cleanup({
-      fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
-    });
-
-    return res
-      .status(500)
-      .json({error: 'Virus engine not initialized. Cannot scan file.'});
-  }
-
-  try {
-    const filePathsToScan = [
-      parsedFormData.file?.filepath,
-      parsedFormData.image?.filepath,
-    ].filter((path): path is string => {
-      return !isStringEmpty(path);
-    });
-
-    const clamScanResult = await clamScan.scanFiles(filePathsToScan);
-    if (clamScanResult.badFiles.length > 0) {
-      throw new VirusScanError(
-        'Files are infected with malware.',
-        clamScanResult.badFiles.join(', ')
-      );
-    }
-  } catch (error) {
-    console.error('Virus scan error: ', error);
-    await cleanup({
-      fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
-    });
-
-    if (error instanceof VirusScanError) {
-      return res.status(400).json({
-        error: 'Files are infected with malware.',
+  if (parsedFormData.image != null) {
+    if (clamScan == null) {
+      console.error('Virus engine not initialized. Cannot scan file.');
+      await cleanup({
+        fileUrls: [parsedFormData.image?.filepath],
       });
+
+      return res
+        .status(500)
+        .json({error: 'Virus engine not initialized. Cannot scan file.'});
     }
 
-    return res
-      .status(500)
-      .json({error: 'File virus scanning failed. Cannot proceed securely.'});
-  }
+    try {
+      const filePathsToScan = [parsedFormData.image?.filepath].filter(
+        (path): path is string => {
+          return !isStringEmpty(path);
+        }
+      );
 
-  const docFile = await getFile({
-    filePath: parsedFormData.file.filepath,
-    mimeType: parsedFormData.file.mimetype ?? 'application/pdf',
-  });
+      const clamScanResult = await clamScan.scanFiles(filePathsToScan);
+      if (clamScanResult.badFiles.length > 0) {
+        throw new VirusScanError(
+          'Files are infected with malware.',
+          clamScanResult.badFiles.join(', ')
+        );
+      }
+    } catch (error) {
+      console.error('Virus scan error: ', error);
+      await cleanup({
+        fileUrls: [parsedFormData.image?.filepath],
+      });
+
+      if (error instanceof VirusScanError) {
+        return res.status(400).json({
+          error: 'Files are infected with malware.',
+        });
+      }
+
+      return res
+        .status(500)
+        .json({error: 'File virus scanning failed. Cannot proceed securely.'});
+    }
+  }
 
   const imageFile =
     parsedFormData.image != null
@@ -216,9 +199,8 @@ export default async function handler(
         })
       : undefined;
 
-  const zodResult = UploadNewDocumentPayloadSchema.safeParse({
+  const zodResult = UpdateDocumentPayloadSchema.safeParse({
     ...parsedFormData,
-    file: docFile,
     image: imageFile,
   });
 
@@ -226,29 +208,16 @@ export default async function handler(
     console.error(zodResult.error);
 
     await cleanup({
-      fileUrls: [parsedFormData.file.filepath, parsedFormData.image?.filepath],
+      fileUrls: [parsedFormData.image?.filepath],
     });
 
     return res.status(400).json({error: 'Invalid request body'});
   }
 
-  let fileUrl: string | undefined;
-  let fileHash: string | undefined;
   let imageUrl: string | undefined;
 
-  try {
-    const fileResult = await saveUploadedDocFile({
-      file: zodResult.data.file,
-    });
-
-    fileUrl = fileResult.fileUrl;
-    fileHash = fileResult.fileHash;
-
-    if (!fileUrl || !fileHash) {
-      throw new Error('Document file upload failed');
-    }
-
-    if (zodResult.data.image != null) {
+  if (zodResult.data.image != null) {
+    try {
       const imageResult = await saveUploadedImageFile({
         imageFile: zodResult.data.image,
       });
@@ -258,33 +227,15 @@ export default async function handler(
       if (!imageUrl) {
         throw new Error('Image file upload failed');
       }
-    }
-  } catch (error) {
-    if (error instanceof FileAlreadyExistsError) {
-      console.error(error);
+    } catch (error) {
+      console.error('Image file upload error:', error);
 
       await cleanup({
-        fileUrls: [
-          parsedFormData.file.filepath,
-          parsedFormData.image?.filepath,
-        ],
+        fileUrls: [parsedFormData.image?.filepath, imageUrl],
       });
 
-      return res.status(400).json({error: 'File already exists'});
+      return res.status(500).json({error: 'Image upload failed'});
     }
-
-    console.error('Document file upload error:', error);
-
-    await cleanup({
-      fileUrls: [
-        parsedFormData.file.filepath,
-        parsedFormData.image?.filepath,
-        fileUrl,
-        imageUrl,
-      ],
-    });
-
-    return res.status(500).json({error: 'Upload failed'});
   }
 
   // Calling TRPC procedure to parse the document
@@ -298,12 +249,10 @@ export default async function handler(
   );
 
   // TODO: If the TRPC procedure fails, we need to delete the uploaded file.
-  const trpcResponse = await trpc.documents.parseDocument({
+  const trpcResponse = await trpc.documents.updateDocument({
+    id: zodResult.data.id,
     title: zodResult.data.title,
-    locale: zodResult.data.locale,
     description: zodResult.data.description,
-    fileUrl,
-    fileHash,
     imageUrl,
   });
 

@@ -60,7 +60,7 @@ export function DashboardMain() {
     // TODO: Show notification (error and success) to the user
   }
 
-  function handleEditDocument(doc: Document) {
+  function handleUpdateDocument(doc: Document) {
     // TODO: Show notification (error and success) to the user
 
     void router.push(`/?documentId=${doc.id}`, undefined, {
@@ -109,11 +109,11 @@ export function DashboardMain() {
               <DocumentCard
                 doc={doc}
                 key={doc.id}
-                onEditButtonClick={(ev) => {
+                onUpdateButtonClick={(ev) => {
                   ev.preventDefault();
-                  handleEditDocument(doc);
+                  handleUpdateDocument(doc);
                 }}
-                onEditDocumentPreview={(ev) => {
+                onUpdateDocumentPreview={(ev) => {
                   ev.preventDefault();
                   void utils.documents.getDocument.prefetch({id: doc.id});
                 }}

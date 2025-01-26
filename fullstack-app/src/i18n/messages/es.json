@@ -26,20 +26,6 @@
     "image-alt": "Imagen de la portada del documento",
     "uploading-document": "Subiendo..."
   },
-  "edit-document-modal": {
-    "cancel": "Cancelar",
-    "delete": "Eliminar documento",
-    "delete-confirmation": "¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.",
-    "description": "Descripción",
-    "document-title": "Título",
-    "form-errors": {
-      "title-max-length": "El título debe tener como máximo 255 caracteres.",
-      "title-min-length": "El título debe tener al menos 3 caracteres.",
-      "title-required": "El título es obligatorio"
-    },
-    "save": "Guardar",
-    "title": "Editar información del documento"
-  },
   "locale-switcher": {
     "locale": "{locale, select, es {Castellano} en {Inglés} other {Otro}}"
   },
@@ -55,20 +41,40 @@
       "title": "Documentos"
     }
   },
+  "update-document-modal": {
+    "cancel": "Cancelar",
+    "delete": "Eliminar documento",
+    "delete-confirmation": "¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.",
+    "description": "Descripción",
+    "document-title": "Título",
+    "form-errors": {
+      "image-max-size": "La imagen debe ser menor de {maxSizeInMB}MB.",
+      "image-must-be-valid": "La imagen debe ser un archivo JPEG, PNG o WebP.",
+      "title-max-length": "El título debe tener como máximo 255 caracteres.",
+      "title-min-length": "El título debe tener al menos 3 caracteres.",
+      "title-required": "El título es obligatorio"
+    },
+    "image-input-label": "Imagen de portada",
+    "save": "Guardar",
+    "title": "Editar información del documento"
+  },
   "upload-new-document-modal": {
     "cancel": "Cancelar",
     "description": "Descripción",
     "document-title": "Título",
     "file-input-label": "Archivo PDF",
     "form-errors": {
-      "file-max-size": "El archivo debe pesar menos de {maxSizeInMB}MB",
-      "file-must-be-pdf": "El archivo debe ser de tipo PDF",
-      "file-required": "Se requiere el archivo",
-      "language-required": "Se requiere seleccionar un idioma",
+      "file-max-size": "El archivo debe pesar menos de {maxSizeInMB}MB.",
+      "file-must-be-pdf": "El archivo debe ser de tipo PDF.",
+      "file-required": "Se requiere el archivo.",
+      "image-max-size": "La imagen debe ser menor de {maxSizeInMB}MB.",
+      "image-must-be-valid": "La imagen debe ser un archivo JPEG, PNG o WebP.",
+      "language-required": "Se requiere seleccionar un idioma.",
       "title-max-length": "El título debe tener como máximo 255 caracteres.",
       "title-min-length": "El título debe tener al menos 3 caracteres de largo.",
       "title-required": "El título del archivo es obligatorio"
     },
+    "image-input-label": "Imagen de portada",
     "language-label": "Idioma del documento",
     "upload": "Subir nuevo documento"
   }
