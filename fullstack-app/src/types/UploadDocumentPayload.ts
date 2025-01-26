@@ -3,7 +3,6 @@ import {z} from 'zod';
 
 export const UploadDocumentPayloadSchema = z
   .object({
-    // TODO: Add real imageUrl, for now using default value so we're not validating it
     title: z.string().trim().min(2).max(255),
     description: z.string().trim().max(2000).optional(),
     locale: z

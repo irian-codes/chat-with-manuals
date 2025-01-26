@@ -162,7 +162,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                     // This should be checked on the backend too, but
                     // checking here first to avoid unnecessary processing.
                     const MAX_FILE_SIZE_MB = 800;
-                    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1000 * 1000;
+                    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
                     const errorFileSizeMessage = t(
                       'form-errors.file-max-size',
                       {
