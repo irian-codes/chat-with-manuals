@@ -65,6 +65,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({res});
+  }
+
   if (req.method !== 'PATCH') {
     return res.status(405).json({error: 'Method not allowed'});
   }
@@ -146,6 +150,17 @@ export default async function handler(
     return res.status(500).json({error: 'Upload failed'});
   }
 
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [parsedFormData.image?.filepath],
+        });
+      },
+    });
+  }
+
   // FILE VIRUS SCANNING
   if (parsedFormData.image != null) {
     if (clamScan == null) {
@@ -191,6 +206,17 @@ export default async function handler(
     }
   }
 
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [parsedFormData.image?.filepath],
+        });
+      },
+    });
+  }
+
   const imageFile =
     parsedFormData.image != null
       ? await getFile({
@@ -212,6 +238,17 @@ export default async function handler(
     });
 
     return res.status(400).json({error: 'Invalid request body'});
+  }
+
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [parsedFormData.image?.filepath],
+        });
+      },
+    });
   }
 
   let imageUrl: string | undefined;
@@ -236,6 +273,17 @@ export default async function handler(
 
       return res.status(500).json({error: 'Image upload failed'});
     }
+  }
+
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [parsedFormData.image?.filepath, imageUrl],
+        });
+      },
+    });
   }
 
   // Calling TRPC procedure to parse the document
@@ -274,4 +322,22 @@ async function cleanup({fileUrls}: {fileUrls: (string | null | undefined)[]}) {
         }
       })
   );
+}
+
+async function returnConnectionAbortedResponse(params: {
+  res: NextApiResponse;
+  cleanup?: () => Promise<void>;
+}) {
+  try {
+    await params.cleanup?.();
+  } catch (error) {
+    console.error(
+      'Cleanup failed during returnConnectionAbortedResponse:',
+      error
+    );
+  }
+
+  console.error('Connection timed out (req.destroyed === true)');
+
+  return params.res.status(408).json({error: 'Request timeout'});
 }

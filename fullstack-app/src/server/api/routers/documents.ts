@@ -1,33 +1,28 @@
-import {env} from '@/env';
-import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
-import {deleteCollection, embedPDF, getDocs} from '@/server/db/chroma';
-import {chunkString} from '@/server/document/chunking';
 import {
-  lintAndFixMarkdown,
-  pdfParseWithLlamaparse,
-  plaintifyMarkdown,
-} from '@/server/document/parsing';
-import {AppEventEmitter} from '@/server/utils/eventEmitter';
+  authedProcedure,
+  createTRPCRouter,
+  withDbUserProcedure,
+} from '@/server/api/trpc';
+import {deleteCollection} from '@/server/db/chroma';
+import {fileParsingTask} from '@/server/trigger/documents';
 import {
-  allowedAbsoluteDirPaths,
+  AppEventEmitter,
+  pendingDocumentEventsSchema,
+} from '@/server/utils/eventEmitter';
+import {
   deleteFile,
   fileExists,
-  getMostRecentFile,
   validateAndResolvePath,
-  writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
 import {UpdateDocumentPayloadSchema} from '@/types/UpdateDocumentPayload';
 import {UploadNewDocumentPayloadSchema} from '@/types/UploadNewDocumentPayload';
 import {isStringEmpty} from '@/utils/strings';
-import {type Chroma} from '@langchain/community/vectorstores/chroma';
 import {Prisma, STATUS, type PrismaClient} from '@prisma/client';
+import {tasks} from '@trigger.dev/sdk/v3';
 import {TRPCError} from '@trpc/server';
-import {IncludeEnum} from 'chromadb';
-import crypto from 'crypto';
-import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
 import {z} from 'zod';
 
-const ee = new AppEventEmitter();
+export const ee = new AppEventEmitter();
 
 export const documentsRouter = createTRPCRouter({
   getDocuments: withDbUserProcedure
@@ -171,6 +166,13 @@ export const documentsRouter = createTRPCRouter({
 
       // Listen for any new pending document list updates from the emitter
       for await (const [action] of iterable) {
+        // TODO: I'm pretty sure that here we should check if the emitted
+        // event pertains to the user that is currently connected.
+        // Otherwise I think we're signalling all users that are connected
+        // to the server whenever any pending document event is emitted.
+        // Which is wrong, because it's a huge waste of requests. To do
+        // this though, we would need to receive the userId from the event.
+
         yield {
           docs: await getPendingDocuments(
             ctx.prisma,
@@ -242,8 +244,6 @@ export const documentsRouter = createTRPCRouter({
             fileUrl: input.fileUrl,
             fileHash: input.fileHash,
             imageUrl: input.imageUrl,
-            llmParsingJobId: crypto.randomUUID(), // Placeholder for now
-            codeParsingJobId: crypto.randomUUID(), // Placeholder for now
             status: STATUS.PENDING,
             user: {
               connect: {
@@ -280,184 +280,27 @@ export const documentsRouter = createTRPCRouter({
 
       ee.emit('pendingDocument', 'added');
 
-      // Start async processing without awaiting.
-      //
-      // TODO: This is a temporary hack but we should be using either
-      // something like Trigger.dev, a proper queue system or another
-      // solution to ensure Node doesn't kill the promise.
-      //
-      // @see
-      // https://stackoverflow.com/questions/46914025/node-exits-without-error-and-doesnt-await-promise-event-callback
-      // @see https://github.com/nodejs/node/issues/22088
-      let vectorStore: Chroma | null = null;
-      void (async () => {
-        try {
-          // Update pending document status to RUNNING
-
-          await ctx.prisma.pendingDocument.update({
-            where: {id: pendingDocument.id},
-            data: {status: STATUS.RUNNING},
-            select: {
-              id: true,
-              status: true,
-            },
-          });
-
-          const markdown = await (async () => {
-            if (env.NODE_ENV === 'development' && env.MOCK_FILE_PARSING) {
-              await new Promise((resolve) => setTimeout(resolve, 5_000));
-
-              const file = await getMostRecentFile({
-                dirPath: 'public/temp/parsing-results',
-                extensions: ['.md'],
-              });
-
-              return file.text();
-            } else {
-              return await pdfParseWithLlamaparse({
-                filePath: pendingDocument.fileUrl,
-                documentLanguage: pendingDocument.locale,
-              });
-            }
-          })();
-
-          const lintedMarkdown = lintAndFixMarkdown(markdown);
-
-          if (typeof lintedMarkdown !== 'string') {
-            throw new Error('Failed to lint and fix markdown');
-          }
-
-          // TODO: This operations could be CPU intensive and we should move them to something like Trigger.dev
-          const plaintifiedMarkdown = await plaintifyMarkdown(lintedMarkdown);
-
-          const chunks = await chunkString({
-            text: plaintifiedMarkdown,
-            splitter: new RecursiveCharacterTextSplitter({
-              chunkSize: 150,
-              chunkOverlap: 0,
-              keepSeparator: false,
-            }),
-          });
-
-          vectorStore = await embedPDF({
-            fileHash: pendingDocument.fileHash,
-            locale: pendingDocument.locale,
-            docs: chunks,
-          });
-
-          if (env.NODE_ENV === 'development') {
-            await writeToTimestampedFile({
-              content: `Chroma collection name: ${vectorStore.collectionName}\n\nContent:\n${markdown}`,
-              destinationFolderPath:
-                allowedAbsoluteDirPaths.publicParsingResults,
-              suffix: 'llamaParse',
-              fileName: pendingDocument.title,
-              fileExtension: 'md',
-            });
-
-            const embeddedChunks = await getDocs({
-              collectionName: vectorStore.collectionName,
-              dbQuery: {
-                include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-                limit: 20,
-              },
-              throwOnEmptyReturn: true,
-            });
-
-            console.log('Retrieved chunks from Chroma:', embeddedChunks);
-          }
-
-          // Creating the new 'document' db entry and deleting pending
-          // document because when a document is done parsing we change its
-          // classification from 'pending document' to 'document'.
-          await ctx.prisma.$transaction([
-            ctx.prisma.document.create({
-              data: {
-                // TODO: Add real imageUrl, for now using default value
-                title: pendingDocument.title,
-                description: pendingDocument.description,
-                locale: pendingDocument.locale,
-                fileUrl: pendingDocument.fileUrl,
-                fileHash: pendingDocument.fileHash,
-                imageUrl: pendingDocument.imageUrl,
-                vectorStoreId: vectorStore.collectionName,
-                users: {
-                  connect: {
-                    id: userId,
-                  },
-                },
-              },
-            }),
-
-            ctx.prisma.pendingDocument.delete({
-              where: {
-                id: pendingDocument.id,
-              },
-            }),
-          ]);
-
-          ee.emit('pendingDocument', 'finished');
-        } catch (error) {
-          // TODO: We should take care of these error somehow in the
-          // frontend. Because TRPC cannot return any errors at this point
-          // since the procedure already returned as this is a Promise
-          // that's being processed but not awaited.
-          console.error('Error processing document:', error);
-
-          // CLEANUP
-          // Deleting pending document entry
-          try {
-            await ctx.prisma.pendingDocument.delete({
-              where: {id: pendingDocument.id},
-            });
-          } catch (error) {
-            if (
-              error instanceof Prisma.PrismaClientKnownRequestError &&
-              error.code === 'P2025'
-            ) {
-              // If the document entry is not found, we don't need to delete it nor log an error.
-            } else {
-              console.error(
-                `Failed to delete pending document ID ${pendingDocument.id}. This pending document entry should be deleted manually.`,
-                error
-              );
-            }
-          }
-          // Delete from vector store
-          if (vectorStore != null) {
-            try {
-              await deleteCollection(vectorStore.collectionName);
-            } catch (error) {
-              console.error(
-                `Failed to delete collection ${vectorStore.collectionName} for document ID ${pendingDocument.id}. This collection should be deleted manually.`,
-                error
-              );
-            }
-          }
-
-          // Delete original file and image
-          try {
-            await deleteFile(pendingDocument.fileUrl);
-
-            if (!isStringEmpty(pendingDocument.imageUrl)) {
-              await deleteFile(pendingDocument.imageUrl);
-            }
-          } catch (error) {
-            const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
-              ? ''
-              : ', image: ' + pendingDocument.imageUrl;
-
-            console.error(
-              `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
-              error
-            );
-          }
-
-          ee.emit('pendingDocument', 'error');
+      // Trigger actual parsing task
+      const taskHandle = await tasks.trigger<typeof fileParsingTask>(
+        'file-parsing',
+        {
+          pendingDocumentId: pendingDocument.id,
+          userId,
         }
-      })();
+      );
 
-      return pendingDocument;
+      return {taskHandleId: taskHandle.id, pendingDocument};
+    }),
+
+  triggerDevWebhookReceiver: authedProcedure
+    .input(
+      z.object({
+        pendingDocumentEventPayload: pendingDocumentEventsSchema,
+      })
+    )
+    .mutation(async ({ctx, input}) => {
+      // TODO: We should validate the source of the request with a secret key
+      ee.emit('pendingDocument', input.pendingDocumentEventPayload);
     }),
 
   updateDocument: withDbUserProcedure

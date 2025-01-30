@@ -54,6 +54,7 @@ export function DashboardModals() {
     await fetch('/api/uploadDocument', {
       method: 'POST',
       body: new FormData(htmlForm),
+      signal: AbortSignal.timeout(10 * 60 * 1_000),
     });
 
     await handleCloseDocumentModal(form);
@@ -69,6 +70,7 @@ export function DashboardModals() {
     await fetch('/api/updateDocument', {
       method: 'PATCH',
       body: formData,
+      signal: AbortSignal.timeout(10 * 60 * 1_000),
     });
 
     await utils.documents.invalidate();

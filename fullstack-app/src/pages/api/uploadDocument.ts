@@ -66,6 +66,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({res});
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({error: 'Method not allowed'});
   }
@@ -159,6 +163,20 @@ export default async function handler(
     return res.status(400).json({error: 'A PDF file is required'});
   }
 
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [
+            parsedFormData.file?.filepath,
+            parsedFormData.image?.filepath,
+          ],
+        });
+      },
+    });
+  }
+
   // FILE VIRUS SCANNING
   if (clamScan == null) {
     console.error('Virus engine not initialized. Cannot scan file.');
@@ -203,6 +221,17 @@ export default async function handler(
       .json({error: 'File virus scanning failed. Cannot proceed securely.'});
   }
 
+  if (req.destroyed) {
+    console.log('Connection aborted (socket destroyed)');
+    await cleanup({
+      fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
+    });
+
+    return res
+      .status(204)
+      .json({message: 'Connection aborted (socket destroyed)'});
+  }
+
   const docFile = await getFile({
     filePath: parsedFormData.file.filepath,
     mimeType: parsedFormData.file.mimetype ?? 'application/pdf',
@@ -230,6 +259,20 @@ export default async function handler(
     });
 
     return res.status(400).json({error: 'Invalid request body'});
+  }
+
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [
+            parsedFormData.file?.filepath,
+            parsedFormData.image?.filepath,
+          ],
+        });
+      },
+    });
   }
 
   let fileUrl: string | undefined;
@@ -287,6 +330,22 @@ export default async function handler(
     return res.status(500).json({error: 'Upload failed'});
   }
 
+  if (req.destroyed) {
+    return await returnConnectionAbortedResponse({
+      res,
+      cleanup: async () => {
+        await cleanup({
+          fileUrls: [
+            parsedFormData.file?.filepath,
+            parsedFormData.image?.filepath,
+            fileUrl,
+            imageUrl,
+          ],
+        });
+      },
+    });
+  }
+
   // Calling TRPC procedure to parse the document
   const trpc = createCaller(
     createInnerTRPCContext({
@@ -325,4 +384,22 @@ async function cleanup({fileUrls}: {fileUrls: (string | null | undefined)[]}) {
         }
       })
   );
+}
+
+async function returnConnectionAbortedResponse(params: {
+  res: NextApiResponse;
+  cleanup?: () => Promise<void>;
+}) {
+  try {
+    await params.cleanup?.();
+  } catch (error) {
+    console.error(
+      'Cleanup failed during returnConnectionAbortedResponse:',
+      error
+    );
+  }
+
+  console.error('Connection timed out (req.destroyed === true)');
+
+  return params.res.status(408).json({error: 'Request timeout'});
 }

@@ -25,6 +25,9 @@ export const env = createEnv({
       (val) => val === 'true',
       z.boolean().default(false)
     ),
+    TRIGGER_DEV_PROJECT_ID: z.string(),
+    TRIGGER_SECRET_KEY: z.string(),
+    TRIGGER_API_URL: z.string(),
   },
 
   /**
@@ -53,6 +56,9 @@ export const env = createEnv({
     API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT:
       process.env.API_REQUESTS_PER_MINUTE_PER_USER_RATE_LIMIT,
     MOCK_FILE_PARSING: process.env.MOCK_FILE_PARSING,
+    TRIGGER_DEV_PROJECT_ID: process.env.TRIGGER_DEV_PROJECT_ID,
+    TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
+    TRIGGER_API_URL: process.env.TRIGGER_API_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

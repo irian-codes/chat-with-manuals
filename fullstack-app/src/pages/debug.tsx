@@ -29,6 +29,9 @@ export default function DebugPage() {
     }
   );
 
+  const debugRunTriggerDevTaskMutation =
+    api.debug.debugRunTriggerDevTask.useMutation();
+
   const error =
     chromaMutation.error ?? getDocsQuery.error ?? clearChromaMutation.error;
   const data = chromaMutation.data ?? getDocsQuery.data;
@@ -45,6 +48,12 @@ export default function DebugPage() {
     void getDocsQuery.refetch();
   };
 
+  const handleRunTriggerDevTask = () => {
+    debugRunTriggerDevTaskMutation.mutate({
+      data: 'Heeeey',
+    });
+  };
+
   if (error) {
     console.error(error);
   }
@@ -54,6 +63,12 @@ export default function DebugPage() {
       <div className="flex flex-col items-start gap-2 rounded-md bg-gray-100 p-4">
         <h1 className="text-2xl font-semibold">Debug Page</h1>
         <p>This is a simple debug page to help with troubleshooting.</p>
+        <button
+          onClick={handleRunTriggerDevTask}
+          className="bg-blue-400 px-4 py-2 text-white"
+        >
+          Run Trigger Dev Task
+        </button>
         <button
           onClick={handleStoreInChromaCustom}
           className="bg-blue-400 px-4 py-2 text-white"
