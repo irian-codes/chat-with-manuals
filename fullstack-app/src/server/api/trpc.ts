@@ -276,6 +276,5 @@ export const publicProcedure = t.procedure
 
 export const authedProcedure = publicProcedure.use(authorizationMiddleware);
 export const withDbUserProcedure = authedProcedure.use(withDbUserMiddleware);
-export const debugProcedure = authedProcedure
-  .use(rateLimitMiddleware)
-  .use(debugMiddleware);
+export const debugAuthedProcedure = authedProcedure.use(debugMiddleware);
+export const debugPublicProcedure = publicProcedure.use(debugMiddleware);
