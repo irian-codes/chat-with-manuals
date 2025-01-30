@@ -1,12 +1,18 @@
 import {clearDatabase, embedPDF, getDocs} from '@/server/db/chroma';
+import {type envVarTestTask} from '@/server/trigger/test';
+import {runs, tasks, type TaskOutput} from '@trigger.dev/sdk/v3';
 import {TRPCError} from '@trpc/server';
 import {IncludeEnum} from 'chromadb';
 import {Document} from 'langchain/document';
 import {z} from 'zod';
-import {createTRPCRouter, debugProcedure} from '../trpc';
+import {
+  createTRPCRouter,
+  debugAuthedProcedure,
+  debugPublicProcedure,
+} from '../trpc';
 
 export const debugRouter = createTRPCRouter({
-  debugStoreInChroma: debugProcedure.mutation(async ({ctx}) => {
+  debugStoreInChroma: debugAuthedProcedure.mutation(async ({ctx}) => {
     const markdown = 'Hello World TEST TEXT';
     const fileHash = '123';
 
@@ -42,7 +48,7 @@ export const debugRouter = createTRPCRouter({
     }
   }),
 
-  debugGetDocsFromChroma: debugProcedure
+  debugGetDocsFromChroma: debugAuthedProcedure
     .input(z.object({collectionName: z.string().trim().nonempty().uuid()}))
     .query(async ({input}) => {
       try {
@@ -62,7 +68,7 @@ export const debugRouter = createTRPCRouter({
       }
     }),
 
-  debugClearChroma: debugProcedure.mutation(async ({ctx}) => {
+  debugClearChroma: debugAuthedProcedure.mutation(async ({ctx}) => {
     try {
       await clearDatabase();
     } catch (error) {
@@ -75,4 +81,28 @@ export const debugRouter = createTRPCRouter({
       });
     }
   }),
+
+  debugRunTriggerDevTask: debugPublicProcedure
+    .input(z.object({data: z.string()}).optional())
+    .mutation(async ({input}) => {
+      const filePath =
+        '/public/temp/uploads/files/f717a4e6bfd5daf0423cde4ba2d9b99fcaa1d1494cfe052677875603b5d3d03e.pdf';
+
+      const handle = await tasks.trigger<typeof envVarTestTask>(
+        'env-var-test',
+        null
+      );
+
+      let output: TaskOutput<typeof envVarTestTask> | undefined;
+      for await (const run of runs.subscribeToRun<typeof envVarTestTask>(
+        handle.id
+      )) {
+        if (run.output != null) {
+          output = run.output;
+          break;
+        }
+      }
+
+      return output;
+    }),
 });

@@ -45,6 +45,9 @@ yarn-error.log*
 # idea files
 .idea
 
+# Trigger.dev
+.trigger
+
 # temp files
 temp/
 public/temp/

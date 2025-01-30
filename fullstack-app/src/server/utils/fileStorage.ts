@@ -315,6 +315,13 @@ function ensureAbsolutePath(filePath: string): string {
     })
     .parse(filePath);
 
+  // TODO: These paths will probably need to go into an environment
+  // variables because when Trigger.dev is deployed to its own docker
+  // container, the paths will need to be changed to whatever permanent
+  // volume the app saved files to.
+  //
+  // In development this works because Trigger.dev runs in the same
+  // environment as the app with command `npm run trigger:dev.
   const absolutePath = _filePath.startsWith(os.tmpdir())
     ? _filePath
     : _filePath.startsWith(process.cwd())

@@ -1,8 +1,16 @@
 import EventEmitter, {on} from 'node:events';
+import {z} from 'zod';
+
+export const pendingDocumentEventsSchema = z.enum([
+  'added',
+  'finished',
+  'cancelled',
+  'error',
+]);
 
 interface AppEvents {
   pendingDocument: (
-    action: 'added' | 'finished' | 'cancelled' | 'error'
+    action: z.infer<typeof pendingDocumentEventsSchema>
   ) => void;
 }
 
