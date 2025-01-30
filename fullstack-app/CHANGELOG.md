@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.13](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.12...v0.1.13) (2025-01-30)
+
+
+### Features
+
+* **api-routes:** implemented timeouts to prevent stale long running requests ([45c0380](https://github.com/irian-codes/chat-with-manuals/commit/45c03803b0eb35f9b7f754c4af5fefec06506a28))
+* **parsing:** implemented document parsing using Trigger.dev ([2cc4ffc](https://github.com/irian-codes/chat-with-manuals/commit/2cc4ffce6e4284c5dc67a228bea63b31d5b059b1))
+
 ## [0.1.12](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.11...v0.1.12) (2025-01-26)
 
 
