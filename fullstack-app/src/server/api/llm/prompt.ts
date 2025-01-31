@@ -128,7 +128,7 @@ export async function sendPrompt({
     });
 
     // Logging response to file for debugging
-    const answerFilePath = writeToTimestampedFile({
+    const answerFilePath = await writeToTimestampedFile({
       content:
         `[PROMPT]: ${systemMessage.content.toString()}\n\n` +
         chatTemplate
