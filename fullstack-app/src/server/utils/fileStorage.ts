@@ -374,8 +374,8 @@ function isPathSafe(filePath: string): boolean {
     return false;
   }
 
-  // Only allow alphanumeric characters, dots, dashes and forward slashes
-  if (!/^[ a-z0-9\-_()\[\]\.\/]+$/i.test(_filePath)) {
+  // Check for valid file path on POSIX systems
+  if (!/^\/?(?:[^\0\/\r\n]+\/)*[^\0\/\r\n]+\/?$/.test(_filePath)) {
     console.error(
       'Filepath validation error: File path contains invalid characters',
       _filePath
