@@ -3,11 +3,13 @@ import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {deleteCollection, embedPDF, getDocs} from '@/server/db/chroma';
 import {prisma} from '@/server/db/prisma';
-import {chunkString} from '@/server/document/chunking';
+import {
+  chunkSectionNodes,
+  markdownToSectionsJson,
+} from '@/server/document/chunking';
 import {
   lintAndFixMarkdown,
   pdfParseWithLlamaparse,
-  plaintifyMarkdown,
 } from '@/server/document/parsing';
 import {
   allowedAbsoluteDirPaths,
@@ -25,9 +27,12 @@ import './init';
 
 export const fileParsingTask = task({
   id: 'file-parsing',
-  maxDuration: 30 * 60, // 30 minutes
+  maxDuration: 6 * 60 * 60, // 6 hours
   retry: {
     maxAttempts: 0,
+  },
+  queue: {
+    concurrencyLimit: 3,
   },
   run: async (payload: {userId: string; pendingDocumentId: string}, {ctx}) => {
     logger.info('File parsing', {payload, ctx});
@@ -60,7 +65,8 @@ export const fileParsingTask = task({
           await new Promise((resolve) => setTimeout(resolve, 5_000));
 
           const file = await getMostRecentFile({
-            dirPath: 'public/temp/parsing-results',
+            dirPath: 'public/temp/parsing-results/markdown',
+            name: pendingDocument.title,
             extensions: ['.md'],
           });
 
@@ -79,10 +85,10 @@ export const fileParsingTask = task({
         throw new Error('Failed to lint and fix markdown');
       }
 
-      const plaintifiedMarkdown = await plaintifyMarkdown(lintedMarkdown);
+      const mdToJson = await markdownToSectionsJson(lintedMarkdown);
 
-      const chunks = await chunkString({
-        text: plaintifiedMarkdown,
+      const chunks = await chunkSectionNodes({
+        sectionsJson: mdToJson,
         splitter: new RecursiveCharacterTextSplitter({
           chunkSize: 150,
           chunkOverlap: 0,
@@ -98,11 +104,28 @@ export const fileParsingTask = task({
 
       if (env.NODE_ENV === 'development') {
         await writeToTimestampedFile({
-          content: `Chroma collection name: ${vectorStore.collectionName}\n\nContent:\n${markdown}`,
-          destinationFolderPath: allowedAbsoluteDirPaths.publicParsingResults,
+          content: `Chroma collection name: ${vectorStore.collectionName}\n\nMarkdown:\n${markdown}`,
+          destinationFolderPath:
+            allowedAbsoluteDirPaths.publicParsingResultsMarkdown,
           suffix: 'llamaParse',
           fileName: pendingDocument.title,
           fileExtension: 'md',
+        });
+
+        await writeToTimestampedFile({
+          content: JSON.stringify(
+            {
+              chromaCollectionName: vectorStore.collectionName,
+              sections: mdToJson,
+            },
+            null,
+            2
+          ),
+          destinationFolderPath:
+            allowedAbsoluteDirPaths.publicParsingResultsSectionsJson,
+          suffix: 'llamaParse',
+          fileName: pendingDocument.title,
+          fileExtension: 'json',
         });
 
         const embeddedChunks = await getDocs({
@@ -257,39 +280,35 @@ export const fileParsingTask = task({
   },
   async onFailure(payload, error, params) {
     // Emitting the 'pendingDocument.error' event
-    const prismaUser = await prisma.user
-      .findUniqueOrThrow({
+    try {
+      const prismaUser = await prisma.user.findUniqueOrThrow({
         where: {
           id: payload.userId,
         },
-      })
-      .catch((error) => {
-        logger.error(
-          `Failed when retrieving prisma user. This shouldn't have happened.`,
-          {payload, error}
-        );
       });
 
-    if (prismaUser == null) {
+      const trpc = createCaller(
+        createInnerTRPCContext({
+          prismaUser,
+          authProviderUserId: prismaUser.authProviderId,
+        })
+      );
+
+      await trpc.documents.triggerDevWebhookReceiver({
+        pendingDocumentEventPayload: 'error',
+      });
+    } catch (error) {
+      logger.error(
+        `Failed when calling TRPC endpoint to emit the 'pendingDocument.error' event.`,
+        {payload, error}
+      );
+
       return;
     }
 
-    const trpc = createCaller(
-      createInnerTRPCContext({
-        prismaUser,
-        authProviderUserId: prismaUser.authProviderId,
-      })
-    );
-
-    await trpc.documents
-      .triggerDevWebhookReceiver({
-        pendingDocumentEventPayload: 'error',
-      })
-      .catch((error) => {
-        logger.error(
-          `Failed when calling TRPC endpoint to emit the 'pendingDocument.error' event.`,
-          {payload, error}
-        );
-      });
+    logger.error('Successfully emitted the "pendingDocument.error" event.', {
+      payload,
+      error,
+    });
   },
 });

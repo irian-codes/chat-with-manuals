@@ -4,7 +4,7 @@ import {
   withDbUserProcedure,
 } from '@/server/api/trpc';
 import {deleteCollection} from '@/server/db/chroma';
-import {fileParsingTask} from '@/server/trigger/documents';
+import {type fileParsingTask} from '@/server/trigger/documents';
 import {
   AppEventEmitter,
   pendingDocumentEventsSchema,
@@ -286,6 +286,11 @@ export const documentsRouter = createTRPCRouter({
         {
           pendingDocumentId: pendingDocument.id,
           userId,
+        },
+        {
+          idempotencyKey: `file-parsing-${pendingDocument.id}`,
+          idempotencyKeyTTL: '6h',
+          maxDuration: 6 * 60 * 60,
         }
       );
 
