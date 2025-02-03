@@ -1,10 +1,12 @@
 import {createTRPCRouter, withDbUserProcedure} from '@/server/api/trpc';
+import {
+  generateConversationTitle,
+  sendPrompt,
+} from '@/server/conversation/prompt';
 import {isStringEmpty} from '@/utils/strings';
 import {AUTHOR, Prisma} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
-import ISO6391 from 'iso-639-1';
 import {z} from 'zod';
-import {generateConversationTitle, sendPrompt} from '../llm/prompt';
 
 export const conversationsRouter = createTRPCRouter({
   getConversations: withDbUserProcedure
@@ -169,25 +171,9 @@ export const conversationsRouter = createTRPCRouter({
         });
       }
 
-      const defaultLlmSystemPrompt = `You are a highly effective AI assistant specialized in explaining documents with precise logical and factual reasoning. Your responses must be based on the provided context, avoiding any unrelated external information. Ensure that your answers are accurate, clear, and cite references from the given context. If the answer is not available within the context, respond in the user's language with 'I couldn't find the answer in the provided document.' (e.g. English: 'I couldn't find the answer in the provided document.', e.g. Spanish: 'No encontré la respuesta en el documento proporcionado.').
-
-All documents are written in ${ISO6391.getName(document.locale)}. You must **always** communicate in ${ISO6391.getName(document.locale)}.
-
-**Language Enforcement:**
-- **Detection:** Automatically detect the language of the user's input.
-- **Compliance:** 
-  - If the user communicates in ${ISO6391.getName(document.locale)}, proceed normally.
-  - If the user uses a different language, respond **immediately** in the user's language with a clear and polite instruction to continue the conversation in ${ISO6391.getName(document.locale)}. For example:
-    - "Por favor, continúe nuestra conversación en Español para que pueda asistirle de manera efectiva."
-    - "Bitte fahren Sie unser Gespräch auf Spanisch fort, damit ich Ihnen effektiv helfen kann."
-
-**Purpose:**
-This strict language requirement ensures that all interactions remain consistent and that the assistance provided is both accurate and meaningful. Adhering to the document's language is crucial for maintaining clarity and effectiveness in communication.`;
-
       const conversation = await ctx.prisma.conversation.create({
         data: {
           userId,
-          llmSystemPrompt: defaultLlmSystemPrompt,
           documents: {
             connect: {
               id: document.id,
@@ -223,10 +209,14 @@ This strict language requirement ensures that all interactions remain consistent
       const conversation = await ctx.prisma.conversation.findFirst({
         where: {
           id: input.conversationId,
-          userId: userId,
+          userId,
         },
         include: {
-          documents: true,
+          _count: {
+            select: {
+              documents: true,
+            },
+          },
         },
       });
 
@@ -237,7 +227,7 @@ This strict language requirement ensures that all interactions remain consistent
         });
       }
 
-      if (conversation.documents.length === 0) {
+      if (conversation._count.documents === 0) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message:
@@ -246,15 +236,8 @@ This strict language requirement ensures that all interactions remain consistent
       }
 
       const response = await sendPrompt({
-        llmSystemPrompt: conversation.llmSystemPrompt,
         prompt: input.message,
-        // TODO: Add support for multiple documents per conversation
-        collectionName: conversation.documents[0]!.vectorStoreId,
-        conversationHistory: await ctx.prisma.message.findMany({
-          where: {conversationId: conversation.id},
-          orderBy: {createdAt: 'asc'},
-        }),
-        documentDescription: conversation.documents[0]!.description,
+        conversationId: conversation.id,
       });
 
       // Create user message
@@ -417,69 +400,59 @@ This strict language requirement ensures that all interactions remain consistent
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      // Get the message and verify ownership
-      const message = await ctx.prisma.message.findFirst({
-        where: {
-          id: input.messageId,
-          author: AUTHOR.USER,
-          conversation: {
-            userId,
-          },
-        },
-        include: {
-          conversation: {
-            include: {
-              documents: true,
+      // Get the message and verify ownership and update the content
+      const updatedMessage = await ctx.prisma.message
+        .update({
+          where: {
+            id: input.messageId,
+            author: AUTHOR.USER,
+            conversation: {
+              userId,
             },
           },
-        },
-      });
+          include: {
+            conversation: true,
+          },
+          data: {
+            content: input.content,
+          },
+        })
+        .catch((error) => {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Message not found or access denied',
+              });
+            }
+          }
 
-      if (!message) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Message not found or access denied',
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to update message',
+          });
         });
-      }
 
       // Delete all messages after this one
       await ctx.prisma.message.deleteMany({
         where: {
-          conversationId: message.conversation.id,
+          conversationId: updatedMessage.conversation.id,
           createdAt: {
-            gt: message.createdAt,
+            gt: updatedMessage.createdAt,
           },
         },
       });
 
-      // Update the message
-      const updatedMessage = await ctx.prisma.message.update({
-        where: {
-          id: input.messageId,
-        },
-        data: {
-          content: input.content,
-          updatedAt: new Date(),
-        },
-      });
-
       const response = await sendPrompt({
-        llmSystemPrompt: message.conversation.llmSystemPrompt,
         prompt: updatedMessage.content,
-        // TODO: Add support for multiple documents per conversation
-        collectionName: message.conversation.documents[0]!.vectorStoreId,
-        conversationHistory: await ctx.prisma.message.findMany({
-          where: {conversationId: message.conversation.id},
-          orderBy: {createdAt: 'asc'},
-        }),
-        documentDescription: message.conversation.documents[0]!.description,
+        conversationId: updatedMessage.conversation.id,
       });
 
       const aiMessage = await ctx.prisma.message.create({
         data: {
           conversation: {
             connect: {
-              id: message.conversation.id,
+              id: updatedMessage.conversation.id,
             },
           },
           author: AUTHOR.AI,

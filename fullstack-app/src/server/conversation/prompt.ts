@@ -1,5 +1,6 @@
 import {env} from '@/env';
 import {queryCollection} from '@/server/db/chroma';
+import {prisma} from '@/server/db/prisma';
 import {
   allowedAbsoluteDirPaths,
   writeToTimestampedFile,
@@ -8,9 +9,10 @@ import {nonEmptyStringSchema} from '@/utils/strings';
 import {SystemMessage} from '@langchain/core/messages';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
-import {type Message} from '@prisma/client';
+import {type Conversation, type Message} from '@prisma/client';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o-mini';
 import {type Document} from 'langchain/document';
+import {getConversationLlmSystemPrompt} from './utils';
 
 // gpt-4o-mini context window (128k) size minus a 28k for the answer.
 // Numbers chosen according to the findings that large contexts degrade model performance, these just feel right. 128k tokens are like 96k words, a "standard" 130 page novel is 40k words.
@@ -39,16 +41,10 @@ const CHAT_TEMPLATES = {
 
 export async function sendPrompt({
   prompt,
-  collectionName,
-  llmSystemPrompt,
-  conversationHistory,
-  documentDescription,
+  conversationId,
 }: {
   prompt: string;
-  collectionName: string;
-  llmSystemPrompt: string;
-  conversationHistory: Message[];
-  documentDescription: string;
+  conversationId: Conversation['id'];
 }) {
   const _prompt = nonEmptyStringSchema.parse(prompt, {
     errorMap: (_) => {
@@ -58,51 +54,49 @@ export async function sendPrompt({
     },
   });
 
-  const _collectionName = nonEmptyStringSchema.parse(collectionName, {
-    errorMap: (_) => {
-      return {
-        message:
-          'Invalid collection name: collection name must be a non-empty string',
-      };
+  const conversation = await prisma.conversation.findUniqueOrThrow({
+    where: {
+      id: conversationId,
+    },
+    include: {
+      documents: true,
+      messages: {
+        orderBy: {createdAt: 'asc'},
+        take: 50,
+      },
     },
   });
 
-  const _llmSystemPrompt = nonEmptyStringSchema.parse(llmSystemPrompt, {
-    errorMap: (_) => {
-      return {
-        message:
-          'Invalid LLM system prompt: LLM system prompt must be a non-empty string',
-      };
-    },
+  // TODO: Add support for multiple documents per conversation
+  const collectionName = conversation.documents[0]!.vectorStoreId;
+  const documentDescription = conversation.documents[0]!.description;
+  const systemPrompt = getConversationLlmSystemPrompt({
+    conversation,
   });
-
-  const _documentDescription = nonEmptyStringSchema
-    .safeParse(documentDescription)
-    .data?.trim();
 
   console.log('Retrieving context...');
 
   const retrievedContext = await retrieveContext({
     prompt: _prompt,
-    collectionName: _collectionName,
+    collectionName,
   });
 
   // Trim conversation history to fit token limit
-  const trimmedHistory = await trimConversationToTokenLimit(
-    _llmSystemPrompt,
-    conversationHistory,
-    _prompt,
-    retrievedContext
-  );
+  const trimmedHistory = await trimConversationToTokenLimit({
+    systemPrompt,
+    conversationHistory: conversation.messages,
+    prompt: _prompt,
+    context: retrievedContext,
+  });
 
   const chatTemplate = await createChatTemplate({
     trimmedHistory,
     retrievedContext,
     prompt: _prompt,
-    documentDescription: _documentDescription,
+    documentDescription,
   });
 
-  const systemMessage = new SystemMessage(_llmSystemPrompt);
+  const systemMessage = new SystemMessage(systemPrompt);
 
   console.log('Sending message to LLM...');
 
@@ -237,12 +231,17 @@ export async function generateConversationTitle(
   return responseContent?.slice(0, 255) ?? '';
 }
 
-async function trimConversationToTokenLimit(
-  systemPrompt: string,
-  conversationHistory: Message[],
-  prompt: string,
-  context: string
-): Promise<Message[]> {
+async function trimConversationToTokenLimit({
+  systemPrompt,
+  conversationHistory,
+  prompt,
+  context,
+}: {
+  systemPrompt: string;
+  conversationHistory: Message[];
+  prompt: string;
+  context: string;
+}): Promise<Message[]> {
   if (conversationHistory.length === 0) {
     return [];
   }
@@ -307,7 +306,6 @@ ${trimmedHistory
 // Otherwise, we try to fit the chat history into the token limit and use
 // the withChatHistoryTemplate.
 // It's very unlikely that the chat history will be too long, but just in case...
-// ... existing code ...
 async function createChatTemplate({
   trimmedHistory,
   retrievedContext,
