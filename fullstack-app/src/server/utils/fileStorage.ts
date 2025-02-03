@@ -18,8 +18,11 @@ export const allowedAbsoluteDirPaths = {
   publicUploadedImages: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'uploads/images')
   ),
-  publicParsingResults: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results')
+  publicParsingResultsMarkdown: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results/markdown')
+  ),
+  publicParsingResultsSectionsJson: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results/sections-json')
   ),
   publicLlmAnswers: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'llm-answers')
@@ -213,12 +216,18 @@ export async function getFile({
 
 export async function getMostRecentFile({
   dirPath,
+  name,
   extensions = [],
 }: {
   dirPath: string;
+  name?: string | null;
   extensions?: string[];
 }): Promise<File> {
   const absolutePath = validateAndResolvePath(dirPath);
+  const lowerCaseName =
+    !isStringEmpty(name) && name!.trim().length > 2
+      ? name!.trim().toLowerCase()
+      : null;
   const _extensions = z
     .array(
       z
@@ -246,6 +255,13 @@ export async function getMostRecentFile({
 
   const mostRecentFile = fileStats
     .filter((file) => file.stats.isFile())
+    .filter((file) => {
+      if (lowerCaseName != null) {
+        return file.name.toLowerCase().includes(lowerCaseName);
+      }
+
+      return true;
+    })
     .filter((file) => {
       if (_extensions.length === 0) {
         return true;
@@ -374,8 +390,8 @@ function isPathSafe(filePath: string): boolean {
     return false;
   }
 
-  // Only allow alphanumeric characters, dots, dashes and forward slashes
-  if (!/^[ a-z0-9\-_()\[\]\.\/]+$/i.test(_filePath)) {
+  // Check for valid file path on POSIX systems
+  if (!/^\/?(?:[^\0\/\r\n]+\/)*[^\0\/\r\n]+\/?$/.test(_filePath)) {
     console.error(
       'Filepath validation error: File path contains invalid characters',
       _filePath
