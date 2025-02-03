@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.14](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.13...v0.1.14) (2025-02-03)
+
+
+### Features
+
+* **parsing:** parsing documents into defined sections ([17400e6](https://github.com/irian-codes/chat-with-manuals/commit/17400e62d6533e3e293c34050d92d02f26829082))
+* **prompt:** sending sections in a structured way to llm ([e312c4e](https://github.com/irian-codes/chat-with-manuals/commit/e312c4e2f4855fbdde89779adfc895e8f395e5a2))
+
+
+### Bug Fixes
+
+* **file-storage:** more lenient filepath validation regex ([8489798](https://github.com/irian-codes/chat-with-manuals/commit/8489798afb183cc33f68e5f25bb1cd508ba7a8c1))
+
 ## [0.1.13](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.12...v0.1.13) (2025-01-30)
 
 
