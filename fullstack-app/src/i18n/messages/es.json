@@ -76,6 +76,7 @@
     },
     "image-input-label": "Imagen de portada",
     "language-label": "Idioma del documento",
+    "language-placeholder": "Seleccione código de idioma",
     "upload": "Subir nuevo documento"
   }
 }

@@ -126,7 +126,9 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                   },
                 })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2"
+                defaultValue=""
               >
+                <option value="">{t('language-placeholder')}</option>
                 {ISO6391.getAllCodes()
                   .sort((a, b) =>
                     ISO6391.getNativeName(a).localeCompare(

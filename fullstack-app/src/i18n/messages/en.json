@@ -76,6 +76,7 @@
     },
     "image-input-label": "Cover image",
     "language-label": "Document language",
+    "language-placeholder": "Select language code",
     "upload": "Upload new document"
   }
 }
