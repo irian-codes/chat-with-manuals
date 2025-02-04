@@ -1,19 +1,20 @@
 ---
-description: Codebase context
-globs: 
+description: App codebase context
+globs: src/**/*,*.prisma
 ---
+# Codebase
 This codebase is a web app that allows users to upload PDF documents and chat with them using AI (commonly known as RAG).
-Stack: TypeScript, Next.js Pages Router, TRPC, Prisma, Chroma DB (vector database), Shadcn UI, Tailwind CSS, Lucide Icons, next-intl, usehooks-ts and LangChain.
-Coding rules:
+
+## Stack
+TypeScript, Next.js Pages Router, TRPC, Prisma, Chroma DB (vector database), Shadcn UI, Tailwind CSS, Lucide Icons, next-intl, usehooks-ts and LangChain.
+
+# Coding rules
 - Prefer inferring Typescript types instead than explicitly defining them.
 - Prefer using zod over custom validation functions.
+- You code elegant and simple solutions, even if it involves breaking some code practices in targeted scenarios, because if it's a very specific breakage but allows for less code complexity it's worth it. Remember, the worst enemy of a codebase is complexity. Best code is lean and readable code.
 - Prioritize readability and maintainability over performance.
 - On the frontend, try to implement TRPC mutations in an optimistic way.
 - On the frontend, avoid using `useEffect` unless it's absolutely necessary. Follow React best practices around hooks.
 - Don't hardcode strings that are intended for the user to read, use i18n files (/src/i18n/messages/*.json) instead.
 - Always import files using the `@/` syntax (e.g. `import {queryCollection} from '@/server/db/chroma';`).
-- Always follow the already present code style and conventions.
-
-Communication rules:
-- If you feel the user request is incomplete or ambiguous, don't assume, ask for clarification.
-- Be concise and to the point.
+- Always try to follow the already present code style and conventions.
