@@ -17,7 +17,12 @@ import {
 import {UpdateDocumentPayloadSchema} from '@/types/UpdateDocumentPayload';
 import {UploadNewDocumentPayloadSchema} from '@/types/UploadNewDocumentPayload';
 import {isStringEmpty} from '@/utils/strings';
-import {Prisma, STATUS, type PrismaClient} from '@prisma/client';
+import {
+  Prisma,
+  STATUS,
+  type PendingDocument,
+  type PrismaClient,
+} from '@prisma/client';
 import {tasks} from '@trigger.dev/sdk/v3';
 import {TRPCError} from '@trpc/server';
 import {z} from 'zod';
@@ -234,10 +239,10 @@ export const documentsRouter = createTRPCRouter({
       const userId = ctx.prismaUser.id;
 
       // Create pending document
-      const pendingDocument = await ctx.prisma.pendingDocument
-        .create({
+      let pendingDocument: PendingDocument | null = null;
+      try {
+        pendingDocument = await ctx.prisma.pendingDocument.create({
           data: {
-            // TODO: Add real imageUrl, for now using default value
             title: input.title,
             description: input.description ?? '',
             locale: input.locale,
@@ -251,50 +256,66 @@ export const documentsRouter = createTRPCRouter({
               },
             },
           },
-        })
-        .catch(async (error) => {
-          // Delete original file and image
+        });
+
+        // Trigger actual parsing task
+        const taskHandle = await tasks.trigger<typeof fileParsingTask>(
+          'file-parsing',
+          {
+            pendingDocumentId: pendingDocument.id,
+            userId,
+          },
+          {
+            idempotencyKey: `file-parsing-${pendingDocument.id}`,
+            idempotencyKeyTTL: '6h',
+            maxDuration: 6 * 60 * 60,
+          }
+        );
+
+        ee.emit('pendingDocument', 'added');
+
+        return {taskHandleId: taskHandle.id, pendingDocument};
+      } catch (error) {
+        // Try delete pending document. If it's null it means Prisma crashed.
+        if (pendingDocument != null) {
           try {
-            await deleteFile(input.fileUrl);
-
-            if (!isStringEmpty(input.imageUrl)) {
-              await deleteFile(input.imageUrl!);
-            }
+            await ctx.prisma.pendingDocument.delete({
+              where: {id: pendingDocument.id},
+            });
           } catch (error) {
-            const imageUrlErrorMsgPart = isStringEmpty(input.imageUrl)
-              ? ''
-              : ', image: ' + input.imageUrl;
-
             console.error(
-              `Failed to delete document file: ${input.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
+              'Failed to delete pending document. This db entry should be deleted manually.',
               error
             );
           }
-
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to create pending document on database',
-            cause: error,
-          });
-        });
-
-      ee.emit('pendingDocument', 'added');
-
-      // Trigger actual parsing task
-      const taskHandle = await tasks.trigger<typeof fileParsingTask>(
-        'file-parsing',
-        {
-          pendingDocumentId: pendingDocument.id,
-          userId,
-        },
-        {
-          idempotencyKey: `file-parsing-${pendingDocument.id}`,
-          idempotencyKeyTTL: '6h',
-          maxDuration: 6 * 60 * 60,
         }
-      );
 
-      return {taskHandleId: taskHandle.id, pendingDocument};
+        // Delete original file and image
+        try {
+          await deleteFile(input.fileUrl);
+
+          if (!isStringEmpty(input.imageUrl)) {
+            await deleteFile(input.imageUrl!);
+          }
+        } catch (error) {
+          const imageUrlErrorMsgPart = isStringEmpty(input.imageUrl)
+            ? ''
+            : ', image: ' + input.imageUrl;
+
+          console.error(
+            `Failed to delete document file: ${input.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
+            error
+          );
+        }
+
+        ee.emit('pendingDocument', 'error');
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create pending document on database',
+          cause: error,
+        });
+      }
     }),
 
   triggerDevWebhookReceiver: authedProcedure
