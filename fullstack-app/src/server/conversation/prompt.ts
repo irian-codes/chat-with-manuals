@@ -19,6 +19,7 @@ import {tasks} from '@trigger.dev/sdk/v3';
 import {IncludeEnum} from 'chromadb';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o-mini';
 import {Document} from 'langchain/document';
+import {createHash} from 'node:crypto';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {type retrieveContextTask} from '../trigger/conversation';
@@ -92,6 +93,10 @@ export async function sendPrompt({
     conversation,
   });
 
+  const hashedPrompt = createHash('sha256')
+    .update(_prompt.toLowerCase())
+    .digest('hex');
+
   const retrievedContext = await tasks.triggerAndPoll<
     typeof retrieveContextTask
   >(
@@ -103,8 +108,8 @@ export async function sendPrompt({
     },
     {
       pollIntervalMs: 500,
-      idempotencyKey: `retrieve-context-${conversationId}`,
-      idempotencyKeyTTL: '10m',
+      idempotencyKey: [conversationId, hashedPrompt],
+      idempotencyKeyTTL: '5m',
     }
   );
 

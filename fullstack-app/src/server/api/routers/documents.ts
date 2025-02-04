@@ -239,7 +239,8 @@ export const documentsRouter = createTRPCRouter({
       const userId = ctx.prismaUser.id;
 
       // Create pending document
-      let pendingDocument: PendingDocument | null = null;
+      let pendingDocument: Pick<PendingDocument, 'id' | 'fileHash'> | null =
+        null;
       try {
         pendingDocument = await ctx.prisma.pendingDocument.create({
           data: {
@@ -256,6 +257,10 @@ export const documentsRouter = createTRPCRouter({
               },
             },
           },
+          select: {
+            id: true,
+            fileHash: true,
+          },
         });
 
         // Trigger actual parsing task
@@ -266,9 +271,8 @@ export const documentsRouter = createTRPCRouter({
             userId,
           },
           {
-            idempotencyKey: `file-parsing-${pendingDocument.id}`,
-            idempotencyKeyTTL: '6h',
-            maxDuration: 6 * 60 * 60,
+            idempotencyKey: pendingDocument.fileHash,
+            idempotencyKeyTTL: '1m',
           }
         );
 
