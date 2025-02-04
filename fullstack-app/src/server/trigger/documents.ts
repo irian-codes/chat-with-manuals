@@ -18,8 +18,7 @@ import {
   writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
 import {isStringEmpty} from '@/utils/strings';
-import {type Chroma} from '@langchain/community/vectorstores/chroma';
-import {Prisma, STATUS} from '@prisma/client';
+import {type PendingDocument, Prisma, STATUS} from '@prisma/client';
 import {logger, task} from '@trigger.dev/sdk/v3';
 import {IncludeEnum} from 'chromadb';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
@@ -38,7 +37,7 @@ export const fileParsingTask = task({
     logger.info('File parsing', {payload, ctx});
 
     // Update pending document status to RUNNING
-    const pendingDocument = await (async () => {
+    let pendingDocument = await (async () => {
       try {
         return await prisma.pendingDocument.update({
           where: {id: payload.pendingDocumentId},
@@ -56,7 +55,6 @@ export const fileParsingTask = task({
       throw pendingDocument ?? new Error('Failed to update pending document');
     }
 
-    let vectorStore: Chroma | null = null;
     try {
       const markdown = await (async () => {
         if (env.NODE_ENV === 'development' && env.MOCK_FILE_PARSING) {
@@ -96,11 +94,24 @@ export const fileParsingTask = task({
         }),
       });
 
-      vectorStore = await embedPDF({
+      const vectorStore = await embedPDF({
         fileHash: pendingDocument.fileHash,
         locale: pendingDocument.locale,
         docs: chunks,
       });
+
+      try {
+        pendingDocument = await prisma.pendingDocument.update({
+          where: {id: payload.pendingDocumentId},
+          data: {vectorStoreId: vectorStore.collectionName},
+        });
+      } catch (error) {
+        // No need to throw an error because it's not a fatal one.
+        logger.error(
+          `Failed to save vector store ID ${vectorStore.collectionName} to pending document ID ${payload.pendingDocumentId}.`,
+          {cause: error}
+        );
+      }
 
       if (env.NODE_ENV === 'development') {
         await writeToTimestampedFile({
@@ -184,54 +195,12 @@ export const fileParsingTask = task({
       logger.error('Error parsing document:', {error});
 
       // CLEANUP
-      // Deleting pending document entry
-      try {
-        await prisma.pendingDocument.delete({
-          where: {id: pendingDocument.id},
-        });
-      } catch (error) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2025'
-        ) {
-          // If the document entry is not found, we don't need to delete it nor log an error.
-        } else {
-          logger.error(
-            `Failed to delete pending document ID ${pendingDocument.id}. This pending document entry should be deleted manually.`,
-            {error}
-          );
-        }
-      }
-
-      // Delete from vector store
-      if (vectorStore != null) {
-        try {
-          await deleteCollection(vectorStore.collectionName);
-        } catch (error) {
-          logger.error(
-            `Failed to delete collection ${vectorStore.collectionName} for document ID ${pendingDocument.id}. This collection should be deleted manually.`,
-            {error}
-          );
-        }
-      }
-
-      // Delete original file and image
-      try {
-        await deleteFile(pendingDocument.fileUrl);
-
-        if (!isStringEmpty(pendingDocument.imageUrl)) {
-          await deleteFile(pendingDocument.imageUrl);
-        }
-      } catch (error) {
-        const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
-          ? ''
-          : ', image: ' + pendingDocument.imageUrl;
-
-        logger.error(
-          `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
-          {error}
-        );
-      }
+      await fileParsingErrorCleanup({
+        pendingDocument,
+        errorLoggerFunction: (message, metadata) => {
+          logger.error(message, metadata);
+        },
+      });
 
       throw error;
     }
@@ -312,3 +281,60 @@ export const fileParsingTask = task({
     });
   },
 });
+
+export async function fileParsingErrorCleanup({
+  pendingDocument,
+  errorLoggerFunction,
+}: {
+  pendingDocument: PendingDocument;
+  errorLoggerFunction: typeof logger.error;
+}) {
+  // Deleting pending document entry
+  try {
+    await prisma.pendingDocument.delete({
+      where: {id: pendingDocument.id},
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2025'
+    ) {
+      // If the document entry is not found, we don't need to delete it nor log an error.
+    } else {
+      errorLoggerFunction(
+        `Failed to delete pending document ID ${pendingDocument.id}. This pending document entry should be deleted manually.`,
+        {error}
+      );
+    }
+  }
+
+  // Delete from vector store
+  if (pendingDocument.vectorStoreId != null) {
+    try {
+      await deleteCollection(pendingDocument.vectorStoreId);
+    } catch (error) {
+      errorLoggerFunction(
+        `Failed to delete collection ${pendingDocument.vectorStoreId} for document ID ${pendingDocument.id}. This collection should be deleted manually.`,
+        {error}
+      );
+    }
+  }
+
+  // Delete original file and image
+  try {
+    await deleteFile(pendingDocument.fileUrl);
+
+    if (!isStringEmpty(pendingDocument.imageUrl)) {
+      await deleteFile(pendingDocument.imageUrl);
+    }
+  } catch (error) {
+    const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
+      ? ''
+      : ', image: ' + pendingDocument.imageUrl;
+
+    errorLoggerFunction(
+      `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
+      {error}
+    );
+  }
+}

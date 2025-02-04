@@ -4,7 +4,10 @@ import {
   withDbUserProcedure,
 } from '@/server/api/trpc';
 import {deleteCollection} from '@/server/db/chroma';
-import {type fileParsingTask} from '@/server/trigger/documents';
+import {
+  fileParsingErrorCleanup,
+  type fileParsingTask,
+} from '@/server/trigger/documents';
 import {
   AppEventEmitter,
   pendingDocumentEventsSchema,
@@ -23,7 +26,7 @@ import {
   type PendingDocument,
   type PrismaClient,
 } from '@prisma/client';
-import {tasks} from '@trigger.dev/sdk/v3';
+import {runs, tasks} from '@trigger.dev/sdk/v3';
 import {TRPCError} from '@trpc/server';
 import {z} from 'zod';
 
@@ -438,7 +441,7 @@ export const documentsRouter = createTRPCRouter({
       const userId = ctx.prismaUser.id;
 
       const pendingDocument = await ctx.prisma.pendingDocument
-        .delete({
+        .findUniqueOrThrow({
           where: {
             id: input.id,
             userId,
@@ -460,22 +463,20 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      // Delete original file and image
-      try {
-        await deleteFile(pendingDocument.fileUrl);
-
-        if (!isStringEmpty(pendingDocument.imageUrl)) {
-          await deleteFile(pendingDocument.imageUrl);
+      // Cancel the Trigger.dev run if we have a task ID
+      if (!isStringEmpty(pendingDocument.parsingTaskId)) {
+        try {
+          await runs.cancel(pendingDocument.parsingTaskId!);
+          await fileParsingErrorCleanup({
+            pendingDocument,
+            errorLoggerFunction: console.error,
+          });
+        } catch (error) {
+          console.error(
+            `Failed to cancel file parsing Trigger.dev run ${pendingDocument.parsingTaskId} for pending document ID ${pendingDocument.id}.`,
+            error
+          );
         }
-      } catch (error) {
-        const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
-          ? ''
-          : ', image: ' + pendingDocument.imageUrl;
-
-        console.error(
-          `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
-          error
-        );
       }
 
       ee.emit('pendingDocument', 'cancelled');
