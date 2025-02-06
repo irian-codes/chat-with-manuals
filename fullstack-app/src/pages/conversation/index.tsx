@@ -81,7 +81,7 @@ export default function NewConversationPage() {
 
   return (
     <MainLayout>
-      <div className="flex h-screen w-full flex-row bg-background">
+      <div className="bg-background flex h-screen w-full flex-row">
         <Sidebar />
       </div>
 

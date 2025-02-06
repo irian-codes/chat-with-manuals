@@ -125,7 +125,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                     message: t('form-errors.language-required'),
                   },
                 })}
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                className="border-input bg-background w-full rounded-md border px-3 py-2"
               >
                 {ISO6391.getAllCodes()
                   .sort((a, b) =>

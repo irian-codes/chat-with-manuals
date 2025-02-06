@@ -31,7 +31,7 @@ export function Sidebar() {
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="h-8 w-8 flex-shrink-0"
+            className="h-8 w-8 shrink-0"
           >
             <Menu className="h-4 w-4" />
           </Button>
