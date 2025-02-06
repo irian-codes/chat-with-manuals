@@ -30,7 +30,7 @@
     "release": "commit-and-tag-version"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.3.0",
+    "@clerk/nextjs": "^6.11.1",
     "@hookform/resolvers": "^3.9.1",
     "@langchain/community": "^0.3.23",
     "@langchain/core": "^0.3.27",
