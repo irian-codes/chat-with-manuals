@@ -72,8 +72,8 @@ export function DashboardMain() {
     <div className="flex-1">
       <Header>
         <div className="flex flex-row flex-wrap gap-4">
-          <div className="relative min-w-[200px] max-w-md flex-1">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative max-w-md min-w-[200px] flex-1">
+            <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
             <Input
               placeholder={t('header.search')}
               className="pl-8"

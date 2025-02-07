@@ -1,5 +1,4 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import {GeistSans} from 'geist/font/sans';
 import {X} from 'lucide-react';
 import * as React from 'react';
 
@@ -20,7 +19,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/80 data-[state=open]:motion-preset-fade',
+      'data-[state=open]:motion-preset-fade fixed inset-0 z-50 bg-black/80',
       className
     )}
     {...props}
@@ -37,11 +36,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg motion-duration-300 data-[state=open]:motion-preset-slide-up',
-        // Tailwind fonts aren't loaded for Dialogs so we manually load the font here
-        // @see https://github.com/shadcn-ui/ui/issues/138#issuecomment-2098324406
-        GeistSans.className,
-        'font-sans',
+        'bg-background motion-duration-300 data-[state=open]:motion-preset-fade fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 transform gap-4 rounded-lg border p-6 shadow-lg',
         className
       )}
       onPointerDownOutside={(ev) => {
@@ -51,7 +46,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+      <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -95,7 +90,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-lg font-semibold leading-none tracking-tight',
+      'text-lg leading-none font-semibold tracking-tight',
       className
     )}
     {...props}
@@ -109,7 +104,7 @@ const DialogDescription = React.forwardRef<
 >(({className, ...props}, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-muted-foreground', className)}
+    className={cn('text-muted-foreground text-sm', className)}
     {...props}
   />
 ));

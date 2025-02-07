@@ -54,7 +54,7 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
 
         {props.onSearchQueryChangeDebounced && (
           <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
             <Input
               placeholder={t('search-placeholder')}
               className="pl-8"
@@ -80,7 +80,7 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
               >
                 <div className="flex flex-col items-start gap-1">
                   <p className="truncate font-medium">{doc.title}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {format.dateTime(doc.updatedAt, 'short')}
                   </p>
                 </div>

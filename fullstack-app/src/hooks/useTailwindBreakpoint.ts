@@ -1,18 +1,19 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import {useEffect, useState} from 'react';
-import tailwindConfig from 'tailwind.config';
-import resolveConfig from 'tailwindcss/resolveConfig';
+import type theme from 'tailwindcss/defaultTheme';
 
-const fullConfig = resolveConfig(tailwindConfig);
-const {
-  theme: {screens},
-} = fullConfig;
-
-export const useTailwindBreakpoint = (query: keyof typeof screens): boolean => {
+export const useTailwindBreakpoint = (
+  query: keyof typeof theme.screens
+): boolean => {
   // SSR check to ensure it only runs on the client
   if (typeof window === 'undefined') return false;
 
-  const mediaQuery = `(min-width: ${screens[query]})`;
+  const styles = getComputedStyle(document.documentElement);
+  const screenWidth = styles.getPropertyValue(
+    `--breakpoint-${query as string}`
+  );
+
+  const mediaQuery = `(min-width: ${screenWidth})`;
   const matchQueryList = window.matchMedia(mediaQuery);
   const [isMatch, setMatch] = useState<boolean>(false);
   const onChange = (e: MediaQueryListEvent) => setMatch(e.matches);
