@@ -143,13 +143,13 @@ export const fileParsingTask = task({
           collectionName: vectorStore.collectionName,
           dbQuery: {
             include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-            limit: 20,
+            limit: 10,
           },
           throwOnEmptyReturn: true,
         });
 
         logger.info('Retrieved chunks from Chroma:', {
-          first10Chunks: embeddedChunks.slice(0, 10),
+          first10Chunks: embeddedChunks,
         });
       }
 
