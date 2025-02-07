@@ -39,5 +39,5 @@
     ".next/types/**/*.ts",
     "trigger.config.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "lint-staged.config.js"]
 }

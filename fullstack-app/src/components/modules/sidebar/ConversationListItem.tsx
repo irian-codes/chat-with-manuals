@@ -25,7 +25,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     <div className="flex flex-row items-center justify-between gap-2">
       {isEditing ? (
         <Input
-          className="w-full flex-grow overflow-hidden text-left focus-visible:ring-0"
+          className="w-full grow overflow-hidden text-left focus-visible:ring-0"
           value={newTitle}
           onChange={(ev) => setNewTitle(ev.target.value)}
           autoFocus
@@ -46,7 +46,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       ) : (
         <Link
           href={`/conversation/${props.conversation.id}`}
-          className="flex-grow overflow-hidden"
+          className="grow overflow-hidden"
           prefetch={false}
           onMouseEnter={props.onPreview}
           onFocus={props.onPreview}
@@ -70,7 +70,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 flex-shrink-0"
+            className="h-8 w-8 shrink-0"
             onClick={async () => {
               const _newTitle = await props.onEdit(newTitle);
               setNewTitle(_newTitle);
@@ -83,7 +83,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 flex-shrink-0"
+            className="h-8 w-8 shrink-0"
             onClick={() => {
               setIsEditing(false);
               setNewTitle(props.conversation.title);
@@ -97,7 +97,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 flex-shrink-0"
+          className="h-8 w-8 shrink-0"
           onClick={() => setIsEditing(true)}
           disabled={props.isLoading}
         >
@@ -108,7 +108,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 flex-shrink-0"
+        className="h-8 w-8 shrink-0"
         onClick={async () => {
           if (
             window.confirm(

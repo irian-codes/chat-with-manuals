@@ -40,7 +40,7 @@ export function DocumentCard(props: DocumentCardProps) {
         <Image
           src={imageUrl}
           alt={t('image-alt')}
-          className="aspect-[1/1] rounded-t-xl object-cover"
+          className="aspect-1/1 rounded-t-xl object-cover"
           width={400}
           height={400}
           placeholder="blur"
@@ -54,7 +54,7 @@ export function DocumentCard(props: DocumentCardProps) {
           <div className="flex items-start justify-between">
             <div className="min-h-[4rem]">
               <h3 className="line-clamp-1 font-medium">{props.doc.title}</h3>
-              <p className="line-clamp-2 text-sm text-muted-foreground">
+              <p className="text-muted-foreground line-clamp-2 text-sm">
                 {docIsUploading
                   ? format.relativeTime(props.doc.createdAt, Date.now())
                   : format.dateTime(props.doc.createdAt, 'full')}
