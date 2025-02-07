@@ -1,5 +1,6 @@
 import {FlatCompat} from '@eslint/eslintrc';
 import tseslint from 'typescript-eslint';
+import noHeeeyConsoleRule from './eslint-rules/no-heeey-console.js';
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -53,6 +54,21 @@ const eslintConfig = [
       ],
     },
   }),
+  // Custom rule to prevent `console.log('heeey ...');` so this way lint-staged can catch it
+  {
+    // Load local plugins. Here, we create a plugin namespace "custom" that contains our rule(s)
+    plugins: {
+      custom: {
+        rules: {
+          'no-heeey-console': noHeeeyConsoleRule,
+        },
+      },
+    },
+    // Enable the custom rule
+    rules: {
+      'custom/no-heeey-console': 'error',
+    },
+  },
 ];
 
 export default eslintConfig;
