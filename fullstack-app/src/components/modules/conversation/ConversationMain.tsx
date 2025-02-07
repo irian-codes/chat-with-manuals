@@ -347,7 +347,7 @@ export function ConversationMain() {
               debounceInMs={1_000}
             >
               {messagesQuery.hasNextPage && (
-                <Loader2 className="mx-auto mb-2 mt-4 h-8 w-8 animate-spin" />
+                <Loader2 className="mx-auto mt-4 mb-2 h-8 w-8 animate-spin" />
               )}
             </InfiniteScrollAnchor>
 
@@ -375,8 +375,8 @@ export function ConversationMain() {
             />
           </div>
         ) : (
-          <div className="flex flex-row items-start justify-around gap-2 pr-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-6 w-6 flex-shrink-0" />
+          <div className="text-muted-foreground flex flex-row items-start justify-around gap-2 pr-2 text-sm">
+            <AlertTriangle className="h-6 w-6 shrink-0" />
             <div>
               <p>
                 {t('language-alert', {

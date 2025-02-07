@@ -56,7 +56,13 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
         appearance={{variables: {fontFamily: GeistSans.style.fontFamily}}}
       >
         <SidebarProvider>
-          <div className={cn(GeistSans.className, 'overflow-x-hidden')}>
+          <div
+            className={cn(
+              GeistSans.className,
+              GeistSans.variable,
+              'overflow-x-hidden'
+            )}
+          >
             <Component {...pageProps} />
           </div>
         </SidebarProvider>

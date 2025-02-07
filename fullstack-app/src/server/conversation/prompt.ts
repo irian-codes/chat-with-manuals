@@ -146,16 +146,20 @@ export async function sendPrompt({
     ...chatTemplate.toChatMessages(),
   ]);
 
-  const responseContent = response.content.toString();
+  if (typeof response.content !== 'string') {
+    throw new Error('Response content is not a string');
+  }
+
+  const responseContent = response.content;
 
   if (env.NODE_ENV === 'development') {
     console.log('Message sent to the LLM: ', {
       prompt:
-        systemMessage.content.toString() +
+        JSON.stringify(systemMessage.content) +
         '\n\n' +
         chatTemplate
           .toChatMessages()
-          .map((m) => m.content)
+          .map((m) => JSON.stringify(m.content))
           .join('\n\n'),
       response: responseContent,
     });
@@ -163,10 +167,10 @@ export async function sendPrompt({
     // Logging response to file for debugging
     const answerFilePath = await writeToTimestampedFile({
       content:
-        `[PROMPT]: ${systemMessage.content.toString()}\n\n` +
+        `[PROMPT]: ${JSON.stringify(systemMessage.content)}\n\n` +
         chatTemplate
           .toChatMessages()
-          .map((m) => m.content)
+          .map((m) => JSON.stringify(m.content))
           .join('\n\n') +
         '\n\n' +
         `[RESPONSE]: ${responseContent}\n`,
@@ -247,7 +251,11 @@ export async function generateConversationTitle(
         ...chatTemplate.toChatMessages(),
       ]);
 
-      return response.content.toString();
+      if (typeof response.content !== 'string') {
+        throw new Error('Response content is not a string');
+      }
+
+      return response.content;
     } catch (error) {
       console.error('Error generating conversation title: ', error);
 
