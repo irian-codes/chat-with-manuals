@@ -48,6 +48,9 @@ yarn-error.log*
 # Trigger.dev
 .trigger
 
+# Repomix
+.repomix
+
 # temp files
 temp/
 public/temp/
