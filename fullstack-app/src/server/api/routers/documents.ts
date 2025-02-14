@@ -94,53 +94,6 @@ export const documentsRouter = createTRPCRouter({
       return document;
     }),
 
-  getDocumentsIncludingPending: withDbUserProcedure
-    .input(
-      z
-        .object({
-          pendingDocumentsStatuses: z.array(z.nativeEnum(STATUS)),
-        })
-        .strict()
-        .optional()
-    )
-    .query(async ({ctx, input}) => {
-      const userId = ctx.prismaUser.id;
-
-      const [documents, pendingDocuments] = await Promise.all([
-        ctx.prisma.document.findMany({
-          where: {
-            users: {
-              some: {
-                id: userId,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-        ctx.prisma.pendingDocument.findMany({
-          where: {
-            userId: userId,
-            status:
-              input?.pendingDocumentsStatuses == null
-                ? undefined
-                : {
-                    in: input.pendingDocumentsStatuses,
-                  },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-      ]);
-
-      return {
-        documents,
-        pendingDocuments,
-      };
-    }),
-
   onDocumentParsingUpdate: withDbUserProcedure
     .input(
       z
