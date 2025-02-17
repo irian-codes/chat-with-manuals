@@ -1,6 +1,7 @@
 import {Sidebar} from '@/components/modules/sidebar/Sidebar';
 import {DocumentListPickerModal} from '@/components/reusable/DocumentListPickerModal';
 import MainLayout from '@/components/reusable/MainLayout';
+import {useErrorToast} from '@/hooks/useErrorToast';
 import {appRouter} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';
 import {prisma} from '@/server/db/prisma';
@@ -10,7 +11,7 @@ import {buildClerkProps, getAuth} from '@clerk/nextjs/server';
 import {createServerSideHelpers} from '@trpc/react-query/server';
 import type {GetServerSidePropsContext} from 'next';
 import {useRouter} from 'next/router';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const authProviderUserId = getAuth(ctx.req).userId!;
@@ -58,18 +59,26 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
 export default function NewConversationPage() {
   const utils = api.useUtils();
+  const router = useRouter();
+  const addConversationErrorToast = useErrorToast(
+    'sidebar.errors.conversation.add'
+  );
+  const getDocumentsErrorToast = useErrorToast(
+    'document-list-picker-modal.errors.documents.get'
+  );
   const addConversationMutation = api.conversations.addConversation.useMutation(
     {
       onSuccess: async () => {
         await utils.conversations.getConversations.invalidate();
       },
+      onError: addConversationErrorToast,
     }
   );
+
   const [docTitleSearch, setDocTitleSearch] = useState('');
   const documentsQuery = api.documents.getDocuments.useQuery({
     titleSearch: docTitleSearch.length > 1 ? docTitleSearch : undefined,
   });
-  const router = useRouter();
   const isLoading =
     addConversationMutation.isPending || documentsQuery.isLoading;
 
@@ -80,6 +89,12 @@ export default function NewConversationPage() {
 
     void router.push(`/conversation/${conversationId}`);
   }
+
+  useEffect(() => {
+    if (documentsQuery.error != null) {
+      getDocumentsErrorToast(documentsQuery.error);
+    }
+  }, [documentsQuery.error, getDocumentsErrorToast]);
 
   return (
     <MainLayout>

@@ -11,6 +11,7 @@ import {
   saveUploadedDocFile,
   saveUploadedImageFile,
 } from '@/server/utils/fileStorage';
+import {type APIRouteErrorResponse} from '@/types/APIRouteErrorResponse';
 import {
   type UploadNewDocumentPayload,
   UploadNewDocumentPayloadSchema,
@@ -71,14 +72,20 @@ export default async function handler(
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({error: 'Method not allowed'});
+    return res.status(405).json({
+      message: 'Method not allowed',
+      data: {code: 'METHOD_NOT_SUPPORTED'},
+    } satisfies APIRouteErrorResponse);
   }
 
   // Check authentication
   const {userId: userAuthId} = getAuth(req);
 
   if (!userAuthId) {
-    return res.status(401).json({error: 'Unauthorized'});
+    return res.status(401).json({
+      message: 'Unauthorized',
+      data: {code: 'UNAUTHORIZED'},
+    } satisfies APIRouteErrorResponse);
   }
 
   const isRateLimited = await rateLimiter.check({
@@ -88,7 +95,10 @@ export default async function handler(
   });
 
   if (isRateLimited) {
-    return res.status(429).json({error: 'Rate limit exceeded'});
+    return res.status(429).json({
+      message: 'Rate limit exceeded',
+      data: {code: 'TOO_MANY_REQUESTS'},
+    } satisfies APIRouteErrorResponse);
   }
 
   const prismaUser = await prisma.user.findFirst({
@@ -98,7 +108,10 @@ export default async function handler(
   });
 
   if (!prismaUser) {
-    return res.status(401).json({error: 'Unauthorized'});
+    return res.status(401).json({
+      message: 'Unauthorized',
+      data: {code: 'UNAUTHORIZED'},
+    } satisfies APIRouteErrorResponse);
   }
 
   // Parse the form data
@@ -153,14 +166,20 @@ export default async function handler(
       fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
     });
 
-    return res.status(500).json({error: 'Upload failed'});
+    return res.status(500).json({
+      message: 'Upload failed',
+      data: {code: 'INTERNAL_SERVER_ERROR'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (
     parsedFormData.file == null ||
     parsedFormData.file.mimetype !== 'application/pdf'
   ) {
-    return res.status(400).json({error: 'A PDF file is required'});
+    return res.status(400).json({
+      message: 'A PDF file is required',
+      data: {code: 'BAD_REQUEST'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (req.destroyed) {
@@ -184,9 +203,10 @@ export default async function handler(
       fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
     });
 
-    return res
-      .status(500)
-      .json({error: 'Virus engine not initialized. Cannot scan file.'});
+    return res.status(500).json({
+      message: 'Virus engine not initialized. Cannot scan file.',
+      data: {code: 'INTERNAL_SERVER_ERROR'},
+    } satisfies APIRouteErrorResponse);
   }
 
   try {
@@ -212,13 +232,15 @@ export default async function handler(
 
     if (error instanceof VirusScanError) {
       return res.status(400).json({
-        error: 'Files are infected with malware.',
-      });
+        message: 'Files are infected with malware.',
+        data: {code: 'BAD_REQUEST'},
+      } satisfies APIRouteErrorResponse);
     }
 
-    return res
-      .status(500)
-      .json({error: 'File virus scanning failed. Cannot proceed securely.'});
+    return res.status(500).json({
+      message: 'File virus scanning failed. Cannot proceed securely.',
+      data: {code: 'INTERNAL_SERVER_ERROR'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (req.destroyed) {
@@ -227,9 +249,10 @@ export default async function handler(
       fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
     });
 
-    return res
-      .status(204)
-      .json({message: 'Connection aborted (socket destroyed)'});
+    return res.status(204).json({
+      message: 'Connection aborted (socket destroyed)',
+      data: {code: 'CLIENT_CLOSED_REQUEST'},
+    } satisfies APIRouteErrorResponse);
   }
 
   const docFile = await getFile({
@@ -258,7 +281,10 @@ export default async function handler(
       fileUrls: [parsedFormData.file.filepath, parsedFormData.image?.filepath],
     });
 
-    return res.status(400).json({error: 'Invalid request body'});
+    return res.status(400).json({
+      message: 'Invalid request body',
+      data: {code: 'BAD_REQUEST'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (req.destroyed) {
@@ -313,7 +339,10 @@ export default async function handler(
         ],
       });
 
-      return res.status(400).json({error: 'File already exists'});
+      return res.status(409).json({
+        message: 'File already exists',
+        data: {code: 'CONFLICT'},
+      } satisfies APIRouteErrorResponse);
     }
 
     console.error('Document file upload error:', error);
@@ -327,7 +356,10 @@ export default async function handler(
       ],
     });
 
-    return res.status(500).json({error: 'Upload failed'});
+    return res.status(500).json({
+      message: 'Upload failed',
+      data: {code: 'INTERNAL_SERVER_ERROR'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (req.destroyed) {
@@ -401,5 +433,8 @@ async function returnConnectionAbortedResponse(params: {
 
   console.error('Connection timed out (req.destroyed === true)');
 
-  return params.res.status(408).json({error: 'Request timeout'});
+  return params.res.status(408).json({
+    message: 'Request timeout',
+    data: {code: 'TIMEOUT'},
+  } satisfies APIRouteErrorResponse);
 }

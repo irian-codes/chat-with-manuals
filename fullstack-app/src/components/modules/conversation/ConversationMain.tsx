@@ -1,6 +1,7 @@
 import {Header} from '@/components/reusable/Header';
 import {InfiniteScrollAnchor} from '@/components/reusable/InfiniteScrollAnchor';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
+import {useErrorToast} from '@/hooks/useErrorToast';
 import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
 import {isStringEmpty} from '@/utils/strings';
@@ -29,6 +30,21 @@ export function ConversationMain() {
   );
   const router = useRouter();
   const utils = api.useUtils();
+  const getConversationErrorToast = useErrorToast(
+    'conversation.errors.conversation.get'
+  );
+  const getMessagesErrorToast = useErrorToast(
+    'conversation.errors.messages.get'
+  );
+  const sendMessageErrorToast = useErrorToast(
+    'conversation.errors.messages.send'
+  );
+  const editMessageErrorToast = useErrorToast(
+    'conversation.errors.messages.edit'
+  );
+  const generateTitleErrorToast = useErrorToast(
+    'conversation.errors.generate-conversation-title'
+  );
 
   const conversationQuery = api.conversations.getConversation.useQuery(
     {
@@ -128,6 +144,8 @@ export function ConversationMain() {
           context.previousReturnPayload
         );
       }
+
+      sendMessageErrorToast(err);
     },
     onSettled: async () => {
       // Always refetch after error or success
@@ -211,6 +229,8 @@ export function ConversationMain() {
           context.previousReturnPayload
         );
       }
+
+      editMessageErrorToast(err);
     },
     onSettled: async () => {
       // Always refetch after error or success
@@ -235,6 +255,7 @@ export function ConversationMain() {
         void utils.conversations.getConversations.invalidate();
       }
     },
+    onError: generateTitleErrorToast,
   });
 
   useEffect(() => {
@@ -257,6 +278,18 @@ export function ConversationMain() {
 
     messagesListUpdateReasonRef.current = null;
   }, [messages.length]);
+
+  useEffect(() => {
+    if (conversationQuery.error != null) {
+      getConversationErrorToast(conversationQuery.error);
+    }
+  }, [conversationQuery.error, getConversationErrorToast]);
+
+  useEffect(() => {
+    if (messagesQuery.error != null) {
+      getMessagesErrorToast(messagesQuery.error);
+    }
+  }, [messagesQuery.error, getMessagesErrorToast]);
 
   async function handleSendMessage(inputMessage: string) {
     const _inputMessage = z.string().trim().parse(inputMessage);

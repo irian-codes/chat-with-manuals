@@ -37,6 +37,9 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
+    NEXT_PUBLIC_CLIENT_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
   },
 
   /**
@@ -59,6 +62,7 @@ export const env = createEnv({
     TRIGGER_DEV_PROJECT_ID: process.env.TRIGGER_DEV_PROJECT_ID,
     TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
     TRIGGER_API_URL: process.env.TRIGGER_API_URL,
+    NEXT_PUBLIC_CLIENT_ENV: process.env.NEXT_PUBLIC_CLIENT_ENV,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

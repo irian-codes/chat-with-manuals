@@ -5,6 +5,7 @@ import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
 import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import {useSidebar} from '@/contexts/ConversationsSidebarContext';
+import {useErrorToast} from '@/hooks/useErrorToast';
 import {usePathname} from '@/hooks/usePathname';
 import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
@@ -13,12 +14,27 @@ import {cn} from '@/utils/ui/utils';
 import {MessageSquare, Plus, Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
-import {Fragment, useState} from 'react';
+import {Fragment, useEffect, useState} from 'react';
 import {useDebounceValue} from 'usehooks-ts';
 import {ConversationListItem} from './ConversationListItem';
 
 export function ConversationSidebarSection() {
   const t = useTranslations('sidebar.conversations');
+  const getConversationsErrorToast = useErrorToast(
+    'sidebar.errors.conversations.get'
+  );
+  const getDocumentsErrorToast = useErrorToast(
+    'document-list-picker-modal.errors.documents.get'
+  );
+  const addConversationErrorToast = useErrorToast(
+    'sidebar.errors.conversation.add'
+  );
+  const editConversationErrorToast = useErrorToast(
+    'sidebar.errors.conversation.edit'
+  );
+  const deleteConversationErrorToast = useErrorToast(
+    'sidebar.errors.conversation.delete'
+  );
   const [isDocumentPickerModalOpen, setIsDocumentPickerModalOpen] =
     useState<boolean>(false);
   const router = useRouter();
@@ -54,12 +70,14 @@ export function ConversationSidebarSection() {
       enabled: isDocumentPickerModalOpen,
     }
   );
+
   const documents = documentsQuery.data ?? [];
   const addConversationMutation = api.conversations.addConversation.useMutation(
     {
       onSuccess: async () => {
         await utils.conversations.getConversations.invalidate();
       },
+      onError: addConversationErrorToast,
     }
   );
 
@@ -69,6 +87,7 @@ export function ConversationSidebarSection() {
         await utils.conversations.getConversations.invalidate();
         await utils.conversations.getConversation.invalidate();
       },
+      onError: editConversationErrorToast,
     });
 
   const deleteConversationMutation =
@@ -81,6 +100,7 @@ export function ConversationSidebarSection() {
           await router.push('/conversation');
         }
       },
+      onError: deleteConversationErrorToast,
     });
 
   const isLoading =
@@ -89,6 +109,18 @@ export function ConversationSidebarSection() {
     editConversationMutation.isPending ||
     deleteConversationMutation.isPending ||
     addConversationMutation.isPending;
+
+  useEffect(() => {
+    if (conversationsQuery.error != null) {
+      getConversationsErrorToast(conversationsQuery.error);
+    }
+  }, [conversationsQuery.error, getConversationsErrorToast]);
+
+  useEffect(() => {
+    if (documentsQuery.error != null) {
+      getDocumentsErrorToast(documentsQuery.error);
+    }
+  }, [documentsQuery.error, getDocumentsErrorToast]);
 
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
