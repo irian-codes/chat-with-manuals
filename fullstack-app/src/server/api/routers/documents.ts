@@ -19,7 +19,7 @@ import {
 } from '@/server/utils/fileStorage';
 import {UpdateDocumentPayloadSchema} from '@/types/UpdateDocumentPayload';
 import {UploadNewDocumentPayloadSchema} from '@/types/UploadNewDocumentPayload';
-import {isStringEmpty} from '@/utils/strings';
+import {isStringEmpty, normalizeStringForSearch} from '@/utils/strings';
 import {
   Prisma,
   STATUS,
@@ -37,7 +37,12 @@ export const documentsRouter = createTRPCRouter({
     .input(
       z
         .object({
-          titleSearch: z.string().max(30).default(''),
+          titleSearch: z
+            .string()
+            .trim()
+            .max(30)
+            .default('')
+            .transform(normalizeStringForSearch),
         })
         .strict()
         .optional()
@@ -58,9 +63,9 @@ export const documentsRouter = createTRPCRouter({
             input.titleSearch.length < 2
               ? undefined
               : {
-                  title: {
+                  searchTitle: {
                     mode: 'insensitive',
-                    contains: input.titleSearch.trim(),
+                    contains: input.titleSearch,
                   },
                 }),
           },
@@ -201,6 +206,7 @@ export const documentsRouter = createTRPCRouter({
         pendingDocument = await ctx.prisma.pendingDocument.create({
           data: {
             title: input.title,
+            searchTitle: normalizeStringForSearch(input.title),
             description: input.description ?? '',
             locale: input.locale,
             fileUrl: input.fileUrl,
@@ -352,7 +358,12 @@ export const documentsRouter = createTRPCRouter({
               },
             },
           },
-          data: _modifiedFields,
+          data: {
+            ..._modifiedFields,
+            searchTitle: !isStringEmpty(_modifiedFields.title)
+              ? normalizeStringForSearch(_modifiedFields.title!)
+              : undefined,
+          },
         })
         .catch((error) => {
           if (error instanceof Prisma.PrismaClientKnownRequestError) {

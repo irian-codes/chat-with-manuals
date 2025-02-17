@@ -160,6 +160,7 @@ export const fileParsingTask = task({
         prisma.document.create({
           data: {
             title: pendingDocument.title,
+            searchTitle: pendingDocument.searchTitle,
             description: pendingDocument.description,
             locale: pendingDocument.locale,
             fileUrl: pendingDocument.fileUrl,
