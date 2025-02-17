@@ -1,10 +1,68 @@
 {
   "app": {
     "description": "App to chat via AI chatbot with structured documents like product manuals",
+    "errors": {
+      "api": {
+        "bad-gateway": "Service temporarily unavailable",
+        "bad-request": "Invalid request",
+        "conflict": "The resource already exists",
+        "forbidden": "Access denied",
+        "internal-server-error": "Internal server error",
+        "not-found": "Resource not found",
+        "not-implemented": "Operation not supported",
+        "parse-error": "Invalid data format",
+        "too-many-requests": "Too many requests, please try again later.",
+        "unauthorized": "Not authorized"
+      },
+      "unknown-error": "An unexpected error occurred"
+    },
     "title": "Chat With Manuals"
   },
   "conversation": {
     "cancel": "Cancel",
+    "errors": {
+      "conversation": {
+        "get": {
+          "api": {
+            "internal-server-error": "Failed to get conversation",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to get conversation"
+        }
+      },
+      "generate-conversation-title": {
+        "api": {
+          "internal-server-error": "Failed to generate conversation title",
+          "not-found": "Conversation not found"
+        },
+        "unknown-error": "Failed to generate conversation title"
+      },
+      "messages": {
+        "edit": {
+          "api": {
+            "bad-request": "Message cannot be empty",
+            "internal-server-error": "Failed to edit message",
+            "not-found": "Message not found"
+          },
+          "unknown-error": "Failed to edit message"
+        },
+        "get": {
+          "api": {
+            "internal-server-error": "Failed to get messages",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to get messages"
+        },
+        "send": {
+          "api": {
+            "bad-request": "Message cannot be empty",
+            "internal-server-error": "Failed to send message",
+            "not-found": "Conversation or document not found"
+          },
+          "unknown-error": "Failed to send message"
+        }
+      }
+    },
     "hallucination-alert": "The AI may sometimes produce inaccurate answers, please always refer back to the original document for accurate information.",
     "input-placeholder": "Type your message...",
     "language-alert": "Please use {locale, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
@@ -15,6 +73,17 @@
   },
   "document-list-picker-modal": {
     "description": "Select a document to open a new conversation with it.",
+    "errors": {
+      "documents": {
+        "get": {
+          "api": {
+            "bad-request": "Invalid document search data supplied",
+            "internal-server-error": "Failed to get documents"
+          },
+          "unknown-error": "Failed to get documents"
+        }
+      }
+    },
     "search-placeholder": "Search document...",
     "title": "Pick document"
   },
@@ -24,7 +93,39 @@
       "upload": "Upload new document"
     },
     "image-alt": "Document preview",
-    "uploading-document": "Uploading..."
+    "uploading-document": "Uploading...",
+    "errors": {
+      "documents": {
+        "get": {
+          "api": {
+            "bad-request": "Invalid document search data supplied",
+            "internal-server-error": "Failed to get documents"
+          },
+          "unknown-error": "Failed to get documents"
+        },
+        "cancelDocumentParsing": {
+          "api": {
+            "internal-server-error": "Failed to cancel document parsing",
+            "not-found": "Pending document not found"
+          },
+          "unknown-error": "Failed to cancel document parsing"
+        },
+        "documentParsing": {
+          "sse-subscription": {
+            "api": {
+              "internal-server-error": "Failed to receive document parsing updates, refresh the page."
+            },
+            "unknown-error": "Failed to receive document parsing updates, refresh the page."
+          },
+          "document-parsing-update": {
+            "api": {
+              "internal-server-error": "Failed to parse the document, try again."
+            },
+            "unknown-error": "Failed to parse the document, try again."
+          }
+        }
+      }
+    }
   },
   "locale-switcher": {
     "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
@@ -37,6 +138,40 @@
       "search": "Search",
       "title": "Conversations"
     },
+    "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "Failed to add conversation",
+            "not-found": "Document not found"
+          },
+          "unknown-error": "Failed to add conversation"
+        },
+        "delete": {
+          "api": {
+            "internal-server-error": "Failed to delete conversation",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to delete conversation"
+        },
+        "edit": {
+          "api": {
+            "bad-request": "Invalid conversation title",
+            "internal-server-error": "Failed to edit conversation",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to edit conversation"
+        }
+      },
+      "conversations": {
+        "get": {
+          "api": {
+            "internal-server-error": "Failed to get conversations"
+          },
+          "unknown-error": "Failed to get conversations"
+        }
+      }
+    },
     "home": {
       "title": "Documents"
     }
@@ -47,6 +182,12 @@
     "delete-confirmation": "Are you sure you want to delete this document? This action cannot be undone.",
     "description": "Description",
     "document-title": "Title",
+    "errors": {
+      "api": {
+        "not-found": "Document not found",
+        "parse-error": "Invalid document update data supplied"
+      }
+    },
     "form-errors": {
       "image-max-size": "Image must be smaller than {maxSizeInMB}MB.",
       "image-must-be-valid": "Image must be a JPEG, PNG or WebP file.",
@@ -62,6 +203,13 @@
     "cancel": "Cancel",
     "description": "Description",
     "document-title": "Title",
+    "errors": {
+      "api": {
+        "conflict": "Document already exists",
+        "not-found": "Document not found",
+        "parse-error": "Invalid document or supplied data"
+      }
+    },
     "file-input-label": "PDF file",
     "form-errors": {
       "file-max-size": "File must be smaller than {maxSizeInMB}MB",

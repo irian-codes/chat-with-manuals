@@ -5,11 +5,14 @@ import type {AppProps, AppType} from 'next/app';
 
 import {api} from '@/utils/api';
 
+import {ErrorBoundaryFallback} from '@/components/modules/error/ErrorBoundaryFallback';
+import {Toaster} from '@/components/shadcn-ui/toaster';
 import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
 import '@/styles/globals.css';
 import type {i18nMessages} from '@/types/i18nMessages';
 import {cn} from '@/utils/ui/utils';
 import {useRouter} from 'next/router';
+import {ErrorBoundary} from 'react-error-boundary';
 
 const MyApp: AppType = ({Component, pageProps}: AppProps) => {
   const router = useRouter();
@@ -63,8 +66,11 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
               'overflow-x-hidden'
             )}
           >
-            <Component {...pageProps} />
+            <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
+              <Component {...pageProps} />
+            </ErrorBoundary>
           </div>
+          <Toaster />
         </SidebarProvider>
       </ClerkProvider>
     </NextIntlClientProvider>
