@@ -1,6 +1,6 @@
 import {Button} from '@/components/shadcn-ui/button';
 import {Textarea} from '@/components/shadcn-ui/textarea';
-import {useIsMacOs, useIsTouchDevice} from '@/hooks/os-utils';
+import {useIsMacOs, useIsTouchDevice} from '@/hooks/osUtils';
 import {AlertTriangle, Send} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {forwardRef, type FormEventHandler} from 'react';
@@ -20,7 +20,7 @@ export const ChatMessageInput = forwardRef<HTMLTextAreaElement, Props>(
 
     return (
       <div className="border-t p-4">
-        <div className="mx-auto flex min-w-[250px] max-w-[750px] flex-col gap-2 lg:w-[calc(100%-12rem)]">
+        <div className="mx-auto flex max-w-[750px] min-w-[250px] flex-col gap-2 lg:w-[calc(100%-12rem)]">
           <form
             onSubmit={props.onSubmit}
             className="flex items-start space-x-2"
@@ -43,7 +43,7 @@ export const ChatMessageInput = forwardRef<HTMLTextAreaElement, Props>(
               )}
             </div>
           </form>
-          <p className="flex items-center justify-start gap-2 pr-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground flex items-center justify-start gap-2 pr-2 text-sm">
             <AlertTriangle className="h-6 w-6" />{' '}
             {t('language-alert-brief', {
               locale: props.conversationLocale,
