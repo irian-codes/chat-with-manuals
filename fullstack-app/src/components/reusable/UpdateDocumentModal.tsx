@@ -28,6 +28,7 @@ export type UpdateDocumentFormInputs = Omit<
 interface UpdateDocumentModalProps {
   isOpen: boolean;
   document?: Document | null;
+  isLoading?: boolean;
   onSubmit: (
     form: UseFormReturn<UpdateDocumentFormInputs>,
     htmlForm: HTMLFormElement
@@ -47,6 +48,10 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   const onSubmit: SubmitHandler<UpdateDocumentFormInputs> = () => {
+    if (props.isLoading) {
+      return;
+    }
+
     void props.onSubmit(form, formRef.current!);
   };
 
@@ -55,6 +60,10 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
   }
 
   function handleDeleteButtonClick() {
+    if (props.isLoading) {
+      return;
+    }
+
     void props.onDelete(form);
   }
 
@@ -83,6 +92,7 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
               <Label htmlFor="title">{t('document-title')}</Label>
               <Input
                 id="title"
+                disabled={props.isLoading}
                 {...form.register('title', {
                   required: {
                     value: true,
@@ -96,6 +106,7 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
                     value: 255,
                     message: t('form-errors.title-max-length'),
                   },
+                  disabled: props.isLoading,
                 })}
                 placeholder={t('document-title')}
                 defaultValue={props.document?.title ?? ''}
@@ -111,9 +122,11 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
               <Label htmlFor="description">{t('description')}</Label>
               <Textarea
                 id="description"
+                disabled={props.isLoading}
                 {...form.register('description', {
                   required: false,
                   maxLength: 2000,
+                  disabled: props.isLoading,
                 })}
                 placeholder={t('description')}
                 rows={3}
@@ -131,8 +144,10 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
               <Input
                 id="image"
                 type="file"
+                disabled={props.isLoading}
                 {...form.register('image', {
                   required: false,
+                  disabled: props.isLoading,
                   validate: (value): string | boolean => {
                     const file = value?.[0];
 
@@ -172,11 +187,14 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
             <Button
               type="reset"
               variant="outline"
+              disabled={props.isLoading}
               onClick={handleCloseButtonClick}
             >
               {t('cancel')}
             </Button>
-            <Button type="submit">{t('save')}</Button>
+            <Button type="submit" disabled={props.isLoading}>
+              {t('save')}
+            </Button>
           </div>
 
           <div className="mt-4 border-t pt-4">
@@ -184,6 +202,7 @@ export function UpdateDocumentModal(props: UpdateDocumentModalProps) {
               type="button"
               variant="destructive"
               className="w-full"
+              disabled={props.isLoading}
               onClick={handleDeleteButtonClick}
             >
               {t('delete')}

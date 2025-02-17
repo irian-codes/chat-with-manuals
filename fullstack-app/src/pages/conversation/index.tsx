@@ -70,6 +70,8 @@ export default function NewConversationPage() {
     titleSearch: docTitleSearch.length > 1 ? docTitleSearch : undefined,
   });
   const router = useRouter();
+  const isLoading =
+    addConversationMutation.isPending || documentsQuery.isLoading;
 
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
@@ -88,7 +90,12 @@ export default function NewConversationPage() {
       <DocumentListPickerModal
         documents={documentsQuery.data ?? []}
         isOpen={true}
+        isLoading={isLoading}
         onDocumentClick={async (document) => {
+          if (isLoading) {
+            return;
+          }
+
           await createNewConversation(document);
         }}
         onSearchQueryChangeDebounced={(searchQuery) => {

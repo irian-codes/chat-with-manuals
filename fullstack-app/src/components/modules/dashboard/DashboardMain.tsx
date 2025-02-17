@@ -51,8 +51,13 @@ export function DashboardMain() {
   const pendingDocuments = pendingDocumentsSubs.data?.docs ?? [];
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation();
+  const isLoading = cancelDocumentParsingMutation.isPending;
 
   function handleCancelDocumentParsing(docId: string) {
+    if (isLoading) {
+      return;
+    }
+
     cancelDocumentParsingMutation.mutate({
       id: docId,
     });
@@ -104,6 +109,7 @@ export function DashboardMain() {
                 doc={doc}
                 key={doc.id}
                 onCancelButtonClick={() => handleCancelDocumentParsing(doc.id)}
+                isLoading={isLoading}
               />
             ) : (
               <DocumentCard

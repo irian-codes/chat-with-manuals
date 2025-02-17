@@ -9,11 +9,12 @@ import {
 import {api} from '@/utils/api';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
-import {Fragment} from 'react';
+import {Fragment, useState} from 'react';
 import {type UseFormReturn} from 'react-hook-form';
 
 export function DashboardModals() {
   const router = useRouter();
+  const [apiRouteLoading, setApiRouteLoading] = useState(false);
   const documentQuery = api.documents.getDocument.useQuery(
     {
       id: router.query.documentId as string,
@@ -38,43 +39,71 @@ export function DashboardModals() {
   const document = documentQuery.data;
   const uploadingDocument = router.query.uploadingDocument === 'true';
   const tUpdateDocModal = useTranslations('update-document-modal');
+  const isLoading =
+    documentQuery.isLoading ||
+    deleteDocumentMutation.isPending ||
+    apiRouteLoading;
 
   async function handleUploadNewDocument(
     form: UseFormReturn<UploadFormInputs>,
     htmlForm: HTMLFormElement
   ) {
+    if (isLoading) {
+      return;
+    }
+
     if (!form.getValues().file?.[0]) {
       throw new Error('No file provided');
     }
+
+    setApiRouteLoading(true);
 
     // TRPC is incompatible with File objects, so we need to use fetch to
     // send the form data and then the server will call TRPC.
     //
     // @see https://github.com/trpc/trpc/issues/1937
-    await fetch('/api/uploadDocument', {
-      method: 'POST',
-      body: new FormData(htmlForm),
-      signal: AbortSignal.timeout(10 * 60 * 1_000),
-    });
+    try {
+      await fetch('/api/uploadDocument', {
+        method: 'POST',
+        body: new FormData(htmlForm),
+        signal: AbortSignal.timeout(10 * 60 * 1_000),
+      });
 
-    await handleCloseDocumentModal(form);
+      await handleCloseDocumentModal(form);
+      setApiRouteLoading(false);
+    } catch (error) {
+      console.error(error);
+      setApiRouteLoading(false);
+    }
   }
 
   async function handleUpdateDocument(
     form: UseFormReturn<UpdateDocumentFormInputs>,
     htmlForm: HTMLFormElement
   ) {
+    if (isLoading) {
+      return;
+    }
+
+    setApiRouteLoading(true);
+
     const formData = new FormData(htmlForm);
     formData.append('id', document!.id);
 
-    await fetch('/api/updateDocument', {
-      method: 'PATCH',
-      body: formData,
-      signal: AbortSignal.timeout(10 * 60 * 1_000),
-    });
+    try {
+      await fetch('/api/updateDocument', {
+        method: 'PATCH',
+        body: formData,
+        signal: AbortSignal.timeout(10 * 60 * 1_000),
+      });
 
-    await utils.documents.invalidate();
-    await handleCloseDocumentModal(form);
+      await utils.documents.invalidate();
+      await handleCloseDocumentModal(form);
+      setApiRouteLoading(false);
+    } catch (error) {
+      console.error(error);
+      setApiRouteLoading(false);
+    }
 
     // TODO: Show notification (error and success) to the user
   }
@@ -82,7 +111,7 @@ export function DashboardModals() {
   async function handleDeleteDocument(
     form: UseFormReturn<UpdateDocumentFormInputs>
   ) {
-    if (!document) {
+    if (isLoading || !document) {
       return;
     }
 
@@ -119,12 +148,14 @@ export function DashboardModals() {
         onSubmit={handleUpdateDocument}
         onDelete={handleDeleteDocument}
         onClose={(form) => handleCloseDocumentModal(form)}
+        isLoading={isLoading}
       />
 
       <UploadNewDocumentModal
         isOpen={uploadingDocument}
         onSubmit={handleUploadNewDocument}
         onClose={(form) => handleCloseDocumentModal(form)}
+        isLoading={isLoading}
       />
     </Fragment>
   );
