@@ -6,6 +6,7 @@ import {
   UploadNewDocumentModal,
   type UploadFormInputs,
 } from '@/components/reusable/UploadNewDocumentModal';
+import {useErrorToast, type ToastErrorType} from '@/hooks/useErrorToast';
 import {api} from '@/utils/api';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
@@ -14,7 +15,16 @@ import {type UseFormReturn} from 'react-hook-form';
 
 export function DashboardModals() {
   const router = useRouter();
+  const utils = api.useUtils();
   const [apiRouteLoading, setApiRouteLoading] = useState(false);
+  const tUpdateDocModal = useTranslations('update-document-modal');
+  const updateDocumentErrorToast = useErrorToast(
+    'update-document-modal.errors'
+  );
+  const uploadDocumentErrorToast = useErrorToast(
+    'upload-new-document-modal.errors'
+  );
+
   const documentQuery = api.documents.getDocument.useQuery(
     {
       id: router.query.documentId as string,
@@ -23,7 +33,7 @@ export function DashboardModals() {
       enabled: !!router.query.documentId,
     }
   );
-  const utils = api.useUtils();
+
   const deleteDocumentMutation = api.documents.deleteDocument.useMutation({
     onSuccess: async () => {
       // Note: We cannot invalidate the whole documents router because it
@@ -34,11 +44,11 @@ export function DashboardModals() {
       await utils.documents.getDocuments.invalidate();
       await utils.conversations.getConversations.invalidate();
     },
+    onError: updateDocumentErrorToast,
   });
 
   const document = documentQuery.data;
   const uploadingDocument = router.query.uploadingDocument === 'true';
-  const tUpdateDocModal = useTranslations('update-document-modal');
   const isLoading =
     documentQuery.isLoading ||
     deleteDocumentMutation.isPending ||
@@ -63,16 +73,29 @@ export function DashboardModals() {
     //
     // @see https://github.com/trpc/trpc/issues/1937
     try {
-      await fetch('/api/uploadDocument', {
+      const res = await fetch('/api/uploadDocument', {
         method: 'POST',
         body: new FormData(htmlForm),
         signal: AbortSignal.timeout(10 * 60 * 1_000),
       });
 
+      if (!res.ok) {
+        try {
+          const errorJson = await res.json();
+          uploadDocumentErrorToast(errorJson);
+        } catch (error) {
+          uploadDocumentErrorToast({
+            data: {
+              code: 'UNKNOWN_ERROR',
+            },
+          } satisfies ToastErrorType);
+        }
+      }
+
       await handleCloseDocumentModal(form);
-      setApiRouteLoading(false);
     } catch (error) {
-      console.error(error);
+      uploadDocumentErrorToast(error);
+    } finally {
       setApiRouteLoading(false);
     }
   }
@@ -91,21 +114,32 @@ export function DashboardModals() {
     formData.append('id', document!.id);
 
     try {
-      await fetch('/api/updateDocument', {
+      const res = await fetch('/api/updateDocument', {
         method: 'PATCH',
         body: formData,
         signal: AbortSignal.timeout(10 * 60 * 1_000),
       });
 
+      if (!res.ok) {
+        try {
+          const errorJson = await res.json();
+          updateDocumentErrorToast(errorJson);
+        } catch (error) {
+          updateDocumentErrorToast({
+            data: {
+              code: 'UNKNOWN_ERROR',
+            },
+          } satisfies ToastErrorType);
+        }
+      }
+
       await utils.documents.invalidate();
       await handleCloseDocumentModal(form);
-      setApiRouteLoading(false);
     } catch (error) {
-      console.error(error);
+      updateDocumentErrorToast(error);
+    } finally {
       setApiRouteLoading(false);
     }
-
-    // TODO: Show notification (error and success) to the user
   }
 
   async function handleDeleteDocument(
@@ -119,13 +153,16 @@ export function DashboardModals() {
       return;
     }
 
-    await deleteDocumentMutation.mutateAsync({
-      id: document.id,
-    });
+    try {
+      await deleteDocumentMutation.mutateAsync({
+        id: document.id,
+      });
+    } catch (error) {
+      // We already show the error to the user on the mutation
+      // declaration, so we don't need to show it again here.
+    }
 
     await handleCloseDocumentModal(form);
-
-    // TODO: Show notification (error and success) to the user
   }
 
   async function handleCloseDocumentModal(

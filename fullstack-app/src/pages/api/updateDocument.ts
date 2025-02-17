@@ -10,6 +10,7 @@ import {
   getFile,
   saveUploadedImageFile,
 } from '@/server/utils/fileStorage';
+import {type APIRouteErrorResponse} from '@/types/APIRouteErrorResponse';
 import {
   type UpdateDocumentPayload,
   UpdateDocumentPayloadSchema,
@@ -70,14 +71,20 @@ export default async function handler(
   }
 
   if (req.method !== 'PATCH') {
-    return res.status(405).json({error: 'Method not allowed'});
+    return res.status(405).json({
+      message: 'Method not allowed',
+      data: {code: 'METHOD_NOT_SUPPORTED'},
+    } satisfies APIRouteErrorResponse);
   }
 
   // Check authentication
   const {userId: userAuthId} = getAuth(req);
 
   if (!userAuthId) {
-    return res.status(401).json({error: 'Unauthorized'});
+    return res.status(401).json({
+      message: 'Unauthorized',
+      data: {code: 'UNAUTHORIZED'},
+    } satisfies APIRouteErrorResponse);
   }
 
   const isRateLimited = await rateLimiter.check({
@@ -87,7 +94,10 @@ export default async function handler(
   });
 
   if (isRateLimited) {
-    return res.status(429).json({error: 'Rate limit exceeded'});
+    return res.status(429).json({
+      message: 'Rate limit exceeded',
+      data: {code: 'TOO_MANY_REQUESTS'},
+    } satisfies APIRouteErrorResponse);
   }
 
   const prismaUser = await prisma.user.findFirst({
@@ -97,7 +107,10 @@ export default async function handler(
   });
 
   if (!prismaUser) {
-    return res.status(401).json({error: 'Unauthorized'});
+    return res.status(401).json({
+      message: 'Unauthorized',
+      data: {code: 'UNAUTHORIZED'},
+    } satisfies APIRouteErrorResponse);
   }
 
   // Parse the form data
@@ -147,7 +160,10 @@ export default async function handler(
       fileUrls: [parsedFormData.image?.filepath],
     });
 
-    return res.status(500).json({error: 'Upload failed'});
+    return res.status(500).json({
+      message: 'Upload failed',
+      data: {code: 'INTERNAL_SERVER_ERROR'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (req.destroyed) {
@@ -169,9 +185,10 @@ export default async function handler(
         fileUrls: [parsedFormData.image?.filepath],
       });
 
-      return res
-        .status(500)
-        .json({error: 'Virus engine not initialized. Cannot scan file.'});
+      return res.status(500).json({
+        message: 'Virus engine not initialized. Cannot scan file.',
+        data: {code: 'INTERNAL_SERVER_ERROR'},
+      } satisfies APIRouteErrorResponse);
     }
 
     try {
@@ -196,13 +213,15 @@ export default async function handler(
 
       if (error instanceof VirusScanError) {
         return res.status(400).json({
-          error: 'Files are infected with malware.',
-        });
+          message: 'Files are infected with malware.',
+          data: {code: 'BAD_REQUEST'},
+        } satisfies APIRouteErrorResponse);
       }
 
-      return res
-        .status(500)
-        .json({error: 'File virus scanning failed. Cannot proceed securely.'});
+      return res.status(500).json({
+        message: 'File virus scanning failed. Cannot proceed securely.',
+        data: {code: 'INTERNAL_SERVER_ERROR'},
+      } satisfies APIRouteErrorResponse);
     }
   }
 
@@ -237,7 +256,10 @@ export default async function handler(
       fileUrls: [parsedFormData.image?.filepath],
     });
 
-    return res.status(400).json({error: 'Invalid request body'});
+    return res.status(400).json({
+      message: 'Invalid request body',
+      data: {code: 'BAD_REQUEST'},
+    } satisfies APIRouteErrorResponse);
   }
 
   if (req.destroyed) {
@@ -271,7 +293,10 @@ export default async function handler(
         fileUrls: [parsedFormData.image?.filepath, imageUrl],
       });
 
-      return res.status(500).json({error: 'Image upload failed'});
+      return res.status(500).json({
+        message: 'Image upload failed',
+        data: {code: 'INTERNAL_SERVER_ERROR'},
+      } satisfies APIRouteErrorResponse);
     }
   }
 
@@ -316,7 +341,7 @@ async function cleanup({fileUrls}: {fileUrls: (string | null | undefined)[]}) {
           await deleteFile(fileUrl);
         } catch (error) {
           console.error(
-            `Failed to delete file '${fileUrl}' during /api/uploadDocument cleanup process: `,
+            `Failed to delete file '${fileUrl}' during /api/updateDocument cleanup process: `,
             error
           );
         }
@@ -339,5 +364,8 @@ async function returnConnectionAbortedResponse(params: {
 
   console.error('Connection timed out (req.destroyed === true)');
 
-  return params.res.status(408).json({error: 'Request timeout'});
+  return params.res.status(408).json({
+    message: 'Request timeout',
+    data: {code: 'TIMEOUT'},
+  } satisfies APIRouteErrorResponse);
 }

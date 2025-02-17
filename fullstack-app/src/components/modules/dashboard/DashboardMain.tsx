@@ -2,13 +2,15 @@ import {DocumentCard} from '@/components/reusable/DocumentCard';
 import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
+import {env} from '@/env';
+import {type ToastErrorType, useErrorToast} from '@/hooks/useErrorToast';
 import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
 import {STATUS} from '@prisma/client';
 import {Search, Upload} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useDebounceValue} from 'usehooks-ts';
 
 export function DashboardMain() {
@@ -21,6 +23,18 @@ export function DashboardMain() {
     titleSearch:
       debouncedTitleSearch.length > 1 ? debouncedTitleSearch : undefined,
   });
+  const getDocumentsErrorToast = useErrorToast(
+    'document-manager.errors.documents.get'
+  );
+  const cancelDocumentParsingErrorToast = useErrorToast(
+    'document-manager.errors.documents.cancelDocumentParsing'
+  );
+  const documentParsingSubscriptionErrorToast = useErrorToast(
+    'document-manager.errors.documents.documentParsing.sse-subscription'
+  );
+  const documentParsingUpdateErrorToast = useErrorToast(
+    'document-manager.errors.documents.documentParsing.document-parsing-update'
+  );
   const pendingDocumentsSubs =
     api.documents.onDocumentParsingUpdate.useSubscription(
       {
@@ -33,16 +47,23 @@ export function DashboardMain() {
             void utils.documents.getDocuments.invalidate();
           }
 
-          // TODO: Handle error ones on the UI to indicate they're errors.
-          // Or maybe send an email about it and that's enough. For now we
-          // don't fetch them.
-          // if (data.action === 'error') {}
+          if (data.action === 'error') {
+            documentParsingUpdateErrorToast({
+              data: {
+                code: 'UNKNOWN_ERROR',
+              },
+            } satisfies ToastErrorType);
+          }
         },
         onError: (error) => {
-          console.error(
-            'Error subscribing to document parsing updates:',
-            error
-          );
+          if (env.NEXT_PUBLIC_CLIENT_ENV === 'development') {
+            console.error(
+              'Error subscribing to document parsing updates:',
+              error
+            );
+          }
+
+          documentParsingSubscriptionErrorToast(error);
         },
       }
     );
@@ -50,8 +71,16 @@ export function DashboardMain() {
   const documents = documentsQuery.data ?? [];
   const pendingDocuments = pendingDocumentsSubs.data?.docs ?? [];
   const cancelDocumentParsingMutation =
-    api.documents.cancelDocumentParsing.useMutation();
+    api.documents.cancelDocumentParsing.useMutation({
+      onError: cancelDocumentParsingErrorToast,
+    });
   const isLoading = cancelDocumentParsingMutation.isPending;
+
+  useEffect(() => {
+    if (documentsQuery.error != null) {
+      getDocumentsErrorToast(documentsQuery.error);
+    }
+  }, [documentsQuery.error, getDocumentsErrorToast]);
 
   function handleCancelDocumentParsing(docId: string) {
     if (isLoading) {
@@ -61,13 +90,9 @@ export function DashboardMain() {
     cancelDocumentParsingMutation.mutate({
       id: docId,
     });
-
-    // TODO: Show notification (error and success) to the user
   }
 
   function handleUpdateDocument(doc: Document) {
-    // TODO: Show notification (error and success) to the user
-
     void router.push(`/?documentId=${doc.id}`, undefined, {
       shallow: true,
     });

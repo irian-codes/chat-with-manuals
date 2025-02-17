@@ -1,10 +1,68 @@
 {
   "app": {
     "description": "Aplicación para chatear con documentos estructurados como manuales de productos mediante un chatbot de IA",
+    "errors": {
+      "api": {
+        "bad-gateway": "Servicio temporalmente no disponible",
+        "bad-request": "Solicitud no válida",
+        "conflict": "El recurso ya existe",
+        "forbidden": "Acceso denegado",
+        "internal-server-error": "Error de Servidor",
+        "not-found": "Recurso no encontrado",
+        "not-implemented": "Operación no compatible",
+        "parse-error": "Formato de datos no válido",
+        "too-many-requests": "Demasiadas solicitudes, intente nuevamente más tarde.",
+        "unauthorized": "No autorizado"
+      },
+      "unknown-error": "Se produjo un error inesperado"
+    },
     "title": "Chat With Manuals"
   },
   "conversation": {
     "cancel": "Cancelar",
+    "errors": {
+      "conversation": {
+        "get": {
+          "api": {
+            "internal-server-error": "No abrir la conversación",
+            "not-found": "Conversación no encontrada"
+          },
+          "unknown-error": "No pudo abrir la conversación"
+        }
+      },
+      "generate-conversation-title": {
+        "api": {
+          "internal-server-error": "No se pudo generar el título de conversación",
+          "not-found": "Conversación no encontrada"
+        },
+        "unknown-error": "No se pudo generar el título de conversación"
+      },
+      "messages": {
+        "edit": {
+          "api": {
+            "bad-request": "El mensaje no puede estar vacío",
+            "internal-server-error": "No se pudo editar el mensaje",
+            "not-found": "Mensaje no encontrado"
+          },
+          "unknown-error": "No se pudo editar el mensaje"
+        },
+        "get": {
+          "api": {
+            "internal-server-error": "No se pudieron obtener los mensajes",
+            "not-found": "Conversación no encontrada"
+          },
+          "unknown-error": "No se pudieron obtener los mensajes"
+        },
+        "send": {
+          "api": {
+            "bad-request": "El mensaje no puede estar vacío",
+            "internal-server-error": "No se pudo enviar el mensaje",
+            "not-found": "Conversación o documento no encontrado"
+          },
+          "unknown-error": "No se pudo enviar el mensaje"
+        }
+      }
+    },
     "hallucination-alert": "En ocasiones, la IA puede producir respuestas inexactas. Consulte siempre el documento original para obtener información precisa.",
     "input-placeholder": "Escribe tu mensaje...",
     "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {locale, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
@@ -15,10 +73,53 @@
   },
   "document-list-picker-modal": {
     "description": "Seleccione un documento para abrir una nueva conversación.",
+    "errors": {
+      "documents": {
+        "get": {
+          "api": {
+            "bad-request": "Datos de búsqueda de documentos no válidos",
+            "internal-server-error": "No se pudieron obtener documentos"
+          },
+          "unknown-error": "No se pudieron obtener documentos"
+        }
+      }
+    },
     "search-placeholder": "Buscar documento...",
     "title": "Seleccionar documento"
   },
   "document-manager": {
+    "errors": {
+      "documents": {
+        "cancelDocumentParsing": {
+          "api": {
+            "internal-server-error": "No se pudo cancelar la subida del documento",
+            "not-found": "Documento en proceso no encontrado"
+          },
+          "unknown-error": "No se pudo cancelar la subida del documento"
+        },
+        "documentParsing": {
+          "document-parsing-update": {
+            "api": {
+              "internal-server-error": "No se logró el documento, intente nuevamente."
+            },
+            "unknown-error": "No logró subir el documento, intente nuevamente."
+          },
+          "sse-subscription": {
+            "api": {
+              "internal-server-error": "No se pueden recibir documentos en tiempo real, actualice la página."
+            },
+            "unknown-error": "No se pueden recibir documentos en tiempo real, actualice la página."
+          }
+        },
+        "get": {
+          "api": {
+            "bad-request": "Búsqueda no válida",
+            "internal-server-error": "No se pudieron obtener documentos"
+          },
+          "unknown-error": "No se pudieron obtener documentos"
+        }
+      }
+    },
     "header": {
       "search": "Buscar",
       "upload": "Subir documento"
@@ -37,6 +138,40 @@
       "search": "Buscar",
       "title": "Conversaciones"
     },
+    "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "No se pudo crear la conversación",
+            "not-found": "Documento no encontrado, no se puede crear la conversación"
+          },
+          "unknown-error": "No se pudo crear la conversación"
+        },
+        "delete": {
+          "api": {
+            "internal-server-error": "No se pudo eliminar la conversación",
+            "not-found": "Conversación no encontrada"
+          },
+          "unknown-error": "No se pudo eliminar la conversación"
+        },
+        "edit": {
+          "api": {
+            "bad-request": "Título no válido",
+            "internal-server-error": "No se pudo editar la conversación",
+            "not-found": "Conversación no encontrada"
+          },
+          "unknown-error": "No se pudo editar la conversación"
+        }
+      },
+      "conversations": {
+        "get": {
+          "api": {
+            "internal-server-error": "No se pudieron obtener conversaciones"
+          },
+          "unknown-error": "No se pudieron obtener conversaciones"
+        }
+      }
+    },
     "home": {
       "title": "Documentos"
     }
@@ -47,6 +182,12 @@
     "delete-confirmation": "¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.",
     "description": "Descripción",
     "document-title": "Título",
+    "errors": {
+      "api": {
+        "not-found": "Documento no encontrado",
+        "parse-error": "Datos del documento inválidos"
+      }
+    },
     "form-errors": {
       "image-max-size": "La imagen debe ser menor de {maxSizeInMB}MB.",
       "image-must-be-valid": "La imagen debe ser un archivo JPEG, PNG o WebP.",
@@ -62,6 +203,13 @@
     "cancel": "Cancelar",
     "description": "Descripción",
     "document-title": "Título",
+    "errors": {
+      "api": {
+        "conflict": "El documento ya existe",
+        "not-found": "Documento no encontrado",
+        "parse-error": "Documento o datos no válidos"
+      }
+    },
     "file-input-label": "Archivo PDF",
     "form-errors": {
       "file-max-size": "El archivo debe pesar menos de {maxSizeInMB}MB.",

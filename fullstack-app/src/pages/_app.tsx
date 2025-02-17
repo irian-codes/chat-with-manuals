@@ -5,6 +5,7 @@ import type {AppProps, AppType} from 'next/app';
 
 import {api} from '@/utils/api';
 
+import {Toaster} from '@/components/shadcn-ui/toaster';
 import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
 import '@/styles/globals.css';
 import type {i18nMessages} from '@/types/i18nMessages';
@@ -65,6 +66,7 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
           >
             <Component {...pageProps} />
           </div>
+          <Toaster />
         </SidebarProvider>
       </ClerkProvider>
     </NextIntlClientProvider>
