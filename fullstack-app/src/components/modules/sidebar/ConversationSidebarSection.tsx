@@ -83,6 +83,13 @@ export function ConversationSidebarSection() {
       },
     });
 
+  const isLoading =
+    conversationsQuery.isPending ||
+    documentsQuery.isLoading ||
+    editConversationMutation.isPending ||
+    deleteConversationMutation.isPending ||
+    addConversationMutation.isPending;
+
   async function createNewConversation(doc: Document) {
     const conversationId = await addConversationMutation.mutateAsync({
       documentId: doc.id,
@@ -121,14 +128,14 @@ export function ConversationSidebarSection() {
           />
         </div>
 
-        <ScrollArea className="h-full">
+        <ScrollArea className="max-h-[calc(100vh-18em)]">
           {conversations.map((conversation) => (
             <ConversationListItem
               key={conversation.id}
               conversation={conversation}
               isHighlighted={currentConversationId === conversation.id}
               onEdit={async (newTitle) => {
-                if (!isStringEmpty(newTitle)) {
+                if (!isStringEmpty(newTitle) && !isLoading) {
                   const newConversation =
                     await editConversationMutation.mutateAsync({
                       id: conversation.id,
@@ -141,6 +148,10 @@ export function ConversationSidebarSection() {
                 }
               }}
               onDelete={async () => {
+                if (isLoading) {
+                  return;
+                }
+
                 await deleteConversationMutation.mutateAsync({
                   id: conversation.id,
                 });
@@ -159,16 +170,14 @@ export function ConversationSidebarSection() {
                   }
                 );
               }}
-              isLoading={
-                editConversationMutation.isPending ||
-                deleteConversationMutation.isPending
-              }
+              isLoading={isLoading}
             />
           ))}
         </ScrollArea>
 
         <Button
           className="w-full"
+          disabled={isLoading}
           onClick={() => setIsDocumentPickerModalOpen(true)}
           onMouseEnter={() => {
             void utils.documents.getDocuments.prefetch({
@@ -189,7 +198,12 @@ export function ConversationSidebarSection() {
       <DocumentListPickerModal
         documents={documents}
         isOpen={isDocumentPickerModalOpen}
+        isLoading={isLoading}
         onDocumentClick={async (document) => {
+          if (isLoading) {
+            return;
+          }
+
           await createNewConversation(document);
         }}
         onSearchQueryChangeDebounced={(searchQuery) =>

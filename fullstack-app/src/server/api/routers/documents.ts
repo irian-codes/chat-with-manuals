@@ -4,7 +4,10 @@ import {
   withDbUserProcedure,
 } from '@/server/api/trpc';
 import {deleteCollection} from '@/server/db/chroma';
-import {type fileParsingTask} from '@/server/trigger/documents';
+import {
+  fileParsingErrorCleanup,
+  type fileParsingTask,
+} from '@/server/trigger/documents';
 import {
   AppEventEmitter,
   pendingDocumentEventsSchema,
@@ -16,9 +19,14 @@ import {
 } from '@/server/utils/fileStorage';
 import {UpdateDocumentPayloadSchema} from '@/types/UpdateDocumentPayload';
 import {UploadNewDocumentPayloadSchema} from '@/types/UploadNewDocumentPayload';
-import {isStringEmpty} from '@/utils/strings';
-import {Prisma, STATUS, type PrismaClient} from '@prisma/client';
-import {tasks} from '@trigger.dev/sdk/v3';
+import {isStringEmpty, normalizeStringForSearch} from '@/utils/strings';
+import {
+  Prisma,
+  STATUS,
+  type PendingDocument,
+  type PrismaClient,
+} from '@prisma/client';
+import {runs, tasks} from '@trigger.dev/sdk/v3';
 import {TRPCError} from '@trpc/server';
 import {z} from 'zod';
 
@@ -29,7 +37,12 @@ export const documentsRouter = createTRPCRouter({
     .input(
       z
         .object({
-          titleSearch: z.string().max(30).default(''),
+          titleSearch: z
+            .string()
+            .trim()
+            .max(30)
+            .default('')
+            .transform(normalizeStringForSearch),
         })
         .strict()
         .optional()
@@ -50,9 +63,9 @@ export const documentsRouter = createTRPCRouter({
             input.titleSearch.length < 2
               ? undefined
               : {
-                  title: {
+                  searchTitle: {
                     mode: 'insensitive',
-                    contains: input.titleSearch.trim(),
+                    contains: input.titleSearch,
                   },
                 }),
           },
@@ -84,53 +97,6 @@ export const documentsRouter = createTRPCRouter({
       }
 
       return document;
-    }),
-
-  getDocumentsIncludingPending: withDbUserProcedure
-    .input(
-      z
-        .object({
-          pendingDocumentsStatuses: z.array(z.nativeEnum(STATUS)),
-        })
-        .strict()
-        .optional()
-    )
-    .query(async ({ctx, input}) => {
-      const userId = ctx.prismaUser.id;
-
-      const [documents, pendingDocuments] = await Promise.all([
-        ctx.prisma.document.findMany({
-          where: {
-            users: {
-              some: {
-                id: userId,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-        ctx.prisma.pendingDocument.findMany({
-          where: {
-            userId: userId,
-            status:
-              input?.pendingDocumentsStatuses == null
-                ? undefined
-                : {
-                    in: input.pendingDocumentsStatuses,
-                  },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-      ]);
-
-      return {
-        documents,
-        pendingDocuments,
-      };
     }),
 
   onDocumentParsingUpdate: withDbUserProcedure
@@ -234,11 +200,13 @@ export const documentsRouter = createTRPCRouter({
       const userId = ctx.prismaUser.id;
 
       // Create pending document
-      const pendingDocument = await ctx.prisma.pendingDocument
-        .create({
+      let pendingDocument: Pick<PendingDocument, 'id' | 'fileHash'> | null =
+        null;
+      try {
+        pendingDocument = await ctx.prisma.pendingDocument.create({
           data: {
-            // TODO: Add real imageUrl, for now using default value
             title: input.title,
+            searchTitle: normalizeStringForSearch(input.title),
             description: input.description ?? '',
             locale: input.locale,
             fileUrl: input.fileUrl,
@@ -251,50 +219,69 @@ export const documentsRouter = createTRPCRouter({
               },
             },
           },
-        })
-        .catch(async (error) => {
-          // Delete original file and image
+          select: {
+            id: true,
+            fileHash: true,
+          },
+        });
+
+        // Trigger actual parsing task
+        const taskHandle = await tasks.trigger<typeof fileParsingTask>(
+          'file-parsing',
+          {
+            pendingDocumentId: pendingDocument.id,
+            userId,
+          },
+          {
+            idempotencyKey: pendingDocument.fileHash,
+            idempotencyKeyTTL: '1m',
+          }
+        );
+
+        ee.emit('pendingDocument', 'added');
+
+        return {taskHandleId: taskHandle.id, pendingDocument};
+      } catch (error) {
+        // Try delete pending document. If it's null it means Prisma crashed.
+        if (pendingDocument != null) {
           try {
-            await deleteFile(input.fileUrl);
-
-            if (!isStringEmpty(input.imageUrl)) {
-              await deleteFile(input.imageUrl!);
-            }
+            await ctx.prisma.pendingDocument.delete({
+              where: {id: pendingDocument.id},
+            });
           } catch (error) {
-            const imageUrlErrorMsgPart = isStringEmpty(input.imageUrl)
-              ? ''
-              : ', image: ' + input.imageUrl;
-
             console.error(
-              `Failed to delete document file: ${input.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
+              'Failed to delete pending document. This db entry should be deleted manually.',
               error
             );
           }
-
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to create pending document on database',
-            cause: error,
-          });
-        });
-
-      ee.emit('pendingDocument', 'added');
-
-      // Trigger actual parsing task
-      const taskHandle = await tasks.trigger<typeof fileParsingTask>(
-        'file-parsing',
-        {
-          pendingDocumentId: pendingDocument.id,
-          userId,
-        },
-        {
-          idempotencyKey: `file-parsing-${pendingDocument.id}`,
-          idempotencyKeyTTL: '6h',
-          maxDuration: 6 * 60 * 60,
         }
-      );
 
-      return {taskHandleId: taskHandle.id, pendingDocument};
+        // Delete original file and image
+        try {
+          await deleteFile(input.fileUrl);
+
+          if (!isStringEmpty(input.imageUrl)) {
+            await deleteFile(input.imageUrl!);
+          }
+        } catch (error) {
+          const imageUrlErrorMsgPart = isStringEmpty(input.imageUrl)
+            ? ''
+            : ', image: ' + input.imageUrl;
+
+          console.error(
+            `Failed to delete document file: ${input.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
+            error
+          );
+        }
+
+        ee.emit('pendingDocument', 'error');
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create pending document on database',
+          cause: error,
+        });
+      }
     }),
 
   triggerDevWebhookReceiver: authedProcedure
@@ -371,7 +358,12 @@ export const documentsRouter = createTRPCRouter({
               },
             },
           },
-          data: _modifiedFields,
+          data: {
+            ..._modifiedFields,
+            searchTitle: !isStringEmpty(_modifiedFields.title)
+              ? normalizeStringForSearch(_modifiedFields.title!)
+              : undefined,
+          },
         })
         .catch((error) => {
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -413,7 +405,7 @@ export const documentsRouter = createTRPCRouter({
       const userId = ctx.prismaUser.id;
 
       const pendingDocument = await ctx.prisma.pendingDocument
-        .delete({
+        .findUniqueOrThrow({
           where: {
             id: input.id,
             userId,
@@ -435,22 +427,20 @@ export const documentsRouter = createTRPCRouter({
           });
         });
 
-      // Delete original file and image
-      try {
-        await deleteFile(pendingDocument.fileUrl);
-
-        if (!isStringEmpty(pendingDocument.imageUrl)) {
-          await deleteFile(pendingDocument.imageUrl);
+      // Cancel the Trigger.dev run if we have a task ID
+      if (!isStringEmpty(pendingDocument.parsingTaskId)) {
+        try {
+          await runs.cancel(pendingDocument.parsingTaskId!);
+          await fileParsingErrorCleanup({
+            pendingDocument,
+            errorLoggerFunction: console.error,
+          });
+        } catch (error) {
+          console.error(
+            `Failed to cancel file parsing Trigger.dev run ${pendingDocument.parsingTaskId} for pending document ID ${pendingDocument.id}.`,
+            error
+          );
         }
-      } catch (error) {
-        const imageUrlErrorMsgPart = isStringEmpty(pendingDocument.imageUrl)
-          ? ''
-          : ', image: ' + pendingDocument.imageUrl;
-
-        console.error(
-          `Failed to delete document file: ${pendingDocument.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
-          error
-        );
       }
 
       ee.emit('pendingDocument', 'cancelled');

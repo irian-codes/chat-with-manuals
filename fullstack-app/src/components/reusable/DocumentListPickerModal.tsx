@@ -21,6 +21,7 @@ interface DocumentPickerModalProps {
   onDocumentClick?: (document: Document) => void;
   onSearchQueryChangeDebounced?: (newSearchQuery: string) => void;
   debounceTimeInMs?: number;
+  isLoading?: boolean;
 }
 
 export function DocumentListPickerModal(props: DocumentPickerModalProps) {
@@ -74,9 +75,14 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
                 variant="outline"
                 className="w-full justify-start py-8"
                 onClick={() => {
+                  if (props.isLoading) {
+                    return;
+                  }
+
                   props.onDocumentClick?.(doc);
                   props.onClose?.();
                 }}
+                disabled={props.isLoading}
               >
                 <div className="flex flex-col items-start gap-1">
                   <p className="truncate font-medium">{doc.title}</p>

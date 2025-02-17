@@ -19,6 +19,7 @@ import {tasks} from '@trigger.dev/sdk/v3';
 import {IncludeEnum} from 'chromadb';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o-mini';
 import {Document} from 'langchain/document';
+import {createHash} from 'node:crypto';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {type retrieveContextTask} from '../trigger/conversation';
@@ -92,6 +93,10 @@ export async function sendPrompt({
     conversation,
   });
 
+  const hashedPrompt = createHash('sha256')
+    .update(_prompt.toLowerCase())
+    .digest('hex');
+
   const retrievedContext = await tasks.triggerAndPoll<
     typeof retrieveContextTask
   >(
@@ -103,8 +108,8 @@ export async function sendPrompt({
     },
     {
       pollIntervalMs: 500,
-      idempotencyKey: `retrieve-context-${conversationId}`,
-      idempotencyKeyTTL: '10m',
+      idempotencyKey: [conversationId, hashedPrompt],
+      idempotencyKeyTTL: '5m',
     }
   );
 
@@ -134,18 +139,32 @@ export async function sendPrompt({
 
   console.log('Sending message to LLM...');
 
-  // TODO: Send part of the conversation to the LLM as well, since now
-  // we're only sending the last message.
-  const response = await miniLlm.invoke([
+  const structuredMiniLlm = miniLlm.withStructuredOutput(
+    z.object({
+      answer: z
+        .string()
+        .describe(
+          "answer to the user's question in a markdown formatted string"
+        ),
+      sources: z
+        .array(z.string())
+        .describe(
+          "if you didn't found the answer in the document, an empty array. Otherwise, this array contains the sources used to answer the user's question, should be one or more section headers."
+        ),
+    }),
+    {
+      strict: true,
+    }
+  );
+
+  const response = await structuredMiniLlm.invoke([
     systemMessage,
     ...chatTemplate.toChatMessages(),
   ]);
 
-  if (typeof response.content !== 'string') {
-    throw new Error('Response content is not a string');
-  }
-
-  const responseContent = response.content;
+  const responseContent = `${response.answer}\n\n📋: ${response.sources
+    .map((source) => source.replace(sectionPrefix, '').trim())
+    .join('\n')}`;
 
   if (env.NODE_ENV === 'development') {
     console.log('Message sent to the LLM: ', {

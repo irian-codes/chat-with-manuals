@@ -3,7 +3,7 @@ import {
   generateConversationTitle,
   sendPrompt,
 } from '@/server/conversation/prompt';
-import {isStringEmpty} from '@/utils/strings';
+import {isStringEmpty, normalizeStringForSearch} from '@/utils/strings';
 import {AUTHOR, Prisma} from '@prisma/client';
 import {TRPCError} from '@trpc/server';
 import {z} from 'zod';
@@ -13,7 +13,12 @@ export const conversationsRouter = createTRPCRouter({
     .input(
       z
         .object({
-          titleSearch: z.string().max(30).default(''),
+          titleSearch: z
+            .string()
+            .trim()
+            .max(30)
+            .default('')
+            .transform(normalizeStringForSearch),
           withMessages: z.boolean().optional(),
           withDocuments: z.boolean().optional(),
         })
@@ -32,9 +37,9 @@ export const conversationsRouter = createTRPCRouter({
             input.titleSearch.length < 2
               ? undefined
               : {
-                  title: {
+                  searchTitle: {
                     mode: 'insensitive',
-                    contains: input.titleSearch.trim(),
+                    contains: input.titleSearch,
                   },
                 }),
           },
@@ -328,7 +333,12 @@ export const conversationsRouter = createTRPCRouter({
             id: input.id,
             userId,
           },
-          data: updatedData,
+          data: {
+            ...updatedData,
+            searchTitle: !isStringEmpty(updatedData.title)
+              ? normalizeStringForSearch(updatedData.title!)
+              : undefined,
+          },
         })
         .catch(async (error) => {
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -381,7 +391,10 @@ export const conversationsRouter = createTRPCRouter({
       if (!isStringEmpty(newTitle)) {
         await ctx.prisma.conversation.update({
           where: {id: conversation.id},
-          data: {title: newTitle},
+          data: {
+            title: newTitle,
+            searchTitle: normalizeStringForSearch(newTitle),
+          },
         });
       }
 

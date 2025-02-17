@@ -57,6 +57,7 @@ model PendingDocument {
     user             User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
     userId           String   @db.Uuid()
     title            String   @db.VarChar(255)
+    searchTitle      String   @default("") @db.VarChar(255)
     description      String   @default("")
     locale           String   @default("en") @db.VarChar(255)
     imageUrl         String   @default("")
@@ -65,6 +66,7 @@ model PendingDocument {
     parsingTaskId    String?  @unique @db.VarChar(64) // Enough for any id it seems
     llmParsingJobId  String?
     codeParsingJobId String?
+    vectorStoreId    String?  @unique @db.Uuid()
     status           STATUS   @default(PENDING)
     createdAt        DateTime @default(now()) @db.Timestamptz(3)
     updatedAt        DateTime @updatedAt @db.Timestamptz(3)
@@ -78,6 +80,7 @@ model Document {
     users         User[] // 1-n users
     conversations Conversation[] // 0-n conversations
     title         String         @db.VarChar(255)
+    searchTitle   String         @default("") @db.VarChar(255)
     description   String         @default("")
     locale        String         @default("en") @db.VarChar(255)
     imageUrl      String         @default("")
@@ -97,6 +100,7 @@ model Conversation {
     user            User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
     userId          String     @db.Uuid()
     title           String     @default("") @db.VarChar(255)
+    searchTitle     String     @default("") @db.VarChar(255)
     createdAt       DateTime   @default(now()) @db.Timestamptz(3)
     updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
     messages        Message[] // 0-n messages

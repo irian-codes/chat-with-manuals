@@ -29,6 +29,7 @@ export type UploadFormInputs = Omit<
 
 interface UploadNewDocumentModalProps {
   isOpen: boolean;
+  isLoading?: boolean;
   onSubmit: (
     form: UseFormReturn<UploadFormInputs>,
     htmlForm: HTMLFormElement
@@ -42,6 +43,10 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   const onSubmit: SubmitHandler<UploadFormInputs> = () => {
+    if (props.isLoading) {
+      return;
+    }
+
     void props.onSubmit(form, formRef.current!);
   };
 
@@ -74,6 +79,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               <Label htmlFor="title">{t('document-title')}</Label>
               <Input
                 id="title"
+                disabled={props.isLoading}
                 {...form.register('title', {
                   required: {
                     value: true,
@@ -87,6 +93,7 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
                     value: 255,
                     message: t('form-errors.title-max-length'),
                   },
+                  disabled: props.isLoading,
                 })}
                 placeholder={t('document-title')}
               />
@@ -101,9 +108,11 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               <Label htmlFor="description">{t('description')}</Label>
               <Textarea
                 id="description"
+                disabled={props.isLoading}
                 {...form.register('description', {
                   required: false,
                   maxLength: 2000,
+                  disabled: props.isLoading,
                 })}
                 placeholder={t('description')}
                 rows={3}
@@ -119,14 +128,18 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               <Label htmlFor="lang">{t('language-label')}</Label>
               <select
                 id="lang"
+                disabled={props.isLoading}
                 {...form.register('locale', {
                   required: {
                     value: true,
                     message: t('form-errors.language-required'),
                   },
+                  disabled: props.isLoading,
                 })}
                 className="border-input bg-background w-full rounded-md border px-3 py-2"
+                defaultValue=""
               >
+                <option value="">{t('language-placeholder')}</option>
                 {ISO6391.getAllCodes()
                   .sort((a, b) =>
                     ISO6391.getNativeName(a).localeCompare(
@@ -151,11 +164,13 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               <Input
                 id="file"
                 type="file"
+                disabled={props.isLoading}
                 {...form.register('file', {
                   required: {
                     value: true,
                     message: t('form-errors.file-required'),
                   },
+                  disabled: props.isLoading,
                   validate: (value): string | boolean => {
                     const file = value?.[0];
 
@@ -205,8 +220,10 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               <Input
                 id="image"
                 type="file"
+                disabled={props.isLoading}
                 {...form.register('image', {
                   required: false,
+                  disabled: props.isLoading,
                   validate: (value): string | boolean => {
                     const file = value?.[0];
 
@@ -246,11 +263,14 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
             <Button
               type="reset"
               variant="outline"
+              disabled={props.isLoading}
               onClick={handleCloseButtonClick}
             >
               {t('cancel')}
             </Button>
-            <Button type="submit">{t('upload')}</Button>
+            <Button type="submit" disabled={props.isLoading}>
+              {t('upload')}
+            </Button>
           </div>
         </form>
       </DialogContent>

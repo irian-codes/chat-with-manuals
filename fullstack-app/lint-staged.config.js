@@ -10,7 +10,7 @@ const buildEslintCommand = (filePaths) =>
  * @type {import('lint-staged').Configuration}
  */
 const config = {
-  '*.{ts,js,tsx,jsx,mdx}': ['prettier --write --cache', buildEslintCommand],
+  '*.{ts,tsx,mdx}': ['prettier --write --cache', buildEslintCommand],
   '*.json': ['prettier --write --cache'],
 };
 

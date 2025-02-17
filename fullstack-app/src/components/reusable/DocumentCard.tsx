@@ -24,7 +24,10 @@ type UploadedDocumentCardProps = {
   ) => void;
 };
 
-type DocumentCardProps = UploadingDocumentCardProps | UploadedDocumentCardProps;
+type DocumentCardProps = {isLoading?: boolean} & (
+  | UploadingDocumentCardProps
+  | UploadedDocumentCardProps
+);
 
 export function DocumentCard(props: DocumentCardProps) {
   const t = useTranslations('document-manager');
@@ -63,6 +66,7 @@ export function DocumentCard(props: DocumentCardProps) {
             <Button
               variant="ghost"
               size="icon"
+              disabled={props.isLoading}
               onClick={
                 docIsUploading
                   ? props.onCancelButtonClick
