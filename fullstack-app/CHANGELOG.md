@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.15](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.14...v0.1.15) (2025-02-17)
+
+
+### Features
+
+* **chat:** display messages as proper visually appealing markdown ([41d6a63](https://github.com/irian-codes/chat-with-manuals/commit/41d6a63cdf6e5ef497e5a09c9d66229862f5b62d))
+* **trpc:** normalizing and saving search titles so the user can do a better fuzzy search ([5981940](https://github.com/irian-codes/chat-with-manuals/commit/5981940f6cc7597743e5fb243ba33604d57a3541)), closes [#57](https://github.com/irian-codes/chat-with-manuals/issues/57)
+
+
+### Bug Fixes
+
+* **frontend:** properly handling loading states to disable components ([06a0723](https://github.com/irian-codes/chat-with-manuals/commit/06a0723ac5add99a3dd1875bca0da6b4fc8b90a7))
+* **modal:** locale form value starts unselected to force user to select ([5bcf6eb](https://github.com/irian-codes/chat-with-manuals/commit/5bcf6eb9814a8a513e5d57fdd06722ee50c97372))
+* **parsing:** cancelling Trigger.dev parsing task if the file upload is cancelled from the frontend ([e9a93d6](https://github.com/irian-codes/chat-with-manuals/commit/e9a93d675847421502ee78af593558cd0e596ed4))
+* **parsing:** emitting error event when parsing fails ([be3f6fc](https://github.com/irian-codes/chat-with-manuals/commit/be3f6fce11ac75634b0df92c939e71934bb42bb8))
+* **sidebar:** new conversation button was obscured when list got too long ([3431863](https://github.com/irian-codes/chat-with-manuals/commit/343186309d64d1035366df2582e962a3f3c38663))
+* **trigger-dev:** fixed wrong idempotency keys for Trigger.dev tasks ([a73be1e](https://github.com/irian-codes/chat-with-manuals/commit/a73be1e0febe163d028abf6fdc7c801a50a2f88b))
+
 ## [0.1.14](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.13...v0.1.14) (2025-02-03)
 
 
