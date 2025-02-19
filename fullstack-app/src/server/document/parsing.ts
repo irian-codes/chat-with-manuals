@@ -72,7 +72,7 @@ export async function pdfParseWithPdfReader({
   });
 
   const pageDataSchema = z.object({
-    page: z.number().gt(1),
+    page: z.number().gte(0),
     width: z.number(),
     height: z.number(),
   });
