@@ -2,7 +2,8 @@ const rule = {
   meta: {
     type: 'problem',
     docs: {
-      description: "Disallow console.log statements that start with 'heeey'",
+      description:
+        "Disallow console.(log|warn) statements that start with 'heeey'",
       recommended: false,
       url: 'https://eslint.org/docs/latest/extend/custom-rules',
     },
@@ -10,7 +11,7 @@ const rule = {
     schema: [],
     messages: {
       forbiddenConsole:
-        "Console.log statements starting with 'heeey' are not allowed.",
+        "Console.(log|warn) statements starting with 'heeey' are not allowed.",
     },
   },
   create(context) {
@@ -25,7 +26,8 @@ const rule = {
           node.callee.object.name === 'console' &&
           node.callee.property &&
           node.callee.property.type === 'Identifier' &&
-          node.callee.property.name === 'log'
+          (node.callee.property.name === 'log' ||
+            node.callee.property.name === 'warn')
         ) {
           // Ensure there is at least one argument to console.log
           const [firstArg] = node.arguments;
