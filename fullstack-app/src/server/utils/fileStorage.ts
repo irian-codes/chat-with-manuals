@@ -24,17 +24,28 @@ export const allowedAbsoluteDirPaths = {
   publicParsingResultsSectionsJson: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'parsing-results/sections-json')
   ),
+  publicParsingResultsPDFParser: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results/pdf-parser')
+  ),
   publicLlmAnswers: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'llm-answers')
   ),
-  publicMatchedChunks: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'matched-chunks')
+  publicReconciliationMatchedChunks: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'reconciliation/matched-chunks')
   ),
-  publicReconciledChunks: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'reconciled-chunks')
+  publicReconciliationReconciledChunks: ensureAbsolutePath(
+    path.join(
+      'public',
+      isDevEnv ? 'temp' : '',
+      'reconciliation/reconciled-chunks'
+    )
   ),
-  publicReconciledSections: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'reconciled-sections')
+  publicReconciliationReconciledSections: ensureAbsolutePath(
+    path.join(
+      'public',
+      isDevEnv ? 'temp' : '',
+      'reconciliation/reconciled-sections'
+    )
   ),
   appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
 } as const;

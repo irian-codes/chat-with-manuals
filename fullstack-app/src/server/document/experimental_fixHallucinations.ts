@@ -58,6 +58,16 @@ export async function fixHallucinationsOnSections({
     throw new Error('Layout parser produced an empty file');
   }
 
+  if (env.NODE_ENV === 'development') {
+    await writeToTimestampedFile({
+      content: layoutExtractedText,
+      destinationFolderPath:
+        allowedAbsoluteDirPaths.publicParsingResultsPDFParser,
+      fileExtension: 'txt',
+      fileName: file.name,
+    });
+  }
+
   console.log('Chunk layout text for reconciliation...');
   console.time('chunkString');
   const layoutChunks = await chunkString({
@@ -105,7 +115,8 @@ export async function fixHallucinationsOnSections({
         null,
         2
       ),
-      destinationFolderPath: allowedAbsoluteDirPaths.publicMatchedChunks,
+      destinationFolderPath:
+        allowedAbsoluteDirPaths.publicReconciliationMatchedChunks,
       fileExtension: 'json',
       fileName: file.name,
     });
@@ -155,7 +166,8 @@ export async function fixHallucinationsOnSections({
         null,
         2
       ),
-      destinationFolderPath: allowedAbsoluteDirPaths.publicReconciledChunks,
+      destinationFolderPath:
+        allowedAbsoluteDirPaths.publicReconciliationReconciledChunks,
       fileExtension: 'json',
       fileName: file.name,
     });
@@ -176,8 +188,8 @@ export async function fixHallucinationsOnSections({
           fixedSections: Object.fromEntries(
             Map.groupBy(
               [
-                ...flattenSectionsTree(fixedSections),
-                ...flattenSectionsTree(sections),
+                ...flattenSectionsTree(fixedSections, 'fixed'),
+                ...flattenSectionsTree(sections, 'original-llm'),
               ],
               (s) => s.headerRouteLevels
             )
@@ -186,7 +198,8 @@ export async function fixHallucinationsOnSections({
         null,
         2
       ),
-      destinationFolderPath: allowedAbsoluteDirPaths.publicReconciledSections,
+      destinationFolderPath:
+        allowedAbsoluteDirPaths.publicReconciliationReconciledSections,
       fileExtension: 'json',
       fileName: file.name,
     });
@@ -229,10 +242,10 @@ export async function fixHallucinationsOnSections({
         let lastReferenceTotalOrder = batch[0].metadata.totalOrder - 1;
 
         for (const sectionChunk of batch) {
-          console.log('Matching section chunk...', {
-            id: sectionChunk.id,
-            totalOrder: sectionChunk.metadata.totalOrder,
-          });
+          // console.log('Matching section chunk...', {
+          //   id: sectionChunk.id,
+          //   totalOrder: sectionChunk.metadata.totalOrder,
+          // });
 
           // We don't match tables for now, as the layout parser cannot parse
           // them effectively.
@@ -272,19 +285,25 @@ export async function fixHallucinationsOnSections({
     return batchResults.flat();
   }
 
-  function flattenSectionsTree(sections: SectionNode[]) {
+  function flattenSectionsTree(
+    sections: SectionNode[],
+    source: 'original-llm' | 'original-layout-parsed' | 'fixed'
+  ) {
     const flattened: (Omit<SectionNode, 'tables'> & {
       tables: Record<number, string>;
+      source: typeof source;
     })[] = [];
 
     sections.forEach((section) => {
       flattened.push({
+        source,
         ...section,
         subsections: [],
         // So we can serialize it
         tables: Object.fromEntries(section.tables),
       });
-      flattened.push(...flattenSectionsTree(section.subsections));
+
+      flattened.push(...flattenSectionsTree(section.subsections, source));
     });
 
     return flattened;
@@ -705,6 +724,17 @@ async function tryReconcileSectionChunk({
     };
   }
 
+  // LLM Reconciliation strategy
+
+  // TODO: This strategy is not reliable. We shouldn't be using an LLM to
+  // fix hallucinations, we should be using a tool that is able to behave
+  // with 100% consistency, like code. Because there are cases where the
+  // LLM will introduce new hallucinations besides fixing the existing
+  // ones. However, this doesn't mean this approach is entirely useless, if
+  // we fix more hallucinations than we create we are still improving the
+  // document, on average. It's true that there's the potential of fixing
+  // irrelevant text and introducing hallucinations with a way worse impact,
+  // but that's the risk we take for now.
   const chat = new ChatOpenAI({
     model: 'gpt-4o-mini',
     temperature: 0,
