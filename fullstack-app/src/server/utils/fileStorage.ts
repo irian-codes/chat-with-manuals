@@ -27,6 +27,15 @@ export const allowedAbsoluteDirPaths = {
   publicLlmAnswers: ensureAbsolutePath(
     path.join('public', isDevEnv ? 'temp' : '', 'llm-answers')
   ),
+  publicMatchedChunks: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'matched-chunks')
+  ),
+  publicReconciledChunks: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'reconciled-chunks')
+  ),
+  publicReconciledSections: ensureAbsolutePath(
+    path.join('public', isDevEnv ? 'temp' : '', 'reconciled-sections')
+  ),
   appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
 } as const;
 

@@ -17,7 +17,7 @@ import {z} from 'zod';
 const metaContentDelimiter = '<<<%s>>>';
 const tableDelimiter = metaContentDelimiter.replace('%s', 'TABLE:%d');
 
-async function chunkString({
+export async function chunkString({
   text,
   splitter,
 }: {
