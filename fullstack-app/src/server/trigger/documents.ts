@@ -22,6 +22,7 @@ import {type PendingDocument, Prisma, STATUS} from '@prisma/client';
 import {logger, task} from '@trigger.dev/sdk/v3';
 import {IncludeEnum} from 'chromadb';
 import {RecursiveCharacterTextSplitter} from 'langchain/text_splitter';
+import {fixHallucinationsOnSections} from '../document/experimental_fixHallucinations';
 import './init';
 
 export const fileParsingTask = task({
@@ -85,8 +86,23 @@ export const fileParsingTask = task({
 
       const mdToJson = await markdownToSectionsJson(lintedMarkdown);
 
+      logger.debug('Fixing LLM hallucinations...', {
+        pendingDocumentId: pendingDocument.id,
+      });
+      console.time('fixHallucinationsOnSections');
+
+      // TODO: Only enable the experimental fixHallucinationsOnSections
+      // when the user has explicitly requested it on the UI form.
+      const fixedSections = await fixHallucinationsOnSections({
+        filePath: pendingDocument.fileUrl,
+        // TODO: This should come from the form input
+        columnsNumber: 2,
+        sections: mdToJson,
+      });
+      console.timeEnd('fixHallucinationsOnSections');
+
       const chunks = await chunkSectionNodes({
-        sectionsJson: mdToJson,
+        sectionsJson: fixedSections,
         splitter: new RecursiveCharacterTextSplitter({
           chunkSize: 150,
           chunkOverlap: 0,
@@ -115,7 +131,7 @@ export const fileParsingTask = task({
 
       if (env.NODE_ENV === 'development') {
         await writeToTimestampedFile({
-          content: `Chroma collection name: ${vectorStore.collectionName}\n\nMarkdown:\n${markdown}`,
+          content: `${markdown}\n\nChroma collection name: ${vectorStore.collectionName}`,
           destinationFolderPath:
             allowedAbsoluteDirPaths.publicParsingResultsMarkdown,
           suffix: 'llamaParse',

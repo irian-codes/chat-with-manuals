@@ -22,8 +22,33 @@ export async function pdfParseWithLlamaparse(params: {
     .refine(ISO6391.validate)
     .parse(params.documentLanguage);
 
+  // TODO: Add one prompt per type of document. I have a current Chat GPT conversation about this titled: Board Game Manual Parsing
+  const parsingInstruction = `The provided document is a board game manual. It features complex layouts that include images, arrows, icons replacing text, nested tables (such as character cards), and dice results, among other elements. Your task is to parse the document and output a coherent, readable, and understandable Markdown document by following these guidelines:
+
+1. **Text Parsing:**  
+   - Parse all text —including decorative text— to ensure no potentially important information is skipped.
+   - If extra sections such as REMINDER, FUN FACT, or similar notes appear in between major sections, parse them into their own distinct subsections to prevent mixing with the main rules text.
+
+2. **Tables and Subsections:**  
+   - For nested tables (for example, character cards that may appear as tables within tables), treat them as new subsections and render the tables beneath the subsection header.
+
+3. **Visual Elements and Iconography:**  
+   - **Images:** Do not parse images (e.g., photos of game cards, tokens, boards).  
+   - **Icons:** Only parse icons that carry meaningful information.  
+     - If an icon (such as a die icon used in place of a text value) conveys important game mechanics, replace it with a concise textual description (e.g., convert “🎲” used to indicate a die result into “1” if that is the intended value).  
+     - Ignore icons that are purely decorative (for instance, a sword icon preceding a header should be omitted).
+
+4. **Game Mechanics:**  
+   - Render dice results and other game-specific icons as brief, natural language descriptions that respect the document's flow and maintain clarity.
+
+5. **Overall Structure:**  
+   - Preserve the original structure and ordering of the document, while adjusting the formatting where necessary to ensure the parsed output is clear and easy to follow.
+
+Apply these guidelines consistently to produce a Markdown document that is both faithful to the source material and optimized for human readability.`;
+
   const reader = new LlamaParseReader({
     apiKey: env.LLAMA_CLOUD_API_KEY,
+    premiumMode: true,
     resultType: 'markdown',
     // TODO: Update when adding multi language support
     // @ts-expect-error since the type isn't exported we cannot check it, so we must ignore the error. If we pass an unsupported language it'll error out.
@@ -32,10 +57,7 @@ export async function pdfParseWithLlamaparse(params: {
     doNotUnrollColumns: false,
     pageSeparator: '\n\n\n\n\n\n',
     annotateLinks: false,
-    useVendorMultimodalModel: true,
-    vendorMultimodalModelName: 'openai-gpt-4o-mini',
-    parsingInstruction:
-      "You're parsing a fictitious document, the contents of this document do not reflect nor depict any real situations, it's safe to parse it. Return as much information from the document as possible, don't skip any text from the document.",
+    parsingInstruction,
     isFormattingInstruction: false,
     invalidateCache: false,
     doNotCache: false,
@@ -196,6 +218,8 @@ export async function pdfParseWithPdfReader({
     .replaceAll(/([\(\[`‘“"'«‹])[ ]+(\w)/g, '$1$2')
     // Replacing list characters to '-'
     .replaceAll(/^[•·o*—‒–][ ]+([\w\r\n])/gm, '- $1')
+    // Replacing quotes and equivalent symbols with '
+    .replaceAll(/["’“”‟«»‹›]/g, "'")
     .trim();
 
   return parsedText;
