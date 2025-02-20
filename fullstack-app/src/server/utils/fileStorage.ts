@@ -272,7 +272,12 @@ export async function getMostRecentFile({
     .sort((a, b) => b.stats.mtime.getTime() - a.stats.mtime.getTime())[0];
 
   if (!mostRecentFile) {
-    throw new Error(`No valid files found in directory: ${dirPath}`);
+    throw new Error(
+      `No valid files found in directory: '${dirPath}' that includes '${name}' in its filename` +
+        (_extensions.length > 0
+          ? `with extensions '${extensions.join(', ')}'.`
+          : '.')
+    );
   }
 
   return getFile({
