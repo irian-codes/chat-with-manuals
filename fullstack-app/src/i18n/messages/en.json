@@ -88,21 +88,8 @@
     "title": "Pick document"
   },
   "document-manager": {
-    "header": {
-      "search": "Search",
-      "upload": "Upload new document"
-    },
-    "image-alt": "Document preview",
-    "uploading-document": "Uploading...",
     "errors": {
       "documents": {
-        "get": {
-          "api": {
-            "bad-request": "Invalid document search data supplied",
-            "internal-server-error": "Failed to get documents"
-          },
-          "unknown-error": "Failed to get documents"
-        },
         "cancelDocumentParsing": {
           "api": {
             "internal-server-error": "Failed to cancel document parsing",
@@ -111,21 +98,34 @@
           "unknown-error": "Failed to cancel document parsing"
         },
         "documentParsing": {
-          "sse-subscription": {
-            "api": {
-              "internal-server-error": "Failed to receive document parsing updates, refresh the page."
-            },
-            "unknown-error": "Failed to receive document parsing updates, refresh the page."
-          },
           "document-parsing-update": {
             "api": {
               "internal-server-error": "Failed to parse the document, try again."
             },
             "unknown-error": "Failed to parse the document, try again."
+          },
+          "sse-subscription": {
+            "api": {
+              "internal-server-error": "Failed to receive document parsing updates, refresh the page."
+            },
+            "unknown-error": "Failed to receive document parsing updates, refresh the page."
           }
+        },
+        "get": {
+          "api": {
+            "bad-request": "Invalid document search data supplied",
+            "internal-server-error": "Failed to get documents"
+          },
+          "unknown-error": "Failed to get documents"
         }
       }
-    }
+    },
+    "header": {
+      "search": "Search",
+      "upload": "Upload new document"
+    },
+    "image-alt": "Document preview",
+    "uploading-document": "Uploading..."
   },
   "locale-switcher": {
     "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
