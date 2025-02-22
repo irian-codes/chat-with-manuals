@@ -192,7 +192,7 @@ export async function sendPrompt({
           .join('\n\n') +
         '\n\n' +
         `[RESPONSE]: ${responseContent}\n`,
-      destinationFolderPath: allowedAbsoluteDirPaths.publicLlmAnswers,
+      destinationFolderPath: allowedAbsoluteDirPaths.logLlmAnswers,
       fileName: 'llmAnswer',
       fileExtension: 'txt',
     });

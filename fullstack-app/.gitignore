@@ -53,6 +53,9 @@ yarn-error.log*
 # Repomix
 .repomix
 
+# User files
+uploads/
+
 # temp files
 temp/
 public/temp/

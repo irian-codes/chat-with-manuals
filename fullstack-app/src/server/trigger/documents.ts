@@ -63,7 +63,7 @@ export const fileParsingTask = task({
           await new Promise((resolve) => setTimeout(resolve, 5_000));
 
           const file = await getMostRecentFile({
-            dirPath: 'public/temp/parsing-results/markdown',
+            dirPath: allowedAbsoluteDirPaths.logParsingResultsMarkdown,
             name: pendingDocument.title,
             extensions: ['.md'],
           });
@@ -115,9 +115,9 @@ export const fileParsingTask = task({
 
       if (env.NODE_ENV === 'development') {
         await writeToTimestampedFile({
-          content: `Chroma collection name: ${vectorStore.collectionName}\n\nMarkdown:\n${markdown}`,
+          content: markdown,
           destinationFolderPath:
-            allowedAbsoluteDirPaths.publicParsingResultsMarkdown,
+            allowedAbsoluteDirPaths.logParsingResultsMarkdown,
           suffix: 'llamaParse',
           fileName: pendingDocument.title,
           fileExtension: 'md',
@@ -133,7 +133,7 @@ export const fileParsingTask = task({
             2
           ),
           destinationFolderPath:
-            allowedAbsoluteDirPaths.publicParsingResultsSectionsJson,
+            allowedAbsoluteDirPaths.logParsingResultsSectionsJson,
           suffix: 'llamaParse',
           fileName: pendingDocument.title,
           fileExtension: 'json',
