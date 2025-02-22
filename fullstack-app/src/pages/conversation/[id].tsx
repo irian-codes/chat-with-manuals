@@ -48,6 +48,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
       id: conversationId,
       withDocuments: true,
       withMessages: false,
+      withFile: true,
     }),
     helpers.conversations.getConversationMessages.prefetchInfinite({
       conversationId,
@@ -68,7 +69,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 export default function ConversationPage() {
   return (
     <MainLayout>
-      <div className="flex h-screen w-full flex-row bg-background">
+      <div className="bg-background flex h-screen w-full flex-row">
         <Sidebar />
         <ConversationMain />
       </div>

@@ -85,9 +85,6 @@ export const debugRouter = createTRPCRouter({
   debugRunTriggerDevTask: debugPublicProcedure
     .input(z.object({data: z.string()}).optional())
     .mutation(async ({input}) => {
-      const filePath =
-        '/public/temp/uploads/files/f717a4e6bfd5daf0423cde4ba2d9b99fcaa1d1494cfe052677875603b5d3d03e.pdf';
-
       const handle = await tasks.trigger<typeof envVarTestTask>(
         'env-var-test',
         null

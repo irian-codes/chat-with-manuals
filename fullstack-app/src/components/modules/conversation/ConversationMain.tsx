@@ -5,7 +5,7 @@ import {useErrorToast} from '@/hooks/useErrorToast';
 import {type Message} from '@/types/Message';
 import {api} from '@/utils/api';
 import {isStringEmpty} from '@/utils/strings';
-import {AUTHOR} from '@prisma/client';
+import {AUTHOR, type Prisma} from '@prisma/client';
 import {AlertTriangle, Loader2} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
@@ -51,6 +51,7 @@ export function ConversationMain() {
       id: router.query.id as string,
       withDocuments: true,
       withMessages: false,
+      withFile: true,
     },
     {
       enabled: router.query.id != null,
@@ -79,8 +80,17 @@ export function ConversationMain() {
       }
     );
 
-  const conversation = conversationQuery.data;
   const messages = messagesQuery.data ?? [];
+  const conversation = conversationQuery.data as
+    | Prisma.ConversationGetPayload<{
+        include: {
+          messages: false;
+          documents: {
+            include: {file: true};
+          };
+        };
+      }>
+    | undefined;
 
   const sendMessageMutation = api.conversations.sendMessage.useMutation({
     onMutate: async (newPayload) => {
@@ -413,7 +423,7 @@ export function ConversationMain() {
             <div>
               <p>
                 {t('language-alert', {
-                  locale: conversation.documents[0]!.locale,
+                  locale: conversation.documents[0]!.file.locale,
                 })}
               </p>
               <br />
@@ -426,7 +436,7 @@ export function ConversationMain() {
       <footer>
         <ChatMessageInput
           ref={msgInputRef}
-          conversationLocale={conversation.documents[0]!.locale}
+          conversationLocale={conversation.documents[0]!.file.locale}
           onSubmit={(e) => {
             e.preventDefault();
 

@@ -63,7 +63,7 @@ export const fileParsingTask = task({
           await new Promise((resolve) => setTimeout(resolve, 5_000));
 
           const file = await getMostRecentFile({
-            dirPath: 'public/temp/parsing-results/markdown',
+            dirPath: allowedAbsoluteDirPaths.logParsingResultsMarkdown,
             name: pendingDocument.title,
             extensions: ['.md'],
           });
@@ -115,9 +115,9 @@ export const fileParsingTask = task({
 
       if (env.NODE_ENV === 'development') {
         await writeToTimestampedFile({
-          content: `Chroma collection name: ${vectorStore.collectionName}\n\nMarkdown:\n${markdown}`,
+          content: markdown,
           destinationFolderPath:
-            allowedAbsoluteDirPaths.publicParsingResultsMarkdown,
+            allowedAbsoluteDirPaths.logParsingResultsMarkdown,
           suffix: 'llamaParse',
           fileName: pendingDocument.title,
           fileExtension: 'md',
@@ -133,7 +133,7 @@ export const fileParsingTask = task({
             2
           ),
           destinationFolderPath:
-            allowedAbsoluteDirPaths.publicParsingResultsSectionsJson,
+            allowedAbsoluteDirPaths.logParsingResultsSectionsJson,
           suffix: 'llamaParse',
           fileName: pendingDocument.title,
           fileExtension: 'json',
@@ -156,26 +156,36 @@ export const fileParsingTask = task({
       // Creating the new 'document' db entry and deleting pending
       // document because when a document is done parsing we change its
       // classification from 'pending document' to 'document'.
-      const [document, _] = await prisma.$transaction([
-        prisma.document.create({
+      const [userDocument, _] = await prisma.$transaction([
+        // First create the DocumentFile record
+        prisma.documentFile.create({
           data: {
-            title: pendingDocument.title,
-            searchTitle: pendingDocument.searchTitle,
-            description: pendingDocument.description,
             locale: pendingDocument.locale,
-            fileUrl: pendingDocument.fileUrl,
-            fileHash: pendingDocument.fileHash,
-            imageUrl: pendingDocument.imageUrl,
+            url: pendingDocument.fileUrl,
+            hash: pendingDocument.fileHash,
             parsingTaskId: ctx.run.id,
             vectorStoreId: vectorStore.collectionName,
-            users: {
-              connect: {
-                id: payload.userId,
+            // Create the associated UserDocument in the same transaction
+            userDocuments: {
+              create: {
+                title: pendingDocument.title,
+                searchTitle: pendingDocument.searchTitle,
+                description: pendingDocument.description,
+                imageUrl: pendingDocument.imageUrl,
+                user: {
+                  connect: {
+                    id: payload.userId,
+                  },
+                },
               },
             },
           },
+          // Select the first UserDocument created
           select: {
-            id: true,
+            userDocuments: {
+              select: {id: true},
+              take: 1,
+            },
           },
         }),
 
@@ -187,7 +197,7 @@ export const fileParsingTask = task({
       ]);
 
       return {
-        documentId: document.id,
+        documentId: userDocument.userDocuments[0]!.id,
         pendingDocumentId: pendingDocument.id,
       };
 

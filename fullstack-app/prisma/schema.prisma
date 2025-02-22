@@ -31,7 +31,7 @@ model User {
     updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
     userSettings     UserSettings?
     pendingDocuments PendingDocument[] // 0-n pending documents
-    documents        Document[] // 0-n documents
+    documents        UserDocument[] // 0-n documents
     conversations    Conversation[] // 0-n conversations
 
     @@index([authProviderId(sort: Asc)])
@@ -57,7 +57,7 @@ model PendingDocument {
     user             User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
     userId           String   @db.Uuid()
     title            String   @db.VarChar(255)
-    searchTitle      String   @default("") @db.VarChar(255)
+    searchTitle      String   @db.VarChar(255)
     description      String   @default("")
     locale           String   @default("en") @db.VarChar(255)
     imageUrl         String   @default("")
@@ -75,36 +75,46 @@ model PendingDocument {
     @@index([fileHash(sort: Asc)])
 }
 
-model Document {
+model DocumentFile {
     id            String         @id @default(uuid()) @db.Uuid()
-    users         User[] // 1-n users
-    conversations Conversation[] // 0-n conversations
-    title         String         @db.VarChar(255)
-    searchTitle   String         @default("") @db.VarChar(255)
-    description   String         @default("")
+    userDocuments UserDocument[] // 1-n documents
     locale        String         @default("en") @db.VarChar(255)
-    imageUrl      String         @default("")
-    fileUrl       String         @unique @default("")
-    fileHash      String         @unique @db.VarChar(64) // Sha256 hash
-    parsingTaskId String         @unique @db.VarChar(64) // Enough for any id it seems
+    url           String         @unique @default("")
+    hash          String         @unique @db.VarChar(64) // Sha256 hash
+    parsingTaskId String         @unique @db.VarChar(64)
     vectorStoreId String         @unique @db.Uuid()
     createdAt     DateTime       @default(now()) @db.Timestamptz(3)
     updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 
-    @@index([fileHash(sort: Asc)])
+    @@index([hash(sort: Asc)])
+}
+
+model UserDocument {
+    id            String         @id @default(uuid()) @db.Uuid()
+    user          User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+    userId        String         @db.Uuid()
+    conversations Conversation[] // 0-n conversations
+    title         String         @db.VarChar(255)
+    searchTitle   String         @db.VarChar(255)
+    description   String         @default("")
+    imageUrl      String         @default("")
+    file          DocumentFile   @relation(fields: [fileId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+    fileId        String         @db.Uuid()
+    createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+    updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 }
 
 model Conversation {
-    id              String     @id @default(uuid()) @db.Uuid()
-    llmSystemPrompt String     @default("")
-    user            User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
-    userId          String     @db.Uuid()
-    title           String     @default("") @db.VarChar(255)
-    searchTitle     String     @default("") @db.VarChar(255)
-    createdAt       DateTime   @default(now()) @db.Timestamptz(3)
-    updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
+    id              String         @id @default(uuid()) @db.Uuid()
+    llmSystemPrompt String         @default("")
+    user            User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+    userId          String         @db.Uuid()
+    title           String         @default("") @db.VarChar(255)
+    searchTitle     String         @default("") @db.VarChar(255)
+    createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+    updatedAt       DateTime       @updatedAt @db.Timestamptz(3)
     messages        Message[] // 0-n messages
-    documents       Document[] // 1-n documents
+    documents       UserDocument[] // 1-n documents
 
     @@index([userId(sort: Asc)])
 }

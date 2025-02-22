@@ -1,4 +1,3 @@
-// src/pages/api/updateDocument.ts
 import {env} from '@/env';
 import {createCaller} from '@/server/api/root';
 import {createInnerTRPCContext} from '@/server/api/trpc';

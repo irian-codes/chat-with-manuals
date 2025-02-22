@@ -60,6 +60,7 @@ export const conversationsRouter = createTRPCRouter({
           id: z.string().min(1).uuid(),
           withMessages: z.boolean().optional(),
           withDocuments: z.boolean().optional(),
+          withFile: z.boolean().optional(),
         })
         .strict()
     )
@@ -72,8 +73,12 @@ export const conversationsRouter = createTRPCRouter({
           userId,
         },
         include: {
-          documents: input?.withDocuments ? true : false,
-          messages: input?.withMessages ? true : false,
+          messages: input.withMessages ? true : false,
+          documents: input.withDocuments
+            ? input.withFile
+              ? {include: {file: true} as const}
+              : true
+            : false,
         },
       });
 
@@ -154,18 +159,13 @@ export const conversationsRouter = createTRPCRouter({
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const document = await ctx.prisma.document.findUnique({
+      const document = await ctx.prisma.userDocument.findUnique({
         where: {
           id: input.documentId,
-          users: {
-            some: {
-              id: userId,
-            },
-          },
+          userId,
         },
         select: {
           id: true,
-          locale: true,
         },
       });
 

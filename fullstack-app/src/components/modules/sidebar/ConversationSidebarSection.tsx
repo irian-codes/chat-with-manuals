@@ -142,7 +142,7 @@ export function ConversationSidebarSection() {
             <h2
               className={cn(
                 'text-xl font-semibold',
-                pathname.includes('/conversation') ? 'italic' : undefined
+                pathname.includes('conversation') ? 'italic' : undefined
               )}
             >
               {t('title')}
@@ -193,6 +193,7 @@ export function ConversationSidebarSection() {
                   id: conversation.id,
                   withDocuments: true,
                   withMessages: false,
+                  withFile: true,
                 });
 
                 void utils.conversations.getConversationMessages.prefetchInfinite(

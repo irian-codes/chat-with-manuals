@@ -12,20 +12,26 @@ import {z} from 'zod';
 const isDevEnv = env.NODE_ENV === 'development';
 
 export const allowedAbsoluteDirPaths = {
-  publicUploadedFiles: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'uploads/files')
+  uploadedFiles: ensureAbsolutePath(
+    path.join(isDevEnv ? 'public/temp' : '', 'uploads/files')
   ),
-  publicUploadedImages: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'uploads/images')
+  uploadedImages: ensureAbsolutePath(
+    path.join(isDevEnv ? 'public/temp' : '', 'uploads/images')
   ),
-  publicParsingResultsMarkdown: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results/markdown')
+  logParsingResultsMarkdown: ensureAbsolutePath(
+    path.join(
+      isDevEnv ? 'public/temp' : 'temp',
+      'logs/parsing-results/markdown'
+    )
   ),
-  publicParsingResultsSectionsJson: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'parsing-results/sections-json')
+  logParsingResultsSectionsJson: ensureAbsolutePath(
+    path.join(
+      isDevEnv ? 'public/temp' : 'temp',
+      'logs/parsing-results/sections-json'
+    )
   ),
-  publicLlmAnswers: ensureAbsolutePath(
-    path.join('public', isDevEnv ? 'temp' : '', 'llm-answers')
+  logLlmAnswers: ensureAbsolutePath(
+    path.join(isDevEnv ? 'public/temp' : 'temp', 'logs/llm-answers')
   ),
   appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
 } as const;
@@ -33,7 +39,12 @@ export const allowedAbsoluteDirPaths = {
 // Ensure that directories exist, if not create them
 void Promise.all(
   Object.values(allowedAbsoluteDirPaths).map(async (dir) => {
-    await fs.mkdir(dir, {recursive: true});
+    if (dir.includes('uploads') && !isDevEnv) {
+      // Ensuring that the uploads directory is only accessible by the app
+      await fs.mkdir(dir, {recursive: true, mode: 0o600});
+    } else {
+      await fs.mkdir(dir, {recursive: true});
+    }
   })
 );
 
@@ -56,20 +67,17 @@ export async function saveUploadedDocFile({
 }> {
   const _file = z.instanceof(File).parse(file);
 
-  await fs.mkdir(allowedAbsoluteDirPaths.publicUploadedFiles, {
+  await fs.mkdir(allowedAbsoluteDirPaths.uploadedFiles, {
     recursive: true,
   });
 
   const fileBuffer = Buffer.from(await _file.arrayBuffer());
   const _fileHash =
-    z.string().trim().min(1).max(64).optional().parse(fileHash) ??
+    z.string().trim().min(1).max(64).optional().safeParse(fileHash).data ??
     crypto.createHash('sha256').update(fileBuffer).digest().toString('hex');
 
   const fileName = `${_fileHash}.pdf`;
-  const filePath = path.join(
-    allowedAbsoluteDirPaths.publicUploadedFiles,
-    fileName
-  );
+  const filePath = path.join(allowedAbsoluteDirPaths.uploadedFiles, fileName);
 
   if (await fileExists(filePath)) {
     throw new FileAlreadyExistsError('File already exists');
@@ -104,17 +112,14 @@ export async function saveUploadedImageFile({
     .transform((val) => mime.getExtension(val))
     .parse(_file.type);
 
-  await fs.mkdir(allowedAbsoluteDirPaths.publicUploadedImages, {
+  await fs.mkdir(allowedAbsoluteDirPaths.uploadedImages, {
     recursive: true,
   });
 
   const fileBuffer = Buffer.from(await _file.arrayBuffer());
 
   const fileName = `${uuidv4()}.${_extension}`;
-  const filePath = path.join(
-    allowedAbsoluteDirPaths.publicUploadedImages,
-    fileName
-  );
+  const filePath = path.join(allowedAbsoluteDirPaths.uploadedImages, fileName);
 
   await fs.writeFile(filePath, fileBuffer);
 

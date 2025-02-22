@@ -50,25 +50,19 @@ export const documentsRouter = createTRPCRouter({
     .query(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const documents = await ctx.prisma.document.findMany({
+      const documents = await ctx.prisma.userDocument.findMany({
         where: {
-          AND: {
-            users: {
-              some: {
-                id: userId,
-              },
-            },
-            ...(input == null ||
-            isStringEmpty(input.titleSearch) ||
-            input.titleSearch.length < 2
-              ? undefined
-              : {
-                  searchTitle: {
-                    mode: 'insensitive',
-                    contains: input.titleSearch,
-                  },
-                }),
-          },
+          userId,
+          ...(input == null ||
+          isStringEmpty(input.titleSearch) ||
+          input.titleSearch.length < 2
+            ? undefined
+            : {
+                searchTitle: {
+                  mode: 'insensitive',
+                  contains: input.titleSearch,
+                },
+              }),
         },
         orderBy: {
           createdAt: 'desc',
@@ -348,15 +342,11 @@ export const documentsRouter = createTRPCRouter({
         }
       })();
 
-      const updatedDocument = await ctx.prisma.document
+      const updatedDocument = await ctx.prisma.userDocument
         .update({
           where: {
             id: input.id,
-            users: {
-              some: {
-                id: userId,
-              },
-            },
+            userId,
           },
           data: {
             ..._modifiedFields,
@@ -457,79 +447,129 @@ export const documentsRouter = createTRPCRouter({
     .mutation(async ({ctx, input}) => {
       const userId = ctx.prismaUser.id;
 
-      const document = await ctx.prisma.document
-        .delete({
+      // First check if document exists and get user count
+      const document = await ctx.prisma.userDocument
+        .findUniqueOrThrow({
           where: {
             id: input.id,
-            users: {
-              some: {
-                id: userId,
+            userId,
+          },
+          select: {
+            file: {
+              select: {
+                _count: {
+                  select: {
+                    userDocuments: true,
+                  },
+                },
+                id: true,
+                vectorStoreId: true,
+                url: true,
               },
             },
           },
         })
-        .catch(async (error) => {
+        .catch((error) => {
           if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P2025') {
               throw new TRPCError({
                 code: 'NOT_FOUND',
-                message: 'Document not found or access denied',
+                message: 'File or UserDocument not found or access denied',
               });
             }
           }
 
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to delete document',
+            message: 'Failed to get UserDocument',
+            cause: error,
           });
         });
 
-      // Delete from vector store
-      try {
-        await deleteCollection(document.vectorStoreId);
-      } catch (error) {
-        console.error(
-          `Failed to delete collection for document ID ${document.id}. This collection should be deleted manually.`,
-          error
-        );
+      const isLastUser = document.file._count.userDocuments === 1;
+      const deletedDocument = await ctx.prisma.userDocument
+        .delete({
+          where: {
+            id: input.id,
+          },
+        })
+        .catch((error) => {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to delete UserDocument',
+            cause: error,
+          });
+        });
+
+      // If this is the last user, proceed with full deletion
+      // This should also delete all UserDocuments associated with the file
+      if (isLastUser) {
+        await ctx.prisma.documentFile
+          .delete({
+            where: {
+              id: document.file.id,
+            },
+          })
+          .catch((error) => {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to delete document file',
+              cause: error,
+            });
+          });
+
+        // Delete from vector store
+        try {
+          await deleteCollection(document.file.vectorStoreId);
+        } catch (error) {
+          console.error(
+            `Failed to delete collection for document file ID ${deletedDocument.id}. This collection should be deleted manually.`,
+            error
+          );
+        }
+
+        // Delete original file
+        try {
+          await deleteFile(document.file.url);
+        } catch (error) {
+          console.error(
+            `Failed to delete document file: ${document.file.url}. This file should be deleted manually.`,
+            error
+          );
+        }
       }
 
-      // Delete original file and image
-      try {
-        await deleteFile(document.fileUrl);
-
-        if (!isStringEmpty(document.imageUrl)) {
-          await deleteFile(document.imageUrl);
+      // Delete the user uploaded image
+      if (!isStringEmpty(deletedDocument.imageUrl)) {
+        try {
+          await deleteFile(deletedDocument.imageUrl);
+        } catch (error) {
+          console.error(
+            `Failed to delete image file: ${deletedDocument.imageUrl}. This file should be deleted manually.`,
+            error
+          );
         }
-      } catch (error) {
-        const imageUrlErrorMsgPart = isStringEmpty(document.imageUrl)
-          ? ''
-          : ', image: ' + document.imageUrl;
-
-        console.error(
-          `Failed to delete document file: ${document.fileUrl}${imageUrlErrorMsgPart}. These files should be deleted manually.`,
-          error
-        );
       }
 
       // Deleting all conversations that are left without a document
       // @see https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries#filter-on-absence-of--to-many-records
-      try {
-        await ctx.prisma.conversation.deleteMany({
+      // TODO: Check if this is ever called because on the schema we have set a cascade on delete for conversations
+      await ctx.prisma.conversation
+        .deleteMany({
           where: {
             documents: {
               none: {},
             },
           },
+        })
+        .catch((error) => {
+          console.error(
+            'Error deleting leftover conversations with zero documents. These conversations should be deleted manually.',
+            error
+          );
         });
-      } catch (error) {
-        console.error(
-          'Error deleting leftover conversations with zero documents. These conversations should be deleted manually.',
-          error
-        );
-      }
 
-      return document;
+      return deletedDocument;
     }),
 });
 
@@ -539,8 +579,8 @@ async function getDocument(params: {
   prisma: PrismaClient;
   documentId: string;
   userId: string;
-  select?: Prisma.DocumentFindUniqueArgs['select'];
-  include?: Prisma.DocumentFindUniqueArgs['include'];
+  select?: Prisma.UserDocumentFindUniqueArgs['select'];
+  include?: Prisma.UserDocumentFindUniqueArgs['include'];
 }) {
   const _userId = z
     .string()
@@ -556,17 +596,13 @@ async function getDocument(params: {
   const _options = {
     where: {
       id: params.documentId,
-      users: {
-        some: {
-          id: _userId,
-        },
-      },
+      userId: _userId,
     },
     ...(params.select ? {select: params.select} : {}),
     ...(params.include ? {include: params.include} : {}),
-  };
+  } satisfies Prisma.UserDocumentFindUniqueArgs;
 
-  const document = await params.prisma.document.findUnique(_options);
+  const document = await params.prisma.userDocument.findUnique(_options);
 
   return document;
 }
