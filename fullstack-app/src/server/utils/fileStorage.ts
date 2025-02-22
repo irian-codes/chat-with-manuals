@@ -62,7 +62,7 @@ export async function saveUploadedDocFile({
 
   const fileBuffer = Buffer.from(await _file.arrayBuffer());
   const _fileHash =
-    z.string().trim().min(1).max(64).optional().parse(fileHash) ??
+    z.string().trim().min(1).max(64).optional().safeParse(fileHash).data ??
     crypto.createHash('sha256').update(fileBuffer).digest().toString('hex');
 
   const fileName = `${_fileHash}.pdf`;

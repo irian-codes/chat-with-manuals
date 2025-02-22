@@ -17,7 +17,8 @@ import {
   UploadNewDocumentPayloadSchema,
 } from '@/types/UploadNewDocumentPayload';
 import {truncateFilename} from '@/utils/files';
-import {isStringEmpty} from '@/utils/strings';
+import {isStringEmpty, nonEmptyStringSchema} from '@/utils/strings';
+import {narrowType} from '@/utils/zod';
 import {getAuth} from '@clerk/nextjs/server';
 import NodeClam from 'clamscan';
 import formidable, {type File as FileInfo} from 'formidable';
@@ -196,6 +197,20 @@ export default async function handler(
     });
   }
 
+  const uploadedFileHash = parsedFormData.file.hash;
+
+  if (!narrowType(nonEmptyStringSchema, uploadedFileHash)) {
+    console.error('File hash could not be generated');
+    await cleanup({
+      fileUrls: [parsedFormData.file?.filepath, parsedFormData.image?.filepath],
+    });
+
+    return res.status(500).json({
+      message: 'File hash could not be generated',
+      data: {code: 'INTERNAL_SERVER_ERROR'},
+    } satisfies APIRouteErrorResponse);
+  }
+
   // FILE VIRUS SCANNING
   if (clamScan == null) {
     console.error('Virus engine not initialized. Cannot scan file.');
@@ -255,12 +270,13 @@ export default async function handler(
     } satisfies APIRouteErrorResponse);
   }
 
-  const docFile = await getFile({
+  // VERIFYING FORM DATA
+  const docTempFile = await getFile({
     filePath: parsedFormData.file.filepath,
     mimeType: parsedFormData.file.mimetype ?? 'application/pdf',
   });
 
-  const imageFile =
+  const imageTempFile =
     parsedFormData.image != null
       ? await getFile({
           filePath: parsedFormData.image.filepath,
@@ -270,8 +286,8 @@ export default async function handler(
 
   const zodResult = UploadNewDocumentPayloadSchema.safeParse({
     ...parsedFormData,
-    file: docFile,
-    image: imageFile,
+    file: docTempFile,
+    image: imageTempFile,
   });
 
   if (!zodResult.success) {
@@ -301,23 +317,10 @@ export default async function handler(
     });
   }
 
-  let fileUrl: string | undefined;
-  let fileHash: string | undefined;
   let imageUrl: string | undefined;
 
-  try {
-    const fileResult = await saveUploadedDocFile({
-      file: zodResult.data.file,
-    });
-
-    fileUrl = fileResult.fileUrl;
-    fileHash = fileResult.fileHash;
-
-    if (!fileUrl || !fileHash) {
-      throw new Error('Document file upload failed');
-    }
-
-    if (zodResult.data.image != null) {
+  if (zodResult.data.image != null) {
+    try {
       const imageResult = await saveUploadedImageFile({
         imageFile: zodResult.data.image,
       });
@@ -327,16 +330,100 @@ export default async function handler(
       if (!imageUrl) {
         throw new Error('Image file upload failed');
       }
+    } catch (error) {
+      console.error('Image file upload error (non-critical):', error);
+
+      await cleanup({
+        fileUrls: [parsedFormData.image?.filepath, imageUrl],
+      });
+
+      // Don't return, if we couldn't save the image, it's not a big deal.
+    }
+  }
+
+  // CHECK IF DOCUMENT IS ALREADY UPLOADED
+  const existingFile = await prisma.documentFile.findFirst({
+    where: {hash: uploadedFileHash},
+    include: {
+      userDocuments: {
+        select: {userId: true},
+      },
+    },
+  });
+
+  if (existingFile != null) {
+    await cleanup({
+      fileUrls: [parsedFormData.file?.filepath],
+    });
+
+    // If user is already linked to this document, return conflict
+    if (
+      existingFile.userDocuments.some((doc) => doc.userId === prismaUser.id)
+    ) {
+      return res.status(409).json({
+        message: 'User already has this document uploaded',
+        data: {code: 'CONFLICT'},
+      } satisfies APIRouteErrorResponse);
+    }
+
+    // If file exists but user is not linked, create new UserDocument and return success
+    const userDocument = await prisma.userDocument.create({
+      data: {
+        title: zodResult.data.title,
+        searchTitle: zodResult.data.title.toLowerCase(),
+        description: zodResult.data.description,
+        imageUrl,
+        user: {
+          connect: {
+            id: prismaUser.id,
+          },
+        },
+        file: {
+          connect: {
+            id: existingFile.id,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      message: 'Document linked successfully',
+      data: {
+        documentId: userDocument.id,
+      },
+    });
+  }
+
+  // UPLOADING NEW DOCUMENT FILE
+  // If we reached here, it means the file didn't previously exist.
+  let fileUrl: string | undefined;
+  let fileHash: string | undefined;
+
+  try {
+    const fileResult = await saveUploadedDocFile({
+      file: zodResult.data.file,
+      fileHash: uploadedFileHash,
+    });
+
+    fileUrl = fileResult.fileUrl;
+    fileHash = fileResult.fileHash;
+
+    if (!fileUrl || !fileHash) {
+      throw new Error('Document file upload failed');
     }
   } catch (error) {
+    const pathsToCleanup = [
+      parsedFormData.file.filepath,
+      parsedFormData.image?.filepath,
+      fileUrl,
+      imageUrl,
+    ];
+
     if (error instanceof FileAlreadyExistsError) {
       console.error(error);
 
       await cleanup({
-        fileUrls: [
-          parsedFormData.file.filepath,
-          parsedFormData.image?.filepath,
-        ],
+        fileUrls: pathsToCleanup,
       });
 
       return res.status(409).json({
@@ -348,12 +435,7 @@ export default async function handler(
     console.error('Document file upload error:', error);
 
     await cleanup({
-      fileUrls: [
-        parsedFormData.file.filepath,
-        parsedFormData.image?.filepath,
-        fileUrl,
-        imageUrl,
-      ],
+      fileUrls: pathsToCleanup,
     });
 
     return res.status(500).json({

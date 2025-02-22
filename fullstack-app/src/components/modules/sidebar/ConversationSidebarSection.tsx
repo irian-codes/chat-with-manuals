@@ -193,6 +193,7 @@ export function ConversationSidebarSection() {
                   id: conversation.id,
                   withDocuments: true,
                   withMessages: false,
+                  withFile: true,
                 });
 
                 void utils.conversations.getConversationMessages.prefetchInfinite(

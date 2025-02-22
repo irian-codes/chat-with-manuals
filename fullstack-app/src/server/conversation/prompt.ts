@@ -77,7 +77,11 @@ export async function sendPrompt({
       id: conversationId,
     },
     include: {
-      documents: true,
+      documents: {
+        include: {
+          file: true,
+        },
+      },
       messages: {
         orderBy: {createdAt: 'asc'},
         take: 50,
@@ -86,7 +90,7 @@ export async function sendPrompt({
   });
 
   // TODO: Add support for multiple documents per conversation
-  const collectionName = conversation.documents[0]!.vectorStoreId;
+  const collectionName = conversation.documents[0]!.file.vectorStoreId;
   const documentDescription = conversation.documents[0]!.description;
   const sectionPrefix = 'SECTION HEADER ROUTE: ';
   const systemPrompt = getConversationLlmSystemPrompt({

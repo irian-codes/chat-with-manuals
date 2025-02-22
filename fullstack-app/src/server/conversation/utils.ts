@@ -5,10 +5,18 @@ import ISO6391 from 'iso-639-1';
 export function getConversationLlmSystemPrompt({
   conversation,
 }: {
-  conversation: Prisma.ConversationGetPayload<{include: {documents: true}}>;
+  conversation: Prisma.ConversationGetPayload<{
+    include: {
+      documents: {
+        include: {
+          file: true;
+        };
+      };
+    };
+  }>;
 }) {
   if (isStringEmpty(conversation.llmSystemPrompt)) {
-    const documentLocale = conversation.documents[0]!.locale;
+    const documentLocale = conversation.documents[0]!.file.locale;
 
     return getDefaultLlmSystemPrompt(documentLocale);
   } else {
