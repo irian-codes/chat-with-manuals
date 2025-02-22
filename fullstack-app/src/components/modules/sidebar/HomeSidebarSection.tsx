@@ -15,7 +15,7 @@ export const HomeSidebarSection = () => {
         <h2
           className={cn(
             'text-xl font-semibold',
-            pathname === '/' ? 'italic' : undefined
+            /^\/(?:[a-z]{2})?$/.test(pathname) ? 'italic' : undefined
           )}
         >
           {t('title')}
