@@ -89,6 +89,15 @@
   },
   "document-manager": {
     "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "Failed to add conversation",
+            "not-found": "Document not found"
+          },
+          "unknown-error": "Failed to add conversation"
+        }
+      },
       "documents": {
         "cancelDocumentParsing": {
           "api": {

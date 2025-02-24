@@ -89,6 +89,15 @@
   },
   "document-manager": {
     "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "No se pudo crear la conversación",
+            "not-found": "Documento no encontrado, no se puede crear la conversación"
+          },
+          "unknown-error": "No se pudo crear la conversación"
+        }
+      },
       "documents": {
         "cancelDocumentParsing": {
           "api": {
