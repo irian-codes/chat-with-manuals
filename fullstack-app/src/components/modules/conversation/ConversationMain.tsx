@@ -10,7 +10,7 @@ import {AlertTriangle, Loader2} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {useCallback, useEffect, useRef} from 'react';
-import {useIsomorphicLayoutEffect} from 'usehooks-ts';
+import {useIsClient, useIsomorphicLayoutEffect} from 'usehooks-ts';
 import {z} from 'zod';
 import {ChatMessage} from './ChatMessage';
 import {ChatMessageInput} from './ChatMessageInput';
@@ -30,6 +30,7 @@ export function ConversationMain() {
   );
   const router = useRouter();
   const utils = api.useUtils();
+  const isClient = useIsClient();
   const getConversationErrorToast = useErrorToast(
     'conversation.errors.conversation.get'
   );
@@ -358,11 +359,7 @@ export function ConversationMain() {
   // RENDERING
 
   if (conversation == null) {
-    if (typeof window !== 'undefined') {
-      return router.push('/404');
-    } else {
-      return null;
-    }
+    return isClient ? router.push('/conversation') : null;
   }
 
   return (
