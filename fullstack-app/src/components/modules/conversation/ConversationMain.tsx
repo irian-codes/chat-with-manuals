@@ -372,7 +372,7 @@ export function ConversationMain() {
         </h1>
       </Header>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="mx-auto max-w-2xl flex-1 p-4">
         {messages.length > 0 ? (
           <div className="space-y-4">
             <InfiniteScrollAnchor
