@@ -20,6 +20,8 @@
   },
   "conversation": {
     "cancel": "Cancel",
+    "chat-title": "Chat: {title}",
+    "document-title": "Document: {title}",
     "errors": {
       "conversation": {
         "get": {
@@ -68,8 +70,7 @@
     "language-alert": "Please use {locale, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
     "language-alert-brief": "Conversation language: {locale, select, es {Spanish} en {English} other {Unknown}}",
     "save": "Save",
-    "send": "Send",
-    "title": "Chat: {title}"
+    "send": "Send"
   },
   "document-list-picker-modal": {
     "description": "Select a document to open a new conversation with it.",
@@ -89,6 +90,15 @@
   },
   "document-manager": {
     "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "Failed to add conversation",
+            "not-found": "Document not found"
+          },
+          "unknown-error": "Failed to add conversation"
+        }
+      },
       "documents": {
         "cancelDocumentParsing": {
           "api": {

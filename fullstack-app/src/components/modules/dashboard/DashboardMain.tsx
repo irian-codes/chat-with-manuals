@@ -35,6 +35,10 @@ export function DashboardMain() {
   const documentParsingUpdateErrorToast = useErrorToast(
     'document-manager.errors.documents.documentParsing.document-parsing-update'
   );
+  const addConversationErrorToast = useErrorToast(
+    'document-manager.errors.conversation.add'
+  );
+
   const pendingDocumentsSubs =
     api.documents.onDocumentParsingUpdate.useSubscription(
       {
@@ -74,7 +78,18 @@ export function DashboardMain() {
     api.documents.cancelDocumentParsing.useMutation({
       onError: cancelDocumentParsingErrorToast,
     });
-  const isLoading = cancelDocumentParsingMutation.isPending;
+  const addConversationMutation = api.conversations.addConversation.useMutation(
+    {
+      onSuccess: async () => {
+        await utils.conversations.getConversations.invalidate();
+      },
+      onError: addConversationErrorToast,
+    }
+  );
+
+  const isLoading =
+    cancelDocumentParsingMutation.isPending ||
+    addConversationMutation.isPending;
 
   useEffect(() => {
     if (documentsQuery.error != null) {
@@ -96,6 +111,18 @@ export function DashboardMain() {
     void router.push(`/?documentId=${doc.id}`, undefined, {
       shallow: true,
     });
+  }
+
+  async function handleCreateConversation(doc: Document) {
+    if (isLoading) {
+      return;
+    }
+
+    const conversationId = await addConversationMutation.mutateAsync({
+      documentId: doc.id,
+    });
+
+    void router.push(`/conversation/${conversationId}`);
   }
 
   return (
@@ -140,14 +167,18 @@ export function DashboardMain() {
               <DocumentCard
                 doc={doc}
                 key={doc.id}
+                isLoading={isLoading}
                 onUpdateButtonClick={(ev) => {
                   ev.preventDefault();
-                  handleUpdateDocument(doc);
+                  void handleUpdateDocument(doc);
                 }}
                 onUpdateDocumentPreview={(ev) => {
                   ev.preventDefault();
                   void utils.documents.getDocument.prefetch({id: doc.id});
                 }}
+                onNewConversationButtonClick={() =>
+                  void handleCreateConversation(doc)
+                }
               />
             )
           )}

@@ -10,7 +10,7 @@ import {AlertTriangle, Loader2} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {useCallback, useEffect, useRef} from 'react';
-import {useIsomorphicLayoutEffect} from 'usehooks-ts';
+import {useIsClient, useIsomorphicLayoutEffect} from 'usehooks-ts';
 import {z} from 'zod';
 import {ChatMessage} from './ChatMessage';
 import {ChatMessageInput} from './ChatMessageInput';
@@ -30,6 +30,7 @@ export function ConversationMain() {
   );
   const router = useRouter();
   const utils = api.useUtils();
+  const isClient = useIsClient();
   const getConversationErrorToast = useErrorToast(
     'conversation.errors.conversation.get'
   );
@@ -358,24 +359,27 @@ export function ConversationMain() {
   // RENDERING
 
   if (conversation == null) {
-    if (typeof window !== 'undefined') {
-      return router.push('/404');
-    } else {
-      return null;
-    }
+    return isClient ? router.push('/conversation') : null;
   }
 
   return (
     <div className="flex flex-1 flex-col">
       <Header>
-        <h1 className="line-clamp-2 text-2xl font-semibold">
-          {t('title', {
-            title: conversation.title,
-          })}
-        </h1>
+        <div className="flex flex-col gap-2">
+          <h1 className="line-clamp-2 text-xl font-semibold">
+            {t('chat-title', {
+              title: conversation.title,
+            })}
+          </h1>
+          <p className="text line-clamp-1">
+            {t('document-title', {
+              title: conversation.documents[0]!.title,
+            })}
+          </p>
+        </div>
       </Header>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="mx-auto max-w-2xl flex-1 p-4">
         {messages.length > 0 ? (
           <div className="space-y-4">
             <InfiniteScrollAnchor

@@ -4,7 +4,7 @@ import type {Document} from '@/types/Document';
 import {type UploadingDocument} from '@/types/UploadingDocument';
 import {isStringEmpty} from '@/utils/strings';
 import {cn} from '@/utils/ui/utils';
-import {FilePenLine, X} from 'lucide-react';
+import {FilePenLine, MessageSquarePlus, X} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
 import Image from 'next/image';
 
@@ -22,6 +22,9 @@ type UploadedDocumentCardProps = {
       | React.FocusEvent<HTMLButtonElement>,
     document: Document
   ) => void;
+  onNewConversationButtonClick: (
+    ev: React.MouseEvent<HTMLButtonElement>
+  ) => void;
 };
 
 type DocumentCardProps = {isLoading?: boolean} & (
@@ -38,12 +41,12 @@ export function DocumentCard(props: DocumentCardProps) {
     : '/default-doc-image.jpg';
 
   return (
-    <Card className={cn('max-w-[14rem]', docIsUploading && 'animate-pulse')}>
+    <Card className={cn('max-w-[16rem]', docIsUploading && 'animate-pulse')}>
       <CardContent className="p-0">
         <Image
           src={imageUrl}
           alt={t('image-alt')}
-          className="aspect-1/1 rounded-t-xl object-cover"
+          className="aspect-4/3 rounded-t-xl object-cover md:aspect-1/1"
           width={400}
           height={400}
           placeholder="blur"
@@ -54,18 +57,20 @@ export function DocumentCard(props: DocumentCardProps) {
           referrerPolicy="no-referrer"
         />
         <div className={'p-4'}>
-          <div className="flex items-start justify-between">
-            <div className="min-h-[4rem]">
-              <h3 className="line-clamp-1 font-medium">{props.doc.title}</h3>
-              <p className="text-muted-foreground line-clamp-2 text-sm">
-                {docIsUploading
-                  ? format.relativeTime(props.doc.createdAt, Date.now())
-                  : format.dateTime(props.doc.createdAt, 'full')}
-              </p>
-            </div>
+          <div className="grid grid-cols-4 grid-rows-2 place-items-center gap-1">
+            <h3 className="col-span-3 line-clamp-1 justify-self-start font-medium">
+              {props.doc.title}
+            </h3>
+            <p className="text-muted-foreground col-span-3 col-start-1 row-start-2 line-clamp-2 justify-self-start text-sm">
+              {docIsUploading
+                ? format.relativeTime(props.doc.createdAt, Date.now())
+                : format.dateTime(props.doc.createdAt, 'full')}
+            </p>
+
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
+              className="col-start-4 row-start-1"
               disabled={props.isLoading}
               onClick={
                 docIsUploading
@@ -91,6 +96,17 @@ export function DocumentCard(props: DocumentCardProps) {
                 <FilePenLine className="h-4 w-4" />
               )}
             </Button>
+            {!docIsUploading && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="col-start-4 row-start-2"
+                disabled={props.isLoading}
+                onClick={props.onNewConversationButtonClick}
+              >
+                <MessageSquarePlus size={32} />
+              </Button>
+            )}
           </div>
           {docIsUploading && (
             <div className="pb-2 text-sm font-semibold">
