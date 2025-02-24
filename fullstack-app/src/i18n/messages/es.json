@@ -20,6 +20,8 @@
   },
   "conversation": {
     "cancel": "Cancelar",
+    "chat-title": "Chat: {title}",
+    "document-title": "Documento: {title}",
     "errors": {
       "conversation": {
         "get": {
@@ -68,8 +70,7 @@
     "language-alert": "Para obtener los mejores resultados, conversa en el chat en idioma {locale, select, es {Castellano} en {Inglés} other {Otro}} ya que el documento se indexa solamente en su idioma.",
     "language-alert-brief": "Idioma de la conversación: {locale, select, es {Spanish} en {English} other {Unknown}}",
     "save": "Guardar",
-    "send": "Enviar",
-    "title": "Chat: {title}"
+    "send": "Enviar"
   },
   "document-list-picker-modal": {
     "description": "Seleccione un documento para abrir una nueva conversación.",

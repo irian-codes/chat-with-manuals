@@ -365,11 +365,18 @@ export function ConversationMain() {
   return (
     <div className="flex flex-1 flex-col">
       <Header>
-        <h1 className="line-clamp-2 text-2xl font-semibold">
-          {t('title', {
-            title: conversation.title,
-          })}
-        </h1>
+        <div className="flex flex-col gap-2">
+          <h1 className="line-clamp-2 text-xl font-semibold">
+            {t('chat-title', {
+              title: conversation.title,
+            })}
+          </h1>
+          <p className="text line-clamp-1">
+            {t('document-title', {
+              title: conversation.documents[0]!.title,
+            })}
+          </p>
+        </div>
       </Header>
 
       <ScrollArea className="mx-auto max-w-2xl flex-1 p-4">
