@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.18](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.17...v0.1.18) (2025-02-24)
+
+
+### Features
+
+* **conversation:** add document title on the conversation page ([e35290c](https://github.com/irian-codes/chat-with-manuals/commit/e35290cdb9d5ed23221b2052c0443e53ff8c005f))
+* **dashboard:** adding new conversation button to document cards ([b60a469](https://github.com/irian-codes/chat-with-manuals/commit/b60a46905213176ac5358847ac78a2a38c4c882c))
+* **dashboard:** fitting more documents in small screens in the dashboard ([ab42465](https://github.com/irian-codes/chat-with-manuals/commit/ab4246509dfbf0cd9b30d22b1465646ceba42765))
+
+
+### Bug Fixes
+
+* **conversation:** limit chat width, for bigger screens ([7584227](https://github.com/irian-codes/chat-with-manuals/commit/75842276460749d6a8736e22f9714357fb73ee1b))
+* **conversation:** proper redirection when conversation cannot load ([964b83e](https://github.com/irian-codes/chat-with-manuals/commit/964b83ead0155a1aecfe3e5035c158436fcd7f02))
+
 ## [0.1.17](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.15...v0.1.17) (2025-02-22)
 
 
