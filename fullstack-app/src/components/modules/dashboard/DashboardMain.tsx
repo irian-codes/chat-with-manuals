@@ -1,4 +1,4 @@
-import {DocumentCard} from '@/components/reusable/DocumentCard';
+import {DocumentCard} from '@/components/modules/dashboard/DocumentCard';
 import {Header} from '@/components/reusable/Header';
 import {Button} from '@/components/shadcn-ui/button';
 import {Input} from '@/components/shadcn-ui/input';
