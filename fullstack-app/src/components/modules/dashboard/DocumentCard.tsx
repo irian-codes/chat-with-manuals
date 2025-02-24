@@ -38,12 +38,12 @@ export function DocumentCard(props: DocumentCardProps) {
     : '/default-doc-image.jpg';
 
   return (
-    <Card className={cn('max-w-[14rem]', docIsUploading && 'animate-pulse')}>
+    <Card className={cn('max-w-[16rem]', docIsUploading && 'animate-pulse')}>
       <CardContent className="p-0">
         <Image
           src={imageUrl}
           alt={t('image-alt')}
-          className="aspect-1/1 rounded-t-xl object-cover"
+          className="aspect-4/3 rounded-t-xl object-cover md:aspect-1/1"
           width={400}
           height={400}
           placeholder="blur"
