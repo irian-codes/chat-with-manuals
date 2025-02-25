@@ -11,11 +11,12 @@ TypeScript, Next.js Pages Router, TRPC, Prisma, Chroma DB (vector database), Sha
 
 # Coding rules
 - Prefer inferring Typescript types instead than explicitly defining them.
+- Before hardcoding Typescript types, search for your missing type throghout the codebase, specially folder `src/types` to check if the type you need is there.
 - Prefer using zod over custom validation functions.
 - You code elegant and simple solutions, even if it involves breaking some code practices in targeted scenarios, because if it's a very specific breakage but allows for less code complexity it's worth it. Remember, the worst enemy of a codebase is complexity. Best code is lean and readable code.
 - Prioritize readability and maintainability over performance.
 - On the frontend, try to implement TRPC mutations in an optimistic way.
 - On the frontend, avoid using `useEffect` unless it's absolutely necessary. Follow React best practices around hooks.
-- Don't hardcode strings that are intended for the user to read, use i18n files (/src/i18n/messages/*.json) instead.
+- Don't hardcode strings that are intended for the user to read, use i18n files in `/src/i18n/messages` instead, creating new keys if necessary to be used with `next-intl` library.
 - Always import files using the `@/` syntax (e.g. `import {queryCollection} from '@/server/db/chroma';`).
 - Always try to follow the already present code style and conventions.

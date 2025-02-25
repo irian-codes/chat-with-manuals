@@ -72,6 +72,21 @@
     "save": "Save",
     "send": "Send"
   },
+  "disclaimer-modal": {
+    "acknowledgment": "By using this application, you acknowledge that you are doing so at your own risk. For your safety and privacy, please limit usage to non-sensitive, non-confidential data until the app is fully launched in a secure environment.",
+    "dont-show-again": "Don't show this again",
+    "please-note": "Please note:",
+    "thank-you": "Thank you for your understanding and cooperation.",
+    "title": "Application in development",
+    "understand-button": "I understand",
+    "warning-items": {
+      "data-exposure": "Be aware that data within this app may be exposed or accessed publicly.",
+      "no-sensitive-documents": "Do not upload any sensitive or confidential documents.",
+      "no-sensitive-info": "Avoid entering any sensitive information in chat conversations or in any other part of the application."
+    },
+    "warning-text": "This application is currently in development and is not yet deployed in a secure production environment. It could also contain unexpected bugs and errors that could expose your data to the public. All data processed by this app is not secure.",
+    "warning-title": "WARNING!"
+  },
   "document-list-picker-modal": {
     "description": "Select a document to open a new conversation with it.",
     "errors": {
