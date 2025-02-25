@@ -1,6 +1,7 @@
 ---
 description: App codebase context
-globs: src/**/*,*.prisma
+globs: 
+alwaysApply: true
 ---
 # Codebase
 This codebase is a web app that allows users to upload PDF documents and chat with them using AI (commonly known as RAG).
