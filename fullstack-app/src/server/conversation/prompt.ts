@@ -13,7 +13,6 @@ import {
 } from '@/types/SectionChunkDoc';
 import {nonEmptyStringSchema} from '@/utils/strings';
 import {SystemMessage} from '@langchain/core/messages';
-import {StructuredOutputParser} from '@langchain/core/output_parsers';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {type Conversation, type Message} from '@prisma/client';
@@ -21,7 +20,6 @@ import {tasks} from '@trigger.dev/sdk/v3';
 import {IncludeEnum} from 'chromadb';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o-mini';
 import {Document} from 'langchain/document';
-import {OutputFixingParser} from 'langchain/output_parsers';
 import {createHash} from 'node:crypto';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
@@ -153,26 +151,28 @@ export async function sendPrompt({
 
   console.log('Sending message to LLM...');
 
-  const answerSchema = z.object({
-    answer: z
-      .string()
-      .describe("answer to the user's question in a markdown formatted string"),
-    sources: z
-      .array(z.string())
-      .describe(
-        "if you didn't found the answer in the document, an empty array. Otherwise, this array contains the sources used to answer the user's question, should be one or more section headers."
-      ),
-  });
-
-  const parser = StructuredOutputParser.fromZodSchema(answerSchema);
-  const parserWithFix = OutputFixingParser.fromLLM(bigLlm, parser);
+  const answerSchema = z
+    .object({
+      answer: z
+        .string()
+        .describe(
+          "answer to the user's question in a markdown formatted string"
+        ),
+      sources: z
+        .array(z.string())
+        .describe(
+          "if you didn't found the answer in the document or the answer didn't require any sources, an empty array. Otherwise, this array contains the sources used to answer the user's question, should be one or more section headers."
+        ),
+    })
+    .strict();
 
   const response = await miniLlm
-    .pipe(parserWithFix)
+    .withStructuredOutput(answerSchema, {
+      strict: true,
+      method: 'function_calling',
+    })
     .invoke([systemMessage, ...chatTemplate.toChatMessages()]);
 
-  // TODO #82: For some reason, sometimes the LLM doesn't include the sources
-  // in the response. We'll see if we can fix this.
   const sourcesText =
     response.sources.length > 0
       ? `\n\n📋: ${response.sources
