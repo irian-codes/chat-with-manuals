@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.20](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.19...v0.1.20) (2025-02-25)
+
+
+### Bug Fixes
+
+* **prompt:** fixed sources not getting returned ([7c2b12d](https://github.com/irian-codes/chat-with-manuals/commit/7c2b12d6cb9e42024f4c7bb0e33e48dcd45510fe))
+
 ## [0.1.19](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.17...v0.1.19) (2025-02-25)
 
 
