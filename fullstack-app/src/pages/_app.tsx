@@ -6,6 +6,7 @@ import type {AppProps, AppType} from 'next/app';
 import {api} from '@/utils/api';
 
 import {ErrorBoundaryFallback} from '@/components/modules/error/ErrorBoundaryFallback';
+import {DisclaimerModal} from '@/components/reusable/DisclaimerModal';
 import {Toaster} from '@/components/shadcn-ui/toaster';
 import {SidebarProvider} from '@/contexts/ConversationsSidebarContext';
 import '@/styles/globals.css';
@@ -68,6 +69,7 @@ const MyApp: AppType = ({Component, pageProps}: AppProps) => {
           >
             <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
               <Component {...pageProps} />
+              <DisclaimerModal />
             </ErrorBoundary>
           </div>
           <Toaster />
