@@ -41,6 +41,7 @@ export function LanguageSwitcher({className}: {className?: string}) {
               <DropdownMenuItem key={locale} asChild>
                 <Link
                   href={route}
+                  hrefLang={locale}
                   locale={locale}
                   className="flex cursor-pointer items-center gap-2"
                 >
