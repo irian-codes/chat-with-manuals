@@ -166,9 +166,16 @@ export async function sendPrompt({
     ...chatTemplate.toChatMessages(),
   ]);
 
-  const responseContent = `${response.answer}\n\n📋: ${response.sources
-    .map((source) => source.replace(sectionPrefix, '').trim())
-    .join('\n')}`;
+  // TODO #82: For some reason, sometimes the LLM doesn't include the sources
+  // in the response. We'll see if we can fix this.
+  const sourcesText =
+    response.sources.length > 0
+      ? `\n\n📋: ${response.sources
+          .map((source) => source.replace(sectionPrefix, '').trim())
+          .join('\n')}`
+      : '';
+
+  const responseContent = `${response.answer}${sourcesText}`;
 
   if (env.NODE_ENV === 'development') {
     console.log('Message sent to the LLM: ', {
