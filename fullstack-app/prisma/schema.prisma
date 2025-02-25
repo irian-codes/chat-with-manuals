@@ -52,24 +52,32 @@ enum STATUS {
     DONE
 }
 
+enum DOCUMENT_TYPE {
+    BOARD_GAME_MANUAL
+    REPORT
+    PRODUCT_MANUAL
+    OTHER
+}
+
 model PendingDocument {
-    id               String   @id @default(uuid()) @db.Uuid()
-    user             User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-    userId           String   @db.Uuid()
-    title            String   @db.VarChar(255)
-    searchTitle      String   @db.VarChar(255)
-    description      String   @default("")
-    locale           String   @default("en") @db.VarChar(255)
-    imageUrl         String   @default("")
-    fileUrl          String   @unique @default("")
-    fileHash         String   @unique @db.VarChar(64) // Sha256 hash
-    parsingTaskId    String?  @unique @db.VarChar(64) // Enough for any id it seems
+    id               String        @id @default(uuid()) @db.Uuid()
+    user             User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+    userId           String        @db.Uuid()
+    title            String        @db.VarChar(255)
+    searchTitle      String        @db.VarChar(255)
+    description      String        @default("")
+    documentType     DOCUMENT_TYPE
+    locale           String        @default("en") @db.VarChar(255)
+    imageUrl         String        @default("")
+    fileUrl          String        @unique @default("")
+    fileHash         String        @unique @db.VarChar(64) // Sha256 hash
+    parsingTaskId    String?       @unique @db.VarChar(64) // Enough for any id it seems
     llmParsingJobId  String?
     codeParsingJobId String?
-    vectorStoreId    String?  @unique @db.Uuid()
-    status           STATUS   @default(PENDING)
-    createdAt        DateTime @default(now()) @db.Timestamptz(3)
-    updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+    vectorStoreId    String?       @unique @db.Uuid()
+    status           STATUS        @default(PENDING)
+    createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+    updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
 
     @@index([userId(sort: Asc)])
     @@index([fileHash(sort: Asc)])
@@ -81,6 +89,7 @@ model DocumentFile {
     locale        String         @default("en") @db.VarChar(255)
     url           String         @unique @default("")
     hash          String         @unique @db.VarChar(64) // Sha256 hash
+    documentType  DOCUMENT_TYPE
     parsingTaskId String         @unique @db.VarChar(64)
     vectorStoreId String         @unique @db.Uuid()
     createdAt     DateTime       @default(now()) @db.Timestamptz(3)

@@ -73,6 +73,7 @@ export const fileParsingTask = task({
           return await pdfParseWithLlamaparse({
             filePath: pendingDocument.fileUrl,
             documentLanguage: pendingDocument.locale,
+            documentType: pendingDocument.documentType,
           });
         }
       })();
@@ -163,6 +164,7 @@ export const fileParsingTask = task({
             locale: pendingDocument.locale,
             url: pendingDocument.fileUrl,
             hash: pendingDocument.fileHash,
+            documentType: pendingDocument.documentType,
             parsingTaskId: ctx.run.id,
             vectorStoreId: vectorStore.collectionName,
             // Create the associated UserDocument in the same transaction
@@ -200,8 +202,6 @@ export const fileParsingTask = task({
         documentId: userDocument.userDocuments[0]!.id,
         pendingDocumentId: pendingDocument.id,
       };
-
-      // TODO: Call an endpoint to emit the completion event from TRPC
     } catch (error) {
       logger.error('Error parsing document:', {error});
 

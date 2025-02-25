@@ -46,10 +46,11 @@ export async function embedPDF({
 }) {
   const vectorStore = await createVectorStore(docs, {
     collectionMetadata: {
-      documentType: 'pdf',
+      fileExtension: 'pdf',
       fileHash,
       locale,
       'hnsw:space': 'cosine',
+      createdAt: new Date().toISOString(),
     },
   });
 

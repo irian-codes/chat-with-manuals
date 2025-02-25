@@ -475,6 +475,7 @@ export default async function handler(
     title: zodResult.data.title,
     locale: zodResult.data.locale,
     description: zodResult.data.description,
+    documentType: zodResult.data.documentType,
     fileUrl,
     fileHash,
     imageUrl,

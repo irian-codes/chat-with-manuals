@@ -213,6 +213,9 @@
     "cancel": "Cancelar",
     "description": "Descripción",
     "document-title": "Título",
+    "document-type-label": "Tipo de documento",
+    "document-type-placeholder": "Seleccione un tipo de documento",
+    "document-type-value": "{type, select, BOARD_GAME_MANUAL {Manual de juego de mesa o rol} REPORT {Informe or paper científico} PRODUCT_MANUAL {Manual de producto} OTHER {Otro} other {Otro}}",
     "errors": {
       "api": {
         "conflict": "El documento ya existe",
@@ -222,6 +225,7 @@
     },
     "file-input-label": "Archivo PDF",
     "form-errors": {
+      "document-type-required": "Seleccione un tipo de documento, si no está seguro, seleccione 'Otro'",
       "file-max-size": "El archivo debe pesar menos de {maxSizeInMB}MB.",
       "file-must-be-pdf": "El archivo debe ser de tipo PDF.",
       "file-required": "Se requiere el archivo.",

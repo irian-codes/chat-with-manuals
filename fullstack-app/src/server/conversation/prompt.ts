@@ -5,6 +5,7 @@ import {
   allowedAbsoluteDirPaths,
   writeToTimestampedFile,
 } from '@/server/utils/fileStorage';
+import {getConversationLlmSystemPrompt} from '@/server/utils/prompt';
 import {type ReconstructedSectionDoc} from '@/types/ReconstructedSectionDoc';
 import {
   sectionChunkDocSchema,
@@ -12,6 +13,7 @@ import {
 } from '@/types/SectionChunkDoc';
 import {nonEmptyStringSchema} from '@/utils/strings';
 import {SystemMessage} from '@langchain/core/messages';
+import {StructuredOutputParser} from '@langchain/core/output_parsers';
 import {ChatPromptTemplate} from '@langchain/core/prompts';
 import {ChatOpenAI} from '@langchain/openai';
 import {type Conversation, type Message} from '@prisma/client';
@@ -19,11 +21,11 @@ import {tasks} from '@trigger.dev/sdk/v3';
 import {IncludeEnum} from 'chromadb';
 import {isWithinTokenLimit} from 'gpt-tokenizer/model/gpt-4o-mini';
 import {Document} from 'langchain/document';
+import {OutputFixingParser} from 'langchain/output_parsers';
 import {createHash} from 'node:crypto';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 import {type retrieveContextTask} from '../trigger/conversation';
-import {getConversationLlmSystemPrompt} from './utils';
 
 // gpt-4o(mini) context window (128k) size.
 // Numbers chosen according to the findings that large contexts degrade model performance, these just feel right. 128k tokens are like 96k words, a "standard" 130 page novel is 40k words.
@@ -42,6 +44,14 @@ const miniLlm = new ChatOpenAI({
   timeout: 10 * 1000,
   maxTokens: TOKEN_LIMITS.maxTokensAnswer,
   maxRetries: 3,
+});
+
+const bigLlm = new ChatOpenAI({
+  model: 'gpt-4o',
+  temperature: 0,
+  apiKey: env.OPENAI_API_KEY,
+  timeout: 30 * 1000,
+  maxRetries: 1,
 });
 
 const CHAT_TEMPLATES = {
@@ -143,28 +153,23 @@ export async function sendPrompt({
 
   console.log('Sending message to LLM...');
 
-  const structuredMiniLlm = miniLlm.withStructuredOutput(
-    z.object({
-      answer: z
-        .string()
-        .describe(
-          "answer to the user's question in a markdown formatted string"
-        ),
-      sources: z
-        .array(z.string())
-        .describe(
-          "if you didn't found the answer in the document, an empty array. Otherwise, this array contains the sources used to answer the user's question, should be one or more section headers."
-        ),
-    }),
-    {
-      strict: true,
-    }
-  );
+  const answerSchema = z.object({
+    answer: z
+      .string()
+      .describe("answer to the user's question in a markdown formatted string"),
+    sources: z
+      .array(z.string())
+      .describe(
+        "if you didn't found the answer in the document, an empty array. Otherwise, this array contains the sources used to answer the user's question, should be one or more section headers."
+      ),
+  });
 
-  const response = await structuredMiniLlm.invoke([
-    systemMessage,
-    ...chatTemplate.toChatMessages(),
-  ]);
+  const parser = StructuredOutputParser.fromZodSchema(answerSchema);
+  const parserWithFix = OutputFixingParser.fromLLM(bigLlm, parser);
+
+  const response = await miniLlm
+    .pipe(parserWithFix)
+    .invoke([systemMessage, ...chatTemplate.toChatMessages()]);
 
   // TODO #82: For some reason, sometimes the LLM doesn't include the sources
   // in the response. We'll see if we can fix this.
