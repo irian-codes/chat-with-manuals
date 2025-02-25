@@ -7,7 +7,9 @@ import {Pencil, Send, X} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {type ClassAttributes, type HTMLAttributes, useState} from 'react';
 import Markdown, {type ExtraProps} from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 
 interface ChatMessageProps {
   message: Message;
@@ -209,7 +211,8 @@ function AIMessage({message, formatDate}: ChatMessageProps) {
   return (
     <div className="ai-message bg-muted max-w-[70%] rounded-md p-4">
       <Markdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           ul: ListWithBullets,
           ol: ListWithNumbers,

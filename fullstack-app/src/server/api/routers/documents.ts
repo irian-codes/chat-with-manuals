@@ -202,6 +202,7 @@ export const documentsRouter = createTRPCRouter({
             title: input.title,
             searchTitle: normalizeStringForSearch(input.title),
             description: input.description ?? '',
+            documentType: input.documentType,
             locale: input.locale,
             fileUrl: input.fileUrl,
             fileHash: input.fileHash,

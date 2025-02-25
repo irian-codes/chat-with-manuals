@@ -10,6 +10,7 @@ import {
   acceptedImageTypes,
   type UploadNewDocumentPayload,
 } from '@/types/UploadNewDocumentPayload';
+import {DOCUMENT_TYPE} from '@prisma/client';
 import ISO6391 from 'iso-639-1';
 import {useTranslations} from 'next-intl';
 import {useRef} from 'react';
@@ -120,6 +121,35 @@ export function UploadNewDocumentModal(props: UploadNewDocumentModalProps) {
               {form.formState.errors.description && (
                 <p className="text-sm text-red-500">
                   {form.formState.errors.description.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="doc-type">{t('document-type-label')}</Label>
+              <select
+                id="doc-type"
+                disabled={props.isLoading}
+                {...form.register('documentType', {
+                  required: {
+                    value: true,
+                    message: t('form-errors.document-type-required'),
+                  },
+                  disabled: props.isLoading,
+                })}
+                className="border-input bg-background w-full rounded-md border px-3 py-2"
+                defaultValue=""
+              >
+                <option value="">{t('document-type-placeholder')}</option>
+                {Object.values(DOCUMENT_TYPE).map((type) => (
+                  <option key={type} value={type}>
+                    {t('document-type-value', {type})}
+                  </option>
+                ))}
+              </select>
+              {form.formState.errors.documentType && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.documentType.message}
                 </p>
               )}
             </div>

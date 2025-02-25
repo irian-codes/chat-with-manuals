@@ -1,4 +1,5 @@
 import {isStringEmpty} from '@/utils/strings';
+import {DOCUMENT_TYPE} from '@prisma/client';
 import ISO6391 from 'iso-639-1';
 import mime from 'mime';
 import {z} from 'zod';
@@ -13,6 +14,7 @@ export const UploadNewDocumentPayloadSchema = z
   .object({
     title: z.string().trim().min(2).max(255),
     description: z.string().trim().max(2000).optional(),
+    documentType: z.nativeEnum(DOCUMENT_TYPE),
     locale: z
       .string()
       .trim()
