@@ -6,6 +6,9 @@
   "engines": {
     "node": ">=22.12.0"
   },
+  "prisma": {
+    "seed": "node --loader ts-node/esm prisma/seed.ts"
+  },
   "scripts": {
     "build": "next build",
     "check": "npm run lint && npm run typecheck",
@@ -13,6 +16,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
     "trigger:dev": "npx trigger.dev@latest dev",
     "dev": "next dev --turbopack",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
@@ -107,7 +111,7 @@
     "@types/eslint__eslintrc": "~2.1.2",
     "@types/eslint-config-prettier": "~6.11.3",
     "@types/formidable": "^3.4.5",
-    "@types/node": "22.12.0",
+    "@types/node": "^22.12.0",
     "@types/pg": "~8.11.11",
     "@types/react": "~18.3.18",
     "@types/react-dom": "~18.3.5",
@@ -121,7 +125,8 @@
     "lint-staged": "^15.4.3",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "typescript": "^5.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3",
     "typescript-eslint": "^8.23.0"
   },
   "ct3aMetadata": {

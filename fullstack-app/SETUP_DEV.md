@@ -1,13 +1,35 @@
-# SETUP
+# DEVELOPMENT ENVIRONMENT SETUP
 
 Glossary:
 
 - The main app: Refers to the Next.js main app, under `fullstack-app` folder in this repository.
-- Trigger.dev: Is the Trigger.dev self-hosted instance or the repository you'll clone to run it locally on your system.
+- Trigger.dev: Is the [Trigger.dev](https://trigger.dev/) self-hosted instance, you'll clone a repository to run it locally on your system.
 
-## Trigger.dev (for development)
+## Services
 
-1. Follow the instructions on [Trigger.dev self-hosting docs](https://trigger.dev/docs/open-source-self-hosting) until after you execute `./start.sh` command inside the Trigger.dev repository. That will start the Docker containers that will run the Trigger.dev instance.
+To run the main app, you must have accounts and API keys for these third party services:
+- [OpenAI API](https://platform.openai.com) – Used for LLM calls.
+- [LlamaCloud API](https://cloud.llamaindex.ai/) – Used to parse PDF documents with LlamaParse.
+- [Clerk API](https://dashboard.clerk.com/) – Provides authentication.
+
+**Steps:**
+
+- Sign up for an account with OpenAI, LlamaCloud, and Clerk.
+- Create API keys for each service following their onboarding process.
+- Add these keys to the main app's .env file as follows:
+    ```
+    OPENAI_API_KEY=your_openai_project_api_key
+    LLAMA_CLOUD_API_KEY=your_llamacloud_api_key
+    CLERK_SECRET_KEY=your_clerk_secret_api_key
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_public_api_key
+    ```
+- If you encounter any errors with OpenAI calls, you may need to check if you have set up a payment method. They offer free credits (for now) but only if you have a payment method configured.
+
+No additional configuration should be required for these services beyond setting the keys in the .env file.
+
+## Trigger.dev
+
+1. Follow the instructions of section 'Option 1: Single server' on [Trigger.dev self-hosting docs](https://trigger.dev/docs/open-source-self-hosting) until after you execute `./start.sh` command inside the Trigger.dev repository. That will start the Docker containers that will run the Trigger.dev instance.
 
     **NOTE**: Execute the command on a dedicated terminal to see the logs because you'll need them.
 
@@ -38,3 +60,28 @@ Glossary:
 1. Grab the base URL of the Trigger.dev dashboard (usually `http://localhost:3040`) and add it to **the main app's** `.env` file as `TRIGGER_API_URL`.
 
 1. From now on, you can run the main app with `npm run dev` and the Trigger.dev client with `npm run trigger:dev`. You need both running to run the app in development mode.
+
+## Executing the Development Environment Setup Script
+
+After you have completed the Trigger.dev setup as described above, you can finalize your local development environment by running the automated setup script. This script will:
+
+- Install npm dependencies automatically.
+- Update your PostgreSQL database schema using Prisma (via `npm run db:push`).
+- Seed your database with the default GlobalSettings values (via `npm run db:seed`).
+- Start the necessary Docker containers for PostgreSQL, ClamAV, and ChromaDB.
+- Verify that the Trigger.dev container is running.
+
+**To execute the script:**
+
+1. Open a Linux terminal at the root of the main app.
+2. Make sure the Trigger.dev container is running (refer to the Trigger.dev setup instructions above).
+3. Run the command `./start-dev-env.sh`.
+4. Follow any on-screen prompts. For example, you may be asked to confirm if you wish to push the updated database schema. Answer accordingly.
+
+Once the script completes, your development environment is ready.
+
+You can then start the application with command `npm run dev`. And run the Trigger.dev client with `npm run trigger:dev`. You always need both to develop the main app.
+
+You should be able to access the main app at [localhost:3000](http://localhost:3000). It'll ask you to create an account with Clerk, and then you'll be able to use it.
+
+All set up! Let's develop! 🚀
