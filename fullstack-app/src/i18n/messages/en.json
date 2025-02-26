@@ -100,6 +100,7 @@
         }
       }
     },
+    "no-documents-body": "Seems you haven't uploaded any documents yet. Upload your first one to get started!",
     "search-placeholder": "Search document...",
     "title": "Pick document"
   },
@@ -150,6 +151,8 @@
       "upload": "Upload new document"
     },
     "image-alt": "Document preview",
+    "no-documents-body": "Upload your first document to get started!",
+    "no-documents-title": "No documents found",
     "uploading-document": "Uploading..."
   },
   "locale-switcher": {

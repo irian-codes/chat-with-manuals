@@ -100,6 +100,7 @@
         }
       }
     },
+    "no-documents-body": "Parece que aún no has subido ningún documento. Sube uno para comenzar.",
     "search-placeholder": "Buscar documento...",
     "title": "Seleccionar documento"
   },
@@ -150,6 +151,8 @@
       "upload": "Subir documento"
     },
     "image-alt": "Imagen de la portada del documento",
+    "no-documents-body": "Sube tu primer documento para comenzar",
+    "no-documents-title": "No hay documentos",
     "uploading-document": "Subiendo..."
   },
   "locale-switcher": {

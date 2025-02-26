@@ -116,6 +116,9 @@ export default function NewConversationPage() {
         onSearchQueryChangeDebounced={(searchQuery) => {
           setDocTitleSearch(searchQuery);
         }}
+        onUploadDocumentButtonClick={() => {
+          void router.push('/?uploadingDocument=true');
+        }}
         onClose={() => {
           void router.push('/');
         }}

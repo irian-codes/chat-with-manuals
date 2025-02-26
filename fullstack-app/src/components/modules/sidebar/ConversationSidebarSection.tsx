@@ -242,6 +242,13 @@ export function ConversationSidebarSection() {
         onSearchQueryChangeDebounced={(searchQuery) =>
           setDocTitleSearch(searchQuery)
         }
+        onUploadDocumentButtonClick={() => {
+          void router.push('/?uploadingDocument=true', undefined, {
+            shallow: pathname === '/',
+          });
+
+          setIsDocumentPickerModalOpen(false);
+        }}
         onClose={() => setIsDocumentPickerModalOpen(false)}
       />
     </Fragment>
