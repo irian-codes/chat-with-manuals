@@ -11,8 +11,9 @@ import {ScrollArea} from '@/components/shadcn-ui/scroll-area';
 import type {Document} from '@/types/Document';
 import {Search} from 'lucide-react';
 import {useFormatter, useTranslations} from 'next-intl';
-import {useEffect, useState} from 'react';
+import {Fragment, useEffect, useState} from 'react';
 import {useDebounceValue} from 'usehooks-ts';
+import {UploadDocumentButton} from './UploadDocumentButton';
 
 interface DocumentPickerModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface DocumentPickerModalProps {
   onClose?: () => void;
   onDocumentClick?: (document: Document) => void;
   onSearchQueryChangeDebounced?: (newSearchQuery: string) => void;
+  onUploadDocumentButtonClick?: () => void;
   debounceTimeInMs?: number;
   isLoading?: boolean;
 }
@@ -37,22 +39,47 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
     props.onSearchQueryChangeDebounced?.(debouncedSearchQuery);
   }, [debouncedSearchQuery]);
 
-  return (
-    <Dialog
-      open={props.isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          setSearchQuery('');
-          props.onClose?.();
-        }
-      }}
-    >
-      <DialogContent className="w-[90vw] max-w-2xl sm:w-full">
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>{t('description')}</DialogDescription>
-        </DialogHeader>
+  function DialogOuter({children}: {children: React.ReactNode}) {
+    return (
+      <Dialog
+        open={props.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSearchQuery('');
+            props.onClose?.();
+          }
+        }}
+      >
+        <DialogContent className="w-[90vw] max-w-2xl sm:w-full">
+          <DialogHeader>
+            <DialogTitle>{t('title')}</DialogTitle>
+            <DialogDescription>{t('description')}</DialogDescription>
+          </DialogHeader>
+          {children}
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
+  if (props.documents.length === 0) {
+    return (
+      <DialogOuter>
+        <div className="mt-4 flex flex-col items-start justify-center gap-8">
+          <p>{t('no-documents-body')}</p>
+          <UploadDocumentButton
+            buttonProps={{
+              onClick: props.onUploadDocumentButtonClick,
+              className: 'self-center',
+            }}
+          />
+        </div>
+      </DialogOuter>
+    );
+  }
+
+  return (
+    <DialogOuter>
+      <Fragment>
         {props.onSearchQueryChangeDebounced && (
           <div className="relative">
             <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
@@ -94,7 +121,7 @@ export function DocumentListPickerModal(props: DocumentPickerModalProps) {
             ))}
           </div>
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      </Fragment>
+    </DialogOuter>
   );
 }

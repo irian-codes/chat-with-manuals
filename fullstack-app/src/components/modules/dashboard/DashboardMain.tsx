@@ -1,13 +1,20 @@
 import {DocumentCard} from '@/components/modules/dashboard/DocumentCard';
 import {Header} from '@/components/reusable/Header';
-import {Button} from '@/components/shadcn-ui/button';
+import {UploadDocumentButton} from '@/components/reusable/UploadDocumentButton';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/shadcn-ui/card';
 import {Input} from '@/components/shadcn-ui/input';
 import {env} from '@/env';
 import {type ToastErrorType, useErrorToast} from '@/hooks/useErrorToast';
 import type {Document} from '@/types/Document';
 import {api} from '@/utils/api';
 import {STATUS} from '@prisma/client';
-import {Search, Upload} from 'lucide-react';
+import {Search} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {useRouter} from 'next/router';
 import {useEffect, useState} from 'react';
@@ -74,6 +81,7 @@ export function DashboardMain() {
 
   const documents = documentsQuery.data ?? [];
   const pendingDocuments = pendingDocumentsSubs.data?.docs ?? [];
+  const allDocuments = [...pendingDocuments, ...documents];
   const cancelDocumentParsingMutation =
     api.documents.cancelDocumentParsing.useMutation({
       onError: cancelDocumentParsingErrorToast,
@@ -126,7 +134,7 @@ export function DashboardMain() {
   }
 
   return (
-    <div className="flex-1">
+    <div className="w-full min-w-0 flex-1">
       <Header>
         <div className="flex flex-row flex-wrap gap-4">
           <div className="relative max-w-md min-w-[200px] flex-1">
@@ -139,50 +147,68 @@ export function DashboardMain() {
             />
           </div>
           <div className="flex items-center gap-4">
-            <Button
-              onClick={() =>
-                void router.push('/?uploadingDocument=true', undefined, {
-                  shallow: true,
-                })
-              }
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {t('header.upload')}
-            </Button>
+            <UploadDocumentButton uploadIconProps={{className: 'mr-2'}} />
           </div>
         </div>
       </Header>
 
       <main className="p-4">
-        <div className="flex flex-row flex-wrap gap-4">
-          {[...pendingDocuments, ...documents].map((doc) =>
-            'status' in doc ? (
-              <DocumentCard
-                doc={doc}
-                key={doc.id}
-                onCancelButtonClick={() => handleCancelDocumentParsing(doc.id)}
-                isLoading={isLoading}
-              />
-            ) : (
-              <DocumentCard
-                doc={doc}
-                key={doc.id}
-                isLoading={isLoading}
-                onUpdateButtonClick={(ev) => {
-                  ev.preventDefault();
-                  void handleUpdateDocument(doc);
-                }}
-                onUpdateDocumentPreview={(ev) => {
-                  ev.preventDefault();
-                  void utils.documents.getDocument.prefetch({id: doc.id});
-                }}
-                onNewConversationButtonClick={() =>
-                  void handleCreateConversation(doc)
-                }
-              />
-            )
-          )}
-        </div>
+        {allDocuments.length === 0 ? (
+          <div className="flex h-full w-full items-center justify-center p-6">
+            <Card className="w-full max-w-md shadow-md">
+              <CardHeader className="mb-4 text-center">
+                <CardTitle className="text-2xl font-bold">
+                  {t('no-documents-title')}
+                </CardTitle>
+                <CardDescription className="text-primary">
+                  {t('no-documents-body')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center">
+                <UploadDocumentButton
+                  buttonProps={{
+                    className: 'max-w-54 p-2 sm:p-4',
+                    variant: 'default',
+                    size: 'lg',
+                  }}
+                  textProps={{className: 'w-full text-wrap'}}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="flex flex-row flex-wrap gap-4">
+            {allDocuments.map((doc) =>
+              'status' in doc ? (
+                <DocumentCard
+                  doc={doc}
+                  key={doc.id}
+                  onCancelButtonClick={() =>
+                    handleCancelDocumentParsing(doc.id)
+                  }
+                  isLoading={isLoading}
+                />
+              ) : (
+                <DocumentCard
+                  doc={doc}
+                  key={doc.id}
+                  isLoading={isLoading}
+                  onUpdateButtonClick={(ev) => {
+                    ev.preventDefault();
+                    void handleUpdateDocument(doc);
+                  }}
+                  onUpdateDocumentPreview={(ev) => {
+                    ev.preventDefault();
+                    void utils.documents.getDocument.prefetch({id: doc.id});
+                  }}
+                  onNewConversationButtonClick={() =>
+                    void handleCreateConversation(doc)
+                  }
+                />
+              )
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
