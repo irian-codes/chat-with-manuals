@@ -41,7 +41,7 @@ void Promise.all(
   Object.values(allowedAbsoluteDirPaths).map(async (dir) => {
     if (dir.includes('uploads') && !isDevEnv) {
       // Ensuring that the uploads directory is only accessible by the app
-      await fs.mkdir(dir, {recursive: true, mode: 0o600});
+      await fs.mkdir(dir, {recursive: true, mode: 0o700});
     } else {
       await fs.mkdir(dir, {recursive: true});
     }
