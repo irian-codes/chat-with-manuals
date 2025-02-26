@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.21](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.20...v0.1.21) (2025-02-26)
+
+
+### Features
+
+* **dashboard:** add no documents reminder ([e352c7c](https://github.com/irian-codes/chat-with-manuals/commit/e352c7c1bb9fbd558e5fc809763462bf31d391b9))
+
+
+### Bug Fixes
+
+* **files:** fixed too strict permission ([c236c9a](https://github.com/irian-codes/chat-with-manuals/commit/c236c9aeb53f5f724a86e6f29b0f6e3daa54bfd8))
+
 ## [0.1.20](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.19...v0.1.20) (2025-02-25)
 
 
