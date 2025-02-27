@@ -43,7 +43,6 @@ This strict language requirement ensures that all interactions remain consistent
   return defaultLlmSystemPrompt;
 }
 
-// TODO: Add one prompt per type of document. I have a current Chat GPT conversation about this titled: Board Game Manual Parsing
 export function getLlamaParseInstructionPrompt(
   docType: DOCUMENT_TYPE
 ): string | null {

@@ -320,7 +320,6 @@ export default async function handler(
     })
   );
 
-  // TODO: If the TRPC procedure fails, we need to delete the uploaded file.
   const trpcResponse = await trpc.documents.updateDocument({
     id: zodResult.data.id,
     title: zodResult.data.title,

@@ -8,7 +8,6 @@ import path from 'node:path';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
 
-// TODO #17: Move this to a SECURE storage solution.
 const isDevEnv = env.NODE_ENV === 'development';
 
 export const allowedAbsoluteDirPaths = {
