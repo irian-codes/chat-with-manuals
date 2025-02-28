@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.0](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.21...v0.2.0) (2025-02-28)
+
+
+### Bug Fixes
+
+* **dashboard:** showing documents images completely with 'object-fit: contain' ([39a18d8](https://github.com/irian-codes/chat-with-manuals/commit/39a18d8c4302ce0a35da5585fe9e56f3a1cabf63))
+* **images:** new API Route to optimize images uploaded by users ([1059f16](https://github.com/irian-codes/chat-with-manuals/commit/1059f16da7fbbcea36d27b208e8524139db24eda))
+* **lang:** using correct variable ([1894093](https://github.com/irian-codes/chat-with-manuals/commit/1894093d8c88957bf5eb96d538aa7824be95cd2e))
+
 ## [0.1.21](https://github.com/irian-codes/chat-with-manuals/compare/v0.1.20...v0.1.21) (2025-02-26)
 
 
