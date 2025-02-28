@@ -59,8 +59,6 @@ No additional configuration should be required for these services beyond setting
 
 1. Grab the base URL of the Trigger.dev dashboard (usually `http://localhost:3040`) and add it to **the main app's** `.env` file as `TRIGGER_API_URL`.
 
-1. From now on, you can run the main app with `npm run dev` and the Trigger.dev client with `npm run trigger:dev`. You need both running to run the app in development mode.
-
 ## Executing the Development Environment Setup Script
 
 After you have completed the Trigger.dev setup as described above, you can finalize your local development environment by running the automated setup script. This script will:
@@ -80,7 +78,7 @@ After you have completed the Trigger.dev setup as described above, you can final
 
 Once the script completes, your development environment is ready.
 
-You can then start the application with command `npm run dev`. And run the Trigger.dev client with `npm run trigger:dev`. You always need both to develop the main app.
+You can then start the application with command `npm run dev`. It will start Next.js and Trigger.dev. You always need both to develop the main app.
 
 You should be able to access the main app at [localhost:3000](http://localhost:3000). It'll ask you to create an account with Clerk, and then you'll be able to use it.
 

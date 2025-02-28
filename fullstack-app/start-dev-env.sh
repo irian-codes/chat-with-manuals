@@ -152,4 +152,4 @@ if ! [ "$(docker ps -q -f name=$TRIGGER_CONTAINER_NAME)" ]; then
 fi
 
 echo -e "\n✅ Development environment setup complete!"
-echo "You can now run the app with 'npm run dev' and the Trigger.dev client with 'npm run trigger:dev'" 
+echo "You can now run the app with 'npm run dev'" 
