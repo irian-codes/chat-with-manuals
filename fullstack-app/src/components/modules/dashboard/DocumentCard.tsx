@@ -46,7 +46,7 @@ export function DocumentCard(props: DocumentCardProps) {
         <Image
           src={imageUrl}
           alt={t('image-alt')}
-          className="aspect-4/3 rounded-t-xl object-cover md:aspect-1/1"
+          className="aspect-4/3 rounded-t-xl object-contain md:aspect-1/1"
           width={400}
           height={400}
           placeholder="blur"
