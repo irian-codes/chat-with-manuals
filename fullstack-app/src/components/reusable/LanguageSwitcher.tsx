@@ -13,7 +13,7 @@ import {useRouter} from 'next/router';
 
 export function LanguageSwitcher({className}: {className?: string}) {
   const t = useTranslations('locale-switcher');
-  const {locale, locales, route} = useRouter();
+  const {locale, locales, asPath} = useRouter();
 
   const flagClasses = {
     // https://github.com/lipis/flag-icons
@@ -40,7 +40,7 @@ export function LanguageSwitcher({className}: {className?: string}) {
             .map((locale) => (
               <DropdownMenuItem key={locale} asChild>
                 <Link
-                  href={route}
+                  href={asPath}
                   hrefLang={locale}
                   locale={locale}
                   className="flex cursor-pointer items-center gap-2"
