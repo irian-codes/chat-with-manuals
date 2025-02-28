@@ -10,6 +10,8 @@ I did some research and found that LLM RAG apps are as good as the context you g
 
 This is my first project with AI, and I'm glad I could finish it to a state where its actually useful for my needs. Feel free to use it however you want though!
 
+🎥 [See it in action! (video in English)](https://1drv.ms/v/c/dcbcde5b83852811/EQqeyeoYDiVFvWBhLspC_x0B9mAwLJb-sxRZJPuy98Re7A?e=5GUeO7) 🎥
+
 ## How's does this RAG work?
 
 1. The document the user uploads is parsed using LlamaParse (AI Vision).
