@@ -44,14 +44,6 @@ const miniLlm = new ChatOpenAI({
   maxRetries: 3,
 });
 
-const bigLlm = new ChatOpenAI({
-  model: 'gpt-4o',
-  temperature: 0,
-  apiKey: env.OPENAI_API_KEY,
-  timeout: 30 * 1000,
-  maxRetries: 1,
-});
-
 const CHAT_TEMPLATES = {
   conversationHistory: 'CONVERSATION HISTORY (CONTEXT):\n{history}',
   documentDescription: 'DOCUMENT DESCRIPTION (CONTEXT):\n{description}',
