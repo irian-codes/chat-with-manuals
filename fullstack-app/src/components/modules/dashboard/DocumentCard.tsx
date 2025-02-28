@@ -36,15 +36,21 @@ export function DocumentCard(props: DocumentCardProps) {
   const t = useTranslations('document-manager');
   const format = useFormatter();
   const docIsUploading = 'onCancelButtonClick' in props;
-  const imageUrl = !isStringEmpty(props.doc.imageUrl)
-    ? props.doc.imageUrl.replace('/public/', '/')
-    : '/default-doc-image.jpg';
+  const imageUrl = isStringEmpty(props.doc.imageUrl)
+    ? 'public/default-doc-image.jpg'
+    : props.doc.imageUrl;
 
   return (
     <Card className={cn('max-w-[16rem]', docIsUploading && 'animate-pulse')}>
       <CardContent className="p-0">
         <Image
           src={imageUrl}
+          // We are optimizing the images ourselves because the image may
+          // not be in the public folder at compile time, and thus Next.js
+          // cannot retrieve it if it's passed as a relative url.
+          loader={({src, width, quality}) =>
+            `/api/serveImage?url=${src}&w=${width}&q=${quality ?? 75}`
+          }
           alt={t('image-alt')}
           className="aspect-4/3 rounded-t-xl object-contain md:aspect-1/1"
           width={400}
