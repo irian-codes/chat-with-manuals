@@ -32,6 +32,7 @@ export const allowedAbsoluteDirPaths = {
   logLlmAnswers: ensureAbsolutePath(
     path.join(isDevEnv ? 'public/temp' : 'temp', 'logs/llm-answers')
   ),
+  public: ensureAbsolutePath(path.join(process.cwd(), 'public')),
   appTempDir: ensureAbsolutePath(path.join(os.tmpdir(), 'chat-with-manuals')),
 } as const;
 
