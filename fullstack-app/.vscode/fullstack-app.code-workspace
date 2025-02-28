@@ -1,0 +1,30 @@
+{
+  "folders": [
+    {
+      "path": "..",
+    },
+  ],
+  "settings": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+    },
+    "editor.formatOnSave": true,
+    "i18n-ally.localesPaths": ["src/i18n/messages"],
+    "i18n-ally.displayLanguage": "en",
+    "i18n-ally.sourceLanguage": "en",
+    "i18n-ally.keystyle": "nested",
+    "cSpell.words": ["Llamaparse"],
+    // Tailwind CSS extension class regex to work with class-variance-authority and clsx
+    "tailwindCSS.experimental.classRegex": [
+      ["cva\\(((?:[^()]|\\([^()]*\\))*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+      ["cx\\(((?:[^()]|\\([^()]*\\))*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+      ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ],
+    "repomix.include": [
+      "src/**",
+      "prisma/**",
+      "next.config.js",
+      "package.json",
+    ],
+  },
+}

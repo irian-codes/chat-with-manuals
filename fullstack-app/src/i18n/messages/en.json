@@ -1,0 +1,262 @@
+{
+  "app": {
+    "description": "App to chat via AI chatbot with structured documents like product manuals",
+    "errors": {
+      "api": {
+        "bad-gateway": "Service temporarily unavailable",
+        "bad-request": "Invalid request",
+        "conflict": "The resource already exists",
+        "forbidden": "Access denied",
+        "internal-server-error": "Internal server error",
+        "not-found": "Resource not found",
+        "not-implemented": "Operation not supported",
+        "parse-error": "Invalid data format",
+        "too-many-requests": "Too many requests, please try again later.",
+        "unauthorized": "Not authorized"
+      },
+      "unknown-error": "An unexpected error occurred"
+    },
+    "title": "Chat With Manuals"
+  },
+  "conversation": {
+    "cancel": "Cancel",
+    "chat-title": "Chat: {title}",
+    "document-title": "Document: {title}",
+    "errors": {
+      "conversation": {
+        "get": {
+          "api": {
+            "internal-server-error": "Failed to get conversation",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to get conversation"
+        }
+      },
+      "generate-conversation-title": {
+        "api": {
+          "internal-server-error": "Failed to generate conversation title",
+          "not-found": "Conversation not found"
+        },
+        "unknown-error": "Failed to generate conversation title"
+      },
+      "messages": {
+        "edit": {
+          "api": {
+            "bad-request": "Message cannot be empty",
+            "internal-server-error": "Failed to edit message",
+            "not-found": "Message not found"
+          },
+          "unknown-error": "Failed to edit message"
+        },
+        "get": {
+          "api": {
+            "internal-server-error": "Failed to get messages",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to get messages"
+        },
+        "send": {
+          "api": {
+            "bad-request": "Message cannot be empty",
+            "internal-server-error": "Failed to send message",
+            "not-found": "Conversation or document not found"
+          },
+          "unknown-error": "Failed to send message"
+        }
+      }
+    },
+    "hallucination-alert": "The AI may sometimes produce inaccurate answers, please always refer back to the original document for accurate information.",
+    "input-placeholder": "Type your message...",
+    "language-alert": "Please use {locale, select, es {Spanish} en {English} other {Unknown}} in this conversation as the document is indexed in this language.",
+    "language-alert-brief": "Conversation language: {locale, select, es {Spanish} en {English} other {Unknown}}",
+    "save": "Save",
+    "send": "Send"
+  },
+  "disclaimer-modal": {
+    "acknowledgment": "By using this application, you acknowledge that you are doing so at your own risk. For your safety and privacy, please limit usage to non-sensitive, non-confidential data until the app is fully launched in a secure environment.",
+    "dont-show-again": "Don't show this again",
+    "please-note": "Please note:",
+    "thank-you": "Thank you for your understanding and cooperation.",
+    "title": "Application in development",
+    "understand-button": "I understand",
+    "warning-items": {
+      "data-exposure": "Be aware that data within this app may be exposed or accessed publicly.",
+      "no-sensitive-documents": "Do not upload any sensitive or confidential documents.",
+      "no-sensitive-info": "Avoid entering any sensitive information in chat conversations or in any other part of the application."
+    },
+    "warning-text": "This application is currently in development and is not yet deployed in a secure production environment. It could also contain unexpected bugs and errors that could expose your data to the public. All data processed by this app is not secure.",
+    "warning-title": "WARNING!"
+  },
+  "document-list-picker-modal": {
+    "description": "Select a document to open a new conversation with it.",
+    "errors": {
+      "documents": {
+        "get": {
+          "api": {
+            "bad-request": "Invalid document search data supplied",
+            "internal-server-error": "Failed to get documents"
+          },
+          "unknown-error": "Failed to get documents"
+        }
+      }
+    },
+    "no-documents-body": "Seems you haven't uploaded any documents yet. Upload your first one to get started!",
+    "search-placeholder": "Search document...",
+    "title": "Pick document"
+  },
+  "document-manager": {
+    "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "Failed to add conversation",
+            "not-found": "Document not found"
+          },
+          "unknown-error": "Failed to add conversation"
+        }
+      },
+      "documents": {
+        "cancelDocumentParsing": {
+          "api": {
+            "internal-server-error": "Failed to cancel document parsing",
+            "not-found": "Pending document not found"
+          },
+          "unknown-error": "Failed to cancel document parsing"
+        },
+        "documentParsing": {
+          "document-parsing-update": {
+            "api": {
+              "internal-server-error": "Failed to parse the document, try again."
+            },
+            "unknown-error": "Failed to parse the document, try again."
+          },
+          "sse-subscription": {
+            "api": {
+              "internal-server-error": "Failed to receive document parsing updates, refresh the page."
+            },
+            "unknown-error": "Failed to receive document parsing updates, refresh the page."
+          }
+        },
+        "get": {
+          "api": {
+            "bad-request": "Invalid document search data supplied",
+            "internal-server-error": "Failed to get documents"
+          },
+          "unknown-error": "Failed to get documents"
+        }
+      }
+    },
+    "header": {
+      "search": "Search",
+      "upload": "Upload new document"
+    },
+    "image-alt": "Document preview",
+    "no-documents-body": "Upload your first document to get started!",
+    "no-documents-title": "No documents found",
+    "uploading-document": "Uploading..."
+  },
+  "locale-switcher": {
+    "locale": "{locale, select, es {Spanish} en {English} other {Unknown}}"
+  },
+  "sidebar": {
+    "conversations": {
+      "conversation-title-missing": "Untitled",
+      "deleteConversationConfirmation": "Are you sure you want to delete conversation titled: {title} ?",
+      "newConversation": "New conversation",
+      "search": "Search",
+      "title": "Conversations"
+    },
+    "errors": {
+      "conversation": {
+        "add": {
+          "api": {
+            "internal-server-error": "Failed to add conversation",
+            "not-found": "Document not found"
+          },
+          "unknown-error": "Failed to add conversation"
+        },
+        "delete": {
+          "api": {
+            "internal-server-error": "Failed to delete conversation",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to delete conversation"
+        },
+        "edit": {
+          "api": {
+            "bad-request": "Invalid conversation title",
+            "internal-server-error": "Failed to edit conversation",
+            "not-found": "Conversation not found"
+          },
+          "unknown-error": "Failed to edit conversation"
+        }
+      },
+      "conversations": {
+        "get": {
+          "api": {
+            "internal-server-error": "Failed to get conversations"
+          },
+          "unknown-error": "Failed to get conversations"
+        }
+      }
+    },
+    "home": {
+      "title": "Documents"
+    }
+  },
+  "update-document-modal": {
+    "cancel": "Cancel",
+    "delete": "Delete document",
+    "delete-confirmation": "Are you sure you want to delete this document? This action cannot be undone.",
+    "description": "Description",
+    "document-title": "Title",
+    "errors": {
+      "api": {
+        "not-found": "Document not found",
+        "parse-error": "Invalid document update data supplied"
+      }
+    },
+    "form-errors": {
+      "image-max-size": "Image must be smaller than {maxSizeInMB}MB.",
+      "image-must-be-valid": "Image must be a JPEG, PNG or WebP file.",
+      "title-max-length": "Title must be at most 255 characters long.",
+      "title-min-length": "Title must be at least 3 characters long.",
+      "title-required": "Title is required"
+    },
+    "image-input-label": "Cover image",
+    "save": "Save",
+    "title": "Edit document information"
+  },
+  "upload-new-document-modal": {
+    "cancel": "Cancel",
+    "description": "Description",
+    "document-title": "Title",
+    "document-type-label": "Document type",
+    "document-type-placeholder": "Select a document type",
+    "document-type-value": "{type, select, BOARD_GAME_MANUAL {RPG or Board game manual} REPORT {Report or scientific paper} PRODUCT_MANUAL {Product manual} OTHER {Other} other {Other}}",
+    "errors": {
+      "api": {
+        "conflict": "Document already exists",
+        "not-found": "Document not found",
+        "parse-error": "Invalid document or supplied data"
+      }
+    },
+    "file-input-label": "PDF file",
+    "form-errors": {
+      "document-type-required": "Please select a document type, if unsure select 'Other'",
+      "file-max-size": "File must be smaller than {maxSizeInMB}MB",
+      "file-must-be-pdf": "File must be a PDF",
+      "file-required": "File is required",
+      "image-max-size": "Image must be smaller than {maxSizeInMB}MB.",
+      "image-must-be-valid": "Image must be a JPEG, PNG or WebP file.",
+      "language-required": "Language is required.",
+      "title-max-length": "Title must be at most 255 characters long.",
+      "title-min-length": "Title must be at least 3 characters long.",
+      "title-required": "Title is required"
+    },
+    "image-input-label": "Cover image",
+    "language-label": "Document language",
+    "language-placeholder": "Select language code",
+    "upload": "Upload new document"
+  }
+}
