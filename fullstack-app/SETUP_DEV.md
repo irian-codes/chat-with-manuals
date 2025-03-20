@@ -8,6 +8,7 @@ Glossary:
 ## Services
 
 To run the main app, you must have accounts and API keys for these third party services:
+
 - [OpenAI API](https://platform.openai.com) – Used for LLM calls.
 - [LlamaCloud API](https://cloud.llamaindex.ai/) – Used to parse PDF documents with LlamaParse.
 - [Clerk API](https://dashboard.clerk.com/) – Provides authentication.
@@ -17,12 +18,14 @@ To run the main app, you must have accounts and API keys for these third party s
 - Sign up for an account with OpenAI, LlamaCloud, and Clerk.
 - Create API keys for each service following their onboarding process.
 - Add these keys to the main app's .env file as follows:
-    ```
+
+    ```txt
     OPENAI_API_KEY=your_openai_project_api_key
     LLAMA_CLOUD_API_KEY=your_llamacloud_api_key
     CLERK_SECRET_KEY=your_clerk_secret_api_key
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_public_api_key
     ```
+
 - If you encounter any errors with OpenAI calls, you may need to check if you have set up a payment method. They offer free credits (for now) but only if you have a payment method configured.
 
 No additional configuration should be required for these services beyond setting the keys in the .env file.
