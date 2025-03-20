@@ -1,6 +1,6 @@
 # Chat with Manuals
 
-This is an app I created to "chat" with PDF documents, specifically manuals. Usually, manuals are useful beyond the first read. For example, if you purchased a product and on a given day you want to check how a specific function works, you will reach the manual and read that section again. But that's a problem if the manual is poorly written or is very long. Thus, I built this app!
+This is an app I created to "chat" with PDF documents, specifically manuals. Usually, manuals are useful beyond the first read. For instance, if you purchased a product and on a given day you want to review how a specific feature works, you will reach the manual and read that section again. But that's a problem if the manual is poorly written or is very long, because it can be a very time consuming thing to do. Thus, I built this app!
 
 I find it very useful to upload a PDF and use AI to search the relevant parts of the document for me, instead of me scrolling through endless pages until I find my answer. For example, you can upload an air conditioner manual and ask it "how do I properly clean the filters?". And the AI will just tell you! Magic! 🪄
 
@@ -288,6 +288,7 @@ I have several ideas for future enhancements, some of which are already listed a
 
   - Decide when not to retrieve context. This is also important, because questions like "Could you simplify the explanation?" don't require any new document context, just the prior conversation. So the AI in this case should choose not to retrieve context.
 - Support sections by parts. Right now only one section can be added into the context, and if the section is very long and requires many separate parts to be included, that right now is impossible. It should be possible by labelling something like `SECTION ROUTE: Heading 1>…Heading 1.3.4 (part n)`.
+- Support multiple documents per conversation.
 - Allow reparsing of documents. Right now if an uploaded document has conversations related to it, and the user wants to upload a new PDF version of it, because the content got updated, they cannot do so. They have to upload it as a new document, but if they delete the old one all conversations are lost. If the document could get updated, those conversation would be preserved, a much better outcome.
 - Research somehow how to do prompt augmentation with document keywords. Because for some manuals, especially board games, using the right keywords should provide a much better similarity search. E.g. a composite keyword like Power Score may mean a very specific thing in a manual that Chroma DB doesn't associate with the corresponding chunks. I have to empirically test for this yet, but I want to validate this hunch.
 - Implement error tracing and logging storage with a tool like Sentry.
