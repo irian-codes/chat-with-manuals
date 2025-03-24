@@ -32,7 +32,8 @@
     "commit": "git add . && cz",
     "commitlint": "commitlint --edit",
     "prepare": "cd .. && husky fullstack-app/.husky",
-    "release": "commit-and-tag-version"
+    "release": "commit-and-tag-version",
+    "serve:dev": "ngrok http http://localhost:3000"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.11.1",
